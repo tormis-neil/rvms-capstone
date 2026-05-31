@@ -27,6 +27,8 @@ import com.rvms.driver.ui.theme.BackgroundLight
 @Composable
 fun HomeScreen(
     onNavigateToMyVehicle: () -> Unit,
+    onNavigateToNewInspection: () -> Unit,
+    onNavigateToReportDefect: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -45,9 +47,9 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(24.dp))
         
         QuickActionsGrid(
-            onNewInspectionClick = { /* TODO Phase 3 */ },
-            onReportDefectClick = { /* TODO Phase 3 */ },
-            onViewHistoryClick = { /* TODO */ },
+            onNewInspectionClick = onNavigateToNewInspection,
+            onReportDefectClick = onNavigateToReportDefect,
+            onViewHistoryClick = { /* TODO Phase 4 */ },
             onMyVehicleClick = onNavigateToMyVehicle
         )
         

@@ -1,4 +1,4 @@
-﻿package com.rvms.driver.navigation
+package com.rvms.driver.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -38,7 +38,21 @@ fun BottomNav(
     ) {
         Screen.entries.forEach { screen ->
             NavigationBarItem(
-                icon = { Icon(screen.icon, contentDescription = screen.label) },
+                icon = {
+                    if (screen == Screen.NOTIFICATIONS) {
+                        androidx.compose.material3.BadgedBox(
+                            badge = {
+                                androidx.compose.material3.Badge(
+                                    containerColor = Color(0xFFEF4444) // Red for unread
+                                )
+                            }
+                        ) {
+                            Icon(screen.icon, contentDescription = screen.label)
+                        }
+                    } else {
+                        Icon(screen.icon, contentDescription = screen.label)
+                    }
+                },
                 label = { Text(screen.label) },
                 selected = currentScreen == screen,
                 onClick = { onScreenSelected(screen) },

@@ -62,29 +62,46 @@ fun MainScreen() {
                 // Bottom Nav Tabs
                 composable(Screen.HOME.name) {
                     HomeScreen(
-                        onNavigateToMyVehicle = { navController.navigate("MY_VEHICLE") }
+                        onNavigateToMyVehicle = { navController.navigate("MY_VEHICLE") },
+                        onNavigateToNewInspection = { navController.navigate("NEW_INSPECTION") },
+                        onNavigateToReportDefect = { navController.navigate("REPORT_DEFECT") }
                     )
                 }
                 composable(Screen.INSPECTIONS.name) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Inspections Placeholder")
-                    }
+                    InspectionsHistoryScreen(
+                        onNavigateToNewInspection = { navController.navigate("NEW_INSPECTION") }
+                    )
                 }
                 composable(Screen.DEFECTS.name) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Defects Placeholder")
-                    }
+                    DefectsHistoryScreen(
+                        onNavigateToReportDefect = { navController.navigate("REPORT_DEFECT") }
+                    )
                 }
                 composable(Screen.NOTIFICATIONS.name) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Notifications Placeholder")
-                    }
+                    NotificationsScreen()
                 }
 
                 // Deep Screens
                 composable("MY_VEHICLE") {
                     MyVehicleScreen(
                         onBack = { navController.popBackStack() }
+                    )
+                }
+                composable("NEW_INSPECTION") {
+                    NewInspectionScreen(
+                        onBack = { navController.popBackStack() },
+                        onSubmitSuccess = { navController.navigate("SUBMISSION_SUCCESS") { popUpTo(Screen.HOME.name) } }
+                    )
+                }
+                composable("REPORT_DEFECT") {
+                    ReportDefectScreen(
+                        onBack = { navController.popBackStack() },
+                        onSubmitSuccess = { navController.navigate("SUBMISSION_SUCCESS") { popUpTo(Screen.HOME.name) } }
+                    )
+                }
+                composable("SUBMISSION_SUCCESS") {
+                    SubmissionSuccessScreen(
+                        onBackToHome = { navController.navigate(Screen.HOME.name) { popUpTo(Screen.HOME.name) { inclusive = true } } }
                     )
                 }
             }
