@@ -1,0 +1,62 @@
+:root {
+    /* Primary Brand Colors */
+    --primary: #1B2F72;
+    --primary-dark: #0E1C4A;
+    --primary-light: #2A429A;
+    --accent: #D4A017;
+    --accent-light: #E8BA3C;
+
+    /* Vehicle Status Colors */
+    --status-operational: #16A34A;
+    --status-dispatched: #2563EB;
+    --status-not-operational: #DC2626;
+    --status-under-pm: #D97706;
+
+    /* Neutral Colors */
+    --bg: #F5F7FA;
+    --surface: #FFFFFF;
+    --border: #E2E8F0;
+    --text-primary: #0F172A;
+    --text-secondary: #64748B;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+}
+
+.bg-navy {
+    background-color: var(--primary) !important;
+}
+
+.text-gold {
+    color: var(--accent) !important;
+}
+
+.splash-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.logo-circle {
+    width: 100px;
+    height: 100px;
+    background-color: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.logo-text {
+    color: var(--primary-dark);
+    font-size: 2.25rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    margin: 0;
+}

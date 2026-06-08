@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RVMS</string>
+    <string name="app_full_name">Rescue Vehicle Management System</string>
+    <string name="app_subtitle">Vehicle Monitoring &amp; Maintenance Platform</string>
+</resources>

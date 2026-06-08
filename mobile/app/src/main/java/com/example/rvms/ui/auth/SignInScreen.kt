@@ -1,0 +1,169 @@
+package com.example.rvms.ui.auth
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.rvms.theme.DarkNavy
+import com.example.rvms.theme.Gold
+import com.example.rvms.theme.NavyBlue
+import com.example.rvms.theme.RVMSTheme
+import com.example.rvms.theme.TextSecondary
+import com.example.rvms.theme.White
+
+@Composable
+fun SignInScreen(
+    onNavigateToHome: () -> Unit,
+    onNavigateToSignUp: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
+    Column(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(White)
+                .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        // Small Logo
+        Box(
+            modifier =
+                Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(Gold),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "RVMS",
+                color = DarkNavy,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.ExtraBold,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // System Name
+        Text(
+            text = "Rescue Vehicle\nManagement System",
+            style = MaterialTheme.typography.headlineSmall,
+            color = NavyBlue,
+            textAlign = TextAlign.Center,
+        )
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        // Email Field
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = NavyBlue,
+                focusedLabelColor = NavyBlue
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Password Field
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Password") },
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = NavyBlue,
+                focusedLabelColor = NavyBlue
+            )
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Sign In Button
+        Button(
+            onClick = onNavigateToHome,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = NavyBlue),
+        ) {
+            Text(
+                text = "Sign In",
+                color = White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Navigate to Sign Up Link
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "Don't have an account? ",
+                color = TextSecondary,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = "Sign Up",
+                color = NavyBlue,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { onNavigateToSignUp() },
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SignInScreenPreview() {
+    RVMSTheme {
+        SignInScreen(onNavigateToHome = {}, onNavigateToSignUp = {})
+    }
+}

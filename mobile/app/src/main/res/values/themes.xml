@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base RVMS theme — Navy Blue status bar, no action bar -->
+    <style name="Theme.RVMS" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#1B2F72</item>
+        <item name="android:navigationBarColor">#1B2F72</item>
+        <item name="android:windowBackground">#1B2F72</item>
+    </style>
+</resources>
