@@ -10,7 +10,9 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.example.rvms.ui.auth.SignInScreen
 import com.example.rvms.ui.auth.SignUpScreen
-import com.example.rvms.ui.main.MainScreen
+import com.example.rvms.ui.damage.DamageReportListScreen
+import com.example.rvms.ui.inspection.InspectionHistoryScreen
+import com.example.rvms.ui.shell.DriverShellScreen
 import com.example.rvms.ui.splash.SplashScreen
 
 @Composable
@@ -35,7 +37,7 @@ fun MainNavigation() {
                     SignInScreen(
                         onNavigateToHome = {
                             backStack.clear()
-                            backStack.add(Main)
+                            backStack.add(Home)
                         },
                         onNavigateToSignUp = {
                             backStack.add(SignUp)
@@ -48,7 +50,7 @@ fun MainNavigation() {
                     SignUpScreen(
                         onNavigateToHome = {
                             backStack.clear()
-                            backStack.add(Main)
+                            backStack.add(Home)
                         },
                         onNavigateToSignIn = {
                             backStack.removeLastOrNull()
@@ -57,10 +59,30 @@ fun MainNavigation() {
                     )
                 }
 
-                entry<Main> {
-                    MainScreen(
-                        onItemClick = { navKey -> backStack.add(navKey) },
-                        modifier = Modifier.safeDrawingPadding().padding(16.dp),
+                entry<Home> {
+                    DriverShellScreen(
+                        onNavigateToInspectionHistory = {
+                            backStack.add(InspectionHistory)
+                        },
+                        onNavigateToDamageReportList = {
+                            backStack.add(DamageReportList)
+                        },
+                        onSignOut = {
+                            backStack.clear()
+                            backStack.add(SignIn)
+                        },
+                    )
+                }
+
+                entry<InspectionHistory> {
+                    InspectionHistoryScreen(
+                        modifier = Modifier.safeDrawingPadding(),
+                    )
+                }
+
+                entry<DamageReportList> {
+                    DamageReportListScreen(
+                        modifier = Modifier.safeDrawingPadding(),
                     )
                 }
             },
