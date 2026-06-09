@@ -33,6 +33,9 @@
                 <a href="pm.html" class="nav-item">
                     <i class="bi bi-wrench-adjustable-circle"></i> PM Schedules
                 </a>
+                <a href="repairs.html" class="nav-item">
+                    <i class="bi bi-tools"></i> Repair Logs
+                </a>
 
                 <div class="px-4 pt-3 pb-2 small text-white-50 text-uppercase fw-semibold">Operations</div>
                 <a href="dispatch.html" class="nav-item">
@@ -81,6 +84,7 @@
                         <li><a class="dropdown-item" href="profile.html"><i class="bi bi-person me-2"></i>Profile</a></li>
                         <li><a class="dropdown-item text-danger" href="login.html"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</a></li>
                     </ul>
+                    </div>
                 </div>
             </header>
 
@@ -107,8 +111,10 @@
                                 <select class="form-select">
                                     <option value="">All Types</option>
                                     <option value="Fire Truck">Fire Truck</option>
+                                    <option value="Rescue Van">Rescue Van</option>
+                                    <option value="Water Tanker">Water Tanker</option>
+                                    <option value="Service Vehicle">Service Vehicle</option>
                                     <option value="Ambulance">Ambulance</option>
-                                    <option value="Rescue Boat">Rescue Boat</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -159,13 +165,13 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td class="fw-bold">XYZ-9876</td>
+                                    <td class="fw-bold">BCD-2310</td>
                                     <td>
                                         <div class="fw-semibold">Fire Truck</div>
                                         <div class="small text-secondary">Hino 500</div>
                                     </td>
-                                    <td>Mark Santos</td>
-                                    <td>32,150 km</td>
+                                    <td>Ricardo Bautista</td>
+                                    <td>38,420 km</td>
                                     <td>
                                         <span class="badge badge-dispatched px-3 py-2 rounded-pill">Dispatched</span>
                                     </td>
@@ -175,13 +181,29 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td class="fw-bold">LMN-4567</td>
+                                    <td class="fw-bold">CDE-3421</td>
                                     <td>
-                                        <div class="fw-semibold">Ambulance</div>
+                                        <div class="fw-semibold">Rescue Van</div>
                                         <div class="small text-secondary">Toyota Hiace</div>
                                     </td>
-                                    <td>Pedro Penduko</td>
-                                    <td>89,400 km</td>
+                                    <td>Allan Reyes</td>
+                                    <td>51,780 km</td>
+                                    <td>
+                                        <span class="badge badge-operational px-3 py-2 rounded-pill">Operational</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">EFG-4532</td>
+                                    <td>
+                                        <div class="fw-semibold">Water Tanker</div>
+                                        <div class="small text-secondary">Isuzu FVR</div>
+                                    </td>
+                                    <td>Carlos Mendoza</td>
+                                    <td>81,650 km</td>
                                     <td>
                                         <span class="badge badge-pm px-3 py-2 rounded-pill">Under PM</span>
                                     </td>
@@ -191,15 +213,31 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td class="fw-bold">DEF-5678</td>
+                                    <td class="fw-bold">FGH-5643</td>
+                                    <td>
+                                        <div class="fw-semibold">Service Vehicle</div>
+                                        <div class="small text-secondary">Mitsubishi L300</div>
+                                    </td>
+                                    <td>Ramon Cruz</td>
+                                    <td>96,300 km</td>
+                                    <td>
+                                        <span class="badge badge-not-operational px-3 py-2 rounded-pill">Not Operational</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">GHI-6754</td>
                                     <td>
                                         <div class="fw-semibold">Ambulance</div>
                                         <div class="small text-secondary">Nissan Urvan</div>
                                     </td>
-                                    <td>Unassigned</td>
-                                    <td>124,000 km</td>
+                                    <td>Felipe Ramos</td>
+                                    <td>64,120 km</td>
                                     <td>
-                                        <span class="badge badge-not-operational px-3 py-2 rounded-pill">Not Operational</span>
+                                        <span class="badge badge-operational px-3 py-2 rounded-pill">Operational</span>
                                     </td>
                                     <td class="text-end">
                                         <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
@@ -211,7 +249,7 @@
                     </div>
                     <div class="card-footer bg-white border-top py-3">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="small text-secondary">Showing 1 to 4 of 4 vehicles</span>
+                            <span class="small text-secondary">Showing 1 to 6 of 6 vehicles</span>
                             <ul class="pagination pagination-sm mb-0">
                                 <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
                                 <li class="page-item active"><a class="page-link bg-navy border-0" href="#">1</a></li>
@@ -244,9 +282,10 @@
                                 <label class="form-label fw-semibold">Vehicle Type</label>
                                 <select class="form-select">
                                     <option>Fire Truck</option>
+                                    <option>Rescue Van</option>
+                                    <option>Water Tanker</option>
+                                    <option>Service Vehicle</option>
                                     <option>Ambulance</option>
-                                    <option>Rescue Boat</option>
-                                    <option>Utility Vehicle</option>
                                 </select>
                             </div>
                         </div>
@@ -270,9 +309,23 @@
                                 <input type="text" class="form-control" placeholder="Engine No.">
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Initial Mileage (km)</label>
-                            <input type="number" class="form-control" value="0">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Current Mileage (km)</label>
+                                <input type="number" class="form-control" value="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Assigned Driver</label>
+                                <select class="form-select">
+                                    <option>Unassigned</option>
+                                    <option>Juan Dela Cruz</option>
+                                    <option>Ricardo Bautista</option>
+                                    <option>Allan Reyes</option>
+                                    <option>Carlos Mendoza</option>
+                                    <option>Ramon Cruz</option>
+                                    <option>Felipe Ramos</option>
+                                </select>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -303,9 +356,10 @@
                                 <label class="form-label fw-semibold">Vehicle Type</label>
                                 <select class="form-select">
                                     <option selected>Fire Truck</option>
+                                    <option>Rescue Van</option>
+                                    <option>Water Tanker</option>
+                                    <option>Service Vehicle</option>
                                     <option>Ambulance</option>
-                                    <option>Rescue Boat</option>
-                                    <option>Utility Vehicle</option>
                                 </select>
                             </div>
                         </div>
@@ -322,9 +376,13 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Assigned Driver</label>
                             <select class="form-select">
-                                <option>None</option>
+                                <option>Unassigned</option>
                                 <option selected>Juan Dela Cruz</option>
-                                <option>Mark Santos</option>
+                                <option>Ricardo Bautista</option>
+                                <option>Allan Reyes</option>
+                                <option>Carlos Mendoza</option>
+                                <option>Ramon Cruz</option>
+                                <option>Felipe Ramos</option>
                             </select>
                         </div>
                     </form>
@@ -372,8 +430,12 @@
                             <span class="fw-medium">45,230 km</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <span class="text-secondary small fw-semibold">Engine No.</span>
+                            <span class="fw-medium text-uppercase">4HK1-TC-587234</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
                             <span class="text-secondary small fw-semibold">Chassis No.</span>
-                            <span class="fw-medium text-uppercase">JS1234567890</span>
+                            <span class="fw-medium text-uppercase">JALC4W14697100345</span>
                         </li>
                     </ul>
                 </div>

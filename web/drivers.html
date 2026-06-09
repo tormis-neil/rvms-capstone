@@ -33,6 +33,9 @@
                 <a href="pm.html" class="nav-item">
                     <i class="bi bi-wrench-adjustable-circle"></i> PM Schedules
                 </a>
+                <a href="repairs.html" class="nav-item">
+                    <i class="bi bi-tools"></i> Repair Logs
+                </a>
 
                 <div class="px-4 pt-3 pb-2 small text-white-50 text-uppercase fw-semibold">Operations</div>
                 <a href="dispatch.html" class="nav-item">
@@ -81,6 +84,7 @@
                         <li><a class="dropdown-item" href="profile.html"><i class="bi bi-person me-2"></i>Profile</a></li>
                         <li><a class="dropdown-item text-danger" href="login.html"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</a></li>
                     </ul>
+                    </div>
                 </div>
             </header>
 
@@ -139,35 +143,65 @@
                                     <td>Dec 15, 2027</td>
                                     <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Valid</span></td>
                                     <td>ABC-1234 (Fire Truck)</td>
+                                    <td class="text-end">
                                         <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
                                         <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
+                                    </td>
                                 </tr>
                                 <tr>
-                                    <td class="fw-bold">Mark Santos</td>
-                                    <td class="font-monospace text-secondary">N01-15-123456</td>
-                                    <td class="text-warning fw-bold">Jun 30, 2026</td>
+                                    <td class="fw-bold">Ricardo Bautista</td>
+                                    <td class="font-monospace text-secondary">N01-14-220815</td>
+                                    <td class="text-warning fw-bold">Jul 8, 2026</td>
                                     <td><span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">Expiring Soon</span></td>
-                                    <td>XYZ-9876 (Fire Truck)</td>
+                                    <td>BCD-2310 (Fire Truck)</td>
+                                    <td class="text-end">
                                         <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
                                         <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
+                                    </td>
                                 </tr>
                                 <tr>
-                                    <td class="fw-bold">Pedro Penduko</td>
-                                    <td class="font-monospace text-secondary">N01-10-876543</td>
-                                    <td>Mar 05, 2028</td>
+                                    <td class="fw-bold">Allan Reyes</td>
+                                    <td class="font-monospace text-secondary">N01-16-334455</td>
+                                    <td>Sep 21, 2028</td>
                                     <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Valid</span></td>
-                                    <td>LMN-4567 (Ambulance)</td>
+                                    <td>CDE-3421 (Rescue Van)</td>
+                                    <td class="text-end">
                                         <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
                                         <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
+                                    </td>
                                 </tr>
                                 <tr>
-                                    <td class="fw-bold">Jose Rizal</td>
-                                    <td class="font-monospace text-secondary">N01-08-112233</td>
-                                    <td class="text-danger fw-bold">Jan 12, 2026</td>
-                                    <td><span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill">Expired</span></td>
-                                    <td><em class="text-secondary small">Unassigned</em></td>
+                                    <td class="fw-bold">Carlos Mendoza</td>
+                                    <td class="font-monospace text-secondary">N01-11-556677</td>
+                                    <td>Feb 14, 2028</td>
+                                    <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Valid</span></td>
+                                    <td>EFG-4532 (Water Tanker)</td>
+                                    <td class="text-end">
                                         <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
                                         <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Ramon Cruz</td>
+                                    <td class="font-monospace text-secondary">N01-09-778899</td>
+                                    <td class="text-danger fw-bold">May 28, 2026</td>
+                                    <td><span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill">Expired</span></td>
+                                    <td>FGH-5643 (Service Vehicle)</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Felipe Ramos</td>
+                                    <td class="font-monospace text-secondary">N01-13-990011</td>
+                                    <td>Nov 3, 2027</td>
+                                    <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Valid</span></td>
+                                    <td>GHI-6754 (Ambulance)</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -205,7 +239,11 @@
                             <select class="form-select">
                                 <option>Unassigned</option>
                                 <option>ABC-1234 (Fire Truck)</option>
-                                <option>LMN-4567 (Ambulance)</option>
+                                <option>BCD-2310 (Fire Truck)</option>
+                                <option>CDE-3421 (Rescue Van)</option>
+                                <option>EFG-4532 (Water Tanker)</option>
+                                <option>FGH-5643 (Service Vehicle)</option>
+                                <option>GHI-6754 (Ambulance)</option>
                             </select>
                         </div>
                     </form>
@@ -245,7 +283,11 @@
                             <select class="form-select">
                                 <option>Unassigned</option>
                                 <option selected>ABC-1234 (Fire Truck)</option>
-                                <option>LMN-4567 (Ambulance)</option>
+                                <option>BCD-2310 (Fire Truck)</option>
+                                <option>CDE-3421 (Rescue Van)</option>
+                                <option>EFG-4532 (Water Tanker)</option>
+                                <option>FGH-5643 (Service Vehicle)</option>
+                                <option>GHI-6754 (Ambulance)</option>
                             </select>
                         </div>
                     </form>

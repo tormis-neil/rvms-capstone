@@ -349,13 +349,14 @@ The web dashboard and mobile application will utilize:
 
 Dashboard summary cards will prominently display:
 
+- Total Vehicles
 - Operational Vehicles
 - Dispatched Vehicles
 - Vehicles Under Preventive Maintenance
 - Not Operational Vehicles
-- Pending Damage Reports
+- Total Drivers
 - Expiring Licenses
-- Upcoming Preventive Maintenance Schedules
+- Pending Damage Reports
 
 This design approach ensures that Agency Administrators can quickly assess fleet readiness while maintaining a professional appearance appropriate for government agency operations.
 
@@ -774,7 +775,7 @@ This objective addresses the fragmented fleet monitoring methods confirmed acros
 
 ### Dashboard Summary — Admin Web Dashboard
 
-Displays a real-time summary of fleet status for the Agency Administrator's own agency. The dashboard shows current counts for Operational, Dispatched, Not Operational, and Under PM vehicles, along with Total Drivers, Expiring Licenses, and Pending Damage Reports. Provides immediate situational awareness without navigating individual records.
+Displays a real-time summary of fleet status for the Agency Administrator's own agency. The dashboard shows current counts for Operational, Dispatched, Not Operational, and Under PM vehicles, along with Total Vehicles, Total Drivers, Expiring Licenses, and Pending Damage Reports. Provides immediate situational awareness without navigating individual records.
 
 ---
 
@@ -1050,9 +1051,8 @@ The administrative dashboard shall display summary information including:
 The system shall support report generation for:
 
 * Inspection Records
-* Damage Reports
-* Repair History
-* Maintenance History
+* Damage and Defect Reports
+* Repair and Maintenance History
 * Preventive Maintenance Records
 * Dispatch Logs
 * Vehicle Status Summaries
