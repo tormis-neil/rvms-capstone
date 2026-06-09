@@ -33,6 +33,9 @@
                 <a href="pm.html" class="nav-item active">
                     <i class="bi bi-wrench-adjustable-circle"></i> PM Schedules
                 </a>
+                <a href="repairs.html" class="nav-item">
+                    <i class="bi bi-tools"></i> Repair Logs
+                </a>
 
                 <div class="px-4 pt-3 pb-2 small text-white-50 text-uppercase fw-semibold">Operations</div>
                 <a href="dispatch.html" class="nav-item">
@@ -81,6 +84,7 @@
                         <li><a class="dropdown-item" href="profile.html"><i class="bi bi-person me-2"></i>Profile</a></li>
                         <li><a class="dropdown-item text-danger" href="login.html"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</a></li>
                     </ul>
+                    </div>
                 </div>
             </header>
 
@@ -129,18 +133,18 @@
                                 <!-- Due -->
                                 <tr class="table-danger bg-opacity-10">
                                     <td>
-                                        <div class="fw-bold">LMN-4567</div>
-                                        <div class="small text-secondary">Ambulance</div>
+                                        <div class="fw-bold">EFG-4532</div>
+                                        <div class="small text-secondary">Water Tanker</div>
                                     </td>
                                     <td>
-                                        <div class="fw-semibold">Tire Replacement</div>
+                                        <div class="fw-semibold">Engine Service</div>
                                     </td>
                                     <td>
-                                        <div class="badge bg-light text-dark border">Time-Based</div>
+                                        <div class="badge bg-light text-dark border">Mileage-Based</div>
                                     </td>
                                     <td>
-                                        <div class="text-danger fw-bold">June 5, 2026</div>
-                                        <div class="small text-secondary">Overdue by 3 days</div>
+                                        <div class="text-danger fw-bold">81,000 km</div>
+                                        <div class="small text-secondary">Current: 81,650 km — overdue</div>
                                     </td>
                                     <td>
                                         <span class="badge bg-danger px-3 py-2 rounded-pill">Due</span>
@@ -175,11 +179,11 @@
                                 <!-- Scheduled -->
                                 <tr>
                                     <td>
-                                        <div class="fw-bold text-dark">XYZ-9876</div>
+                                        <div class="fw-bold text-dark">BCD-2310</div>
                                         <div class="small text-secondary">Fire Truck</div>
                                     </td>
                                     <td>
-                                        <div class="fw-semibold text-dark">Battery Replacement</div>
+                                        <div class="fw-semibold text-dark">Brake Fluid Flush</div>
                                     </td>
                                     <td>
                                         <div class="badge bg-light text-dark border">Time-Based</div>
@@ -210,16 +214,17 @@
                                     <tr>
                                         <th class="py-3 text-secondary fw-semibold small">VEHICLE</th>
                                         <th class="py-3 text-secondary fw-semibold small">MAINTENANCE PERFORMED</th>
-                                        <th class="py-3 text-secondary fw-semibold small">COMPLETED ON</th>
-                                        <th class="py-3 text-secondary fw-semibold small">MILEAGE</th>
+                                        <th class="py-3 text-secondary fw-semibold small">DATE SERVICED</th>
+                                        <th class="py-3 text-secondary fw-semibold small">REPAIR SOURCE</th>
+                                        <th class="py-3 text-secondary fw-semibold small">PARTS REPLACED</th>
                                         <th class="py-3 text-secondary fw-semibold small">STATUS</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
                                         <td>
-                                            <div class="fw-bold text-dark">DEF-5678</div>
-                                            <div class="small text-secondary">Rescue Tender</div>
+                                            <div class="fw-bold text-dark">GHI-6754</div>
+                                            <div class="small text-secondary">Ambulance</div>
                                         </td>
                                         <td>
                                             <div class="fw-semibold text-dark">Brake Inspection & Fluid</div>
@@ -228,7 +233,10 @@
                                             <div class="fw-medium text-dark">May 20, 2026</div>
                                         </td>
                                         <td>
-                                            <div class="fw-medium text-dark">32,500 km</div>
+                                            <span class="badge bg-light text-dark border">GSO Motorpool</span>
+                                        </td>
+                                        <td>
+                                            <div class="fw-medium text-dark">Brake fluid</div>
                                         </td>
                                         <td>
                                             <span class="badge bg-secondary px-3 py-2 rounded-pill">Completed</span>
@@ -260,25 +268,39 @@
                             <label class="form-label fw-semibold">Vehicle</label>
                             <select class="form-select">
                                 <option>ABC-1234 (Fire Truck)</option>
-                                <option>XYZ-9876 (Fire Truck)</option>
-                                <option>LMN-4567 (Ambulance)</option>
+                                <option>BCD-2310 (Fire Truck)</option>
+                                <option>CDE-3421 (Rescue Van)</option>
+                                <option>EFG-4532 (Water Tanker)</option>
+                                <option>FGH-5643 (Service Vehicle)</option>
+                                <option>GHI-6754 (Ambulance)</option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Maintenance Target</label>
-                            <input type="text" class="form-control" placeholder="e.g., Oil Change, Tire Replacement">
+                            <label class="form-label fw-semibold">Specific Part(s)</label>
+                            <input type="text" class="form-control" placeholder="e.g., Oil Change & Filter, Tire Replacement">
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Schedule Type</label>
+                                <label class="form-label fw-semibold">PM Type</label>
                                 <select class="form-select">
                                     <option>Mileage-Based</option>
                                     <option>Time-Based</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Target Value</label>
-                                <input type="text" class="form-control" placeholder="e.g., 50000 km or Dec 1, 2026">
+                                <label class="form-label fw-semibold">Interval</label>
+                                <input type="text" class="form-control" placeholder="e.g., 5,000 km or 6 months">
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Last PM Mileage</label>
+                                <input type="number" class="form-control" placeholder="e.g., 41000">
+                                <div class="form-text">For mileage-based schedules.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Due Soon Warning Threshold</label>
+                                <input type="text" class="form-control" placeholder="e.g., 1,000 km or 2 weeks before">
                             </div>
                         </div>
                         <div class="mb-3">
@@ -304,19 +326,23 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <p class="text-secondary small mb-4">Record the completion of this preventive maintenance schedule.</p>
+                    <p class="text-secondary small mb-4">Record the completion of this preventive maintenance schedule. Remember to update the vehicle's status to Operational in Vehicle Management afterwards.</p>
                     <form>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Completion Date</label>
+                            <label class="form-label fw-semibold">Date Serviced</label>
                             <input type="date" class="form-control" value="2026-06-08">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Current Odometer/Mileage</label>
-                            <input type="number" class="form-control" placeholder="Enter current km">
+                            <label class="form-label fw-semibold">Repair Source</label>
+                            <select class="form-select">
+                                <option>Internal Office</option>
+                                <option>GSO Motorpool</option>
+                                <option>External Repair Shop</option>
+                            </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Mechanic/Shop Name</label>
-                            <input type="text" class="form-control" placeholder="Who performed the maintenance?">
+                            <label class="form-label fw-semibold">Parts Replaced</label>
+                            <input type="text" class="form-control" placeholder="e.g., Engine oil, oil filter">
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Remarks & Findings</label>
@@ -344,15 +370,15 @@
                     <form>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Vehicle</label>
-                            <input type="text" class="form-control bg-light" value="XYZ-9876 (Fire Truck)" readonly>
+                            <input type="text" class="form-control bg-light" value="BCD-2310 (Fire Truck)" readonly>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Maintenance Target</label>
-                            <input type="text" class="form-control" value="Battery Replacement">
+                            <label class="form-label fw-semibold">Specific Part(s)</label>
+                            <input type="text" class="form-control" value="Brake Fluid Flush">
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Schedule Type</label>
+                                <label class="form-label fw-semibold">PM Type</label>
                                 <select class="form-select">
                                     <option>Mileage-Based</option>
                                     <option selected>Time-Based</option>
@@ -362,6 +388,10 @@
                                 <label class="form-label fw-semibold">Target Date</label>
                                 <input type="date" class="form-control" value="2026-12-10">
                             </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Due Soon Warning Threshold</label>
+                            <input type="text" class="form-control" value="2 weeks before">
                         </div>
                     </form>
                 </div>
