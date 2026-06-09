@@ -18,7 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -42,15 +42,13 @@ data class BottomNavItem(
 
 @Composable
 fun DriverShellScreen(
-    onNavigateToInspectionHistory: () -> Unit,
     onNavigateToNewInspection: () -> Unit,
     onNavigateToNewDamageReport: () -> Unit,
-    onNavigateToDamageReportList: () -> Unit,
     onNavigateToVehicleInfo: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
     val navItems = listOf(
         BottomNavItem("Home", Icons.Default.Home),
@@ -108,12 +106,10 @@ fun DriverShellScreen(
             )
             1 -> InspectionScreen(
                 onStartInspection = onNavigateToNewInspection,
-                onViewHistory = onNavigateToInspectionHistory,
                 modifier = contentModifier,
             )
             2 -> DamageScreen(
                 onSubmitNew = onNavigateToNewDamageReport,
-                onViewReports = onNavigateToDamageReportList,
                 modifier = contentModifier,
             )
             3 -> NotificationScreen(modifier = contentModifier)

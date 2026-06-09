@@ -20,7 +20,5 @@ import kotlinx.serialization.Serializable
 @Serializable data object Profile : NavKey
 
 // Sub-screens
-@Serializable data object InspectionHistory : NavKey
-@Serializable data object DamageReportList : NavKey
 @Serializable data object NewInspection : NavKey
 @Serializable data object NewDamageReport : NavKey

@@ -1,6 +1,7 @@
 package com.example.rvms.ui.damage
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,10 +16,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,13 +33,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.rvms.data.DamageReport
 import com.example.rvms.data.DamageStatus
 import com.example.rvms.data.Session
 import com.example.rvms.ui.common.ScreenHeader
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.NavyBlue
-import com.example.rvms.theme.StatusNotOperational
 import com.example.rvms.theme.StatusOperational
+import com.example.rvms.theme.StatusUnderPM
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
@@ -43,12 +49,10 @@ import com.example.rvms.theme.White
 @Composable
 fun DamageScreen(
     onSubmitNew: () -> Unit,
-    onViewReports: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
     val data = Session.current
-    val lastReport = data.damageReports.firstOrNull()
 
     Column(
         modifier = modifier
@@ -80,78 +84,104 @@ fun DamageScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Button(
-            onClick = onViewReports,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Surface,
-                contentColor = NavyBlue,
-            ),
-        ) {
-            Text(
-                text = "View My Reports",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
-
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Latest Report",
+            text = "Damage Reports History",
             style = MaterialTheme.typography.titleMedium,
             color = TextPrimary,
             fontWeight = FontWeight.Bold,
         )
+        Text(
+            text = "${data.vehicle.type} — ${data.vehicle.plateNo}",
+            style = MaterialTheme.typography.bodySmall,
+            color = TextSecondary,
+        )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Surface),
-        ) {
+        if (data.damageReports.isEmpty()) {
+            Text(
+                text = "No damage reports submitted yet.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary,
+            )
+        } else {
+            data.damageReports.forEach { report ->
+                DamageHistoryItem(report)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun DamageHistoryItem(report: DamageReport) {
+    val isPending = report.status == DamageStatus.PENDING
+    val statusColor = if (isPending) StatusUnderPM else StatusOperational
+    val icon = if (isPending) Icons.Default.Info else Icons.Default.CheckCircle
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 10.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
-                modifier = Modifier.padding(20.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                val isPending = lastReport?.status == DamageStatus.PENDING
-                val statusColor = if (isPending) StatusNotOperational else StatusOperational
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
-                        .background(statusColor.copy(alpha = 0.1f)),
+                        .background(statusColor.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        text = if (lastReport == null) "—" else if (isPending) "!" else "✓",
-                        color = if (lastReport == null) TextSecondary else statusColor,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = statusColor,
+                        modifier = Modifier.size(20.dp),
                     )
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = report.date,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                    modifier = Modifier.weight(1f),
+                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(statusColor.copy(alpha = 0.1f))
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                ) {
                     Text(
-                        text = if (lastReport != null) lastReport.status.label else "No Reports Yet",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = TextPrimary,
+                        text = report.status.label,
+                        color = statusColor,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = lastReport?.let { "${it.date} — ${it.nature}" }
-                            ?: "Submit a damage report to track vehicle issues.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary,
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = report.nature,
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextPrimary,
+                fontWeight = FontWeight.Medium,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "Suspected parts: ${report.suspectedParts}",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+            )
         }
     }
 }
