@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.rvms.data.Session
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.StatusOperational
@@ -47,6 +48,7 @@ fun DamageReportListScreen(
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
+    val data = Session.current
 
     Scaffold(
         modifier = modifier,
@@ -71,28 +73,21 @@ fun DamageReportListScreen(
                 .padding(16.dp),
         ) {
         Text(
-            text = "Fire Truck — ABC-1234",
+            text = "${data.vehicle.type} — ${data.vehicle.plateNo}",
             style = MaterialTheme.typography.bodyMedium,
             color = TextSecondary,
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        ReportItem(
-            date = "June 8, 2026",
-            nature = "Cracked side mirror (driver side)",
-            status = "Pending",
-        )
-        ReportItem(
-            date = "May 28, 2026",
-            nature = "Brake pad wear — unusual noise during braking",
-            status = "Reviewed",
-        )
-        ReportItem(
-            date = "May 15, 2026",
-            nature = "Headlight bulb burned out (left)",
-            status = "Reviewed",
-        )
+        data.damageReports.forEach { report ->
+            ReportItem(
+                date = report.date,
+                nature = report.nature,
+                suspectedParts = report.suspectedParts,
+                status = report.status.label,
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
         }
@@ -103,6 +98,7 @@ fun DamageReportListScreen(
 private fun ReportItem(
     date: String,
     nature: String,
+    suspectedParts: String,
     status: String,
 ) {
     val statusColor = if (status == "Pending") StatusUnderPM else StatusOperational
@@ -145,6 +141,12 @@ private fun ReportItem(
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextPrimary,
                 fontWeight = FontWeight.Medium,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "Suspected parts: $suspectedParts",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
             )
         }
     }

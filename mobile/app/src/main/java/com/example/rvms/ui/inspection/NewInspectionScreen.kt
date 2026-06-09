@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rvms.data.SampleData
+import com.example.rvms.data.Session
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.Gold
@@ -67,9 +68,10 @@ fun NewInspectionScreen(
     onSubmitted: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val driver = SampleData.currentDriver
-    val vehicle = SampleData.currentVehicle
-    val items = remember { SampleData.inspectionItemsFor(driver.agency) }
+    val data = Session.current
+    val driver = data.driver
+    val vehicle = data.vehicle
+    val items = remember { data.inspectionItems }
     val standardItems = SampleData.standardInspectionItems
     val extraItems = items.filter { it !in standardItems }
 

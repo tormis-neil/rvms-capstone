@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.rvms.data.Session
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.StatusNotOperational
 import com.example.rvms.theme.StatusOperational
@@ -47,6 +48,7 @@ fun InspectionHistoryScreen(
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
+    val data = Session.current
 
     Scaffold(
         modifier = modifier,
@@ -71,49 +73,22 @@ fun InspectionHistoryScreen(
                 .padding(16.dp),
         ) {
         Text(
-            text = "Fire Truck — ABC-1234",
+            text = "${data.vehicle.type} — ${data.vehicle.plateNo}",
             style = MaterialTheme.typography.bodyMedium,
             color = TextSecondary,
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Sample history entries
-        HistoryEntry(
-            date = "June 8, 2026",
-            time = "7:30 AM",
-            result = "All OK",
-            itemsChecked = 14,
-            issueCount = 0,
-        )
-        HistoryEntry(
-            date = "June 7, 2026",
-            time = "7:15 AM",
-            result = "1 Issue",
-            itemsChecked = 14,
-            issueCount = 1,
-        )
-        HistoryEntry(
-            date = "June 6, 2026",
-            time = "7:45 AM",
-            result = "All OK",
-            itemsChecked = 14,
-            issueCount = 0,
-        )
-        HistoryEntry(
-            date = "June 5, 2026",
-            time = "7:20 AM",
-            result = "All OK",
-            itemsChecked = 14,
-            issueCount = 0,
-        )
-        HistoryEntry(
-            date = "June 4, 2026",
-            time = "7:35 AM",
-            result = "2 Issues",
-            itemsChecked = 14,
-            issueCount = 2,
-        )
+        data.inspectionHistory.forEach { record ->
+            HistoryEntry(
+                date = record.date,
+                time = record.time,
+                result = record.resultLabel,
+                itemsChecked = record.itemsChecked,
+                issueCount = record.issueCount,
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
         }
