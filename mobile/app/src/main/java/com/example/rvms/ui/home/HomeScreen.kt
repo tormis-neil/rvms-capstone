@@ -45,7 +45,6 @@ import com.example.rvms.ui.common.statusColor
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
-import com.example.rvms.theme.StatusNotOperational
 import com.example.rvms.theme.StatusUnderPM
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
@@ -210,17 +209,18 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         Session.current.recentActivity.forEach { activity ->
-            val dotColor = when (activity.kind) {
-                ActivityKind.INSPECTION_SUBMITTED -> NavyBlue
-                ActivityKind.STATUS_UPDATE -> activity.status?.let(::statusColor) ?: NavyBlue
-                ActivityKind.PM_REMINDER -> StatusUnderPM
-                ActivityKind.DAMAGE_SUBMITTED -> StatusNotOperational
+            val (activityIcon, iconTint) = when (activity.kind) {
+                ActivityKind.INSPECTION_SUBMITTED -> Icons.Default.List to NavyBlue
+                ActivityKind.DAMAGE_SUBMITTED -> Icons.Default.Warning to Gold
+                ActivityKind.STATUS_UPDATE -> Icons.Default.CarRental to NavyBlue
+                ActivityKind.PM_REMINDER -> Icons.Default.Info to StatusUnderPM
             }
             ActivityItem(
                 title = activity.title,
                 subtitle = activity.subtitle,
                 time = activity.time,
-                dotColor = dotColor,
+                icon = activityIcon,
+                iconTint = iconTint,
             )
         }
     }
@@ -294,7 +294,8 @@ private fun ActivityItem(
     title: String,
     subtitle: String,
     time: String,
-    dotColor: Color,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    iconTint: Color,
 ) {
     Card(
         modifier = Modifier
@@ -309,11 +310,18 @@ private fun ActivityItem(
         ) {
             Box(
                 modifier = Modifier
-                    .padding(top = 4.dp)
-                    .size(10.dp)
+                    .size(36.dp)
                     .clip(CircleShape)
-                    .background(dotColor),
-            )
+                    .background(iconTint.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
