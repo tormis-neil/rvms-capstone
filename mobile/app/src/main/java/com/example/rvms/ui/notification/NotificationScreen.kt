@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.rvms.data.Session
+import com.example.rvms.ui.common.ScreenHeader
 import com.example.rvms.ui.common.notificationColor
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.NavyBlue
@@ -49,12 +50,7 @@ fun NotificationScreen(
             .verticalScroll(scrollState)
             .padding(16.dp),
     ) {
-        Text(
-            text = "Notifications",
-            style = MaterialTheme.typography.headlineSmall,
-            color = TextPrimary,
-            fontWeight = FontWeight.Bold,
-        )
+        ScreenHeader(title = "Notifications")
 
         Spacer(modifier = Modifier.height(20.dp))
 
