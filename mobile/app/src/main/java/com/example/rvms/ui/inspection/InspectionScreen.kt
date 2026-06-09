@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rvms.data.SampleData
 import com.example.rvms.data.Session
+import com.example.rvms.ui.common.ScreenHeader
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
@@ -59,16 +60,9 @@ fun InspectionScreen(
             .verticalScroll(scrollState)
             .padding(16.dp),
     ) {
-        Text(
-            text = "BLOWBAGETS Inspection",
-            style = MaterialTheme.typography.headlineSmall,
-            color = TextPrimary,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = "Daily vehicle inspection checklist",
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary,
+        ScreenHeader(
+            title = "BLOWBAGETS Inspection",
+            subtitle = "Daily vehicle inspection checklist",
         )
 
         Spacer(modifier = Modifier.height(20.dp))

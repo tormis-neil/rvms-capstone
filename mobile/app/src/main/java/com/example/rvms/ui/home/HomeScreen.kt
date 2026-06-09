@@ -85,9 +85,8 @@ fun HomeScreen(
             Column {
                 Text(
                     text = "Good day, ${driver.name.substringBefore(' ')}!",
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.headlineLarge,
                     color = TextPrimary,
-                    fontWeight = FontWeight.Bold,
                 )
                 Text(
                     text = driver.agency.fullName,

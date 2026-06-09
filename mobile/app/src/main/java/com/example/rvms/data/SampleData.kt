@@ -195,6 +195,7 @@ object SampleData {
         ),
         recentActivity = listOf(
             RecentActivity(ActivityKind.INSPECTION_SUBMITTED, "Daily Inspection Submitted", "All items OK", "Today, 7:30 AM"),
+            RecentActivity(ActivityKind.DAMAGE_SUBMITTED, "Damage Report Submitted", "Cracked side mirror (driver side)", "Jun 8, 8:10 AM"),
             RecentActivity(ActivityKind.STATUS_UPDATE, "Vehicle Status Updated", "Status changed to Operational", "Yesterday, 4:00 PM", VehicleStatus.OPERATIONAL),
             RecentActivity(ActivityKind.PM_REMINDER, "PM Reminder", "Oil change due at 46,000 km", "Jun 5, 2026"),
         ),
@@ -242,6 +243,7 @@ object SampleData {
         recentActivity = listOf(
             RecentActivity(ActivityKind.STATUS_UPDATE, "Vehicle Status Updated", "Status changed to Dispatched", "Today, 9:15 AM", VehicleStatus.DISPATCHED),
             RecentActivity(ActivityKind.INSPECTION_SUBMITTED, "Daily Inspection Submitted", "All items OK", "Today, 6:50 AM"),
+            RecentActivity(ActivityKind.DAMAGE_SUBMITTED, "Damage Report Submitted", "Dent on rear bumper after patrol", "Jun 7, 3:30 PM"),
             RecentActivity(ActivityKind.PM_REMINDER, "PM Reminder", "Tire rotation due", "Jun 6, 2026"),
         ),
     )
@@ -287,6 +289,7 @@ object SampleData {
         recentActivity = listOf(
             RecentActivity(ActivityKind.STATUS_UPDATE, "Vehicle Status Updated", "Status changed to Under PM", "Today, 10:00 AM", VehicleStatus.UNDER_PM),
             RecentActivity(ActivityKind.DAMAGE_SUBMITTED, "Damage Report Submitted", "Hydraulic leak on rescue lift", "Today, 9:30 AM"),
+            RecentActivity(ActivityKind.INSPECTION_SUBMITTED, "Daily Inspection Submitted", "2 issues found", "Today, 7:10 AM"),
             RecentActivity(ActivityKind.PM_REMINDER, "PM Reminder", "Engine service due at 79,000 km", "Today, 8:00 AM"),
         ),
     )
@@ -333,6 +336,7 @@ object SampleData {
             RecentActivity(ActivityKind.STATUS_UPDATE, "Vehicle Status Updated", "Status changed to Not Operational", "Today, 11:00 AM", VehicleStatus.NOT_OPERATIONAL),
             RecentActivity(ActivityKind.DAMAGE_SUBMITTED, "Damage Report Submitted", "Transmission slipping", "Today, 8:15 AM"),
             RecentActivity(ActivityKind.INSPECTION_SUBMITTED, "Daily Inspection Submitted", "3 issues found", "Today, 6:30 AM"),
+            RecentActivity(ActivityKind.PM_REMINDER, "PM Reminder", "Brake inspection overdue", "Today, 7:00 AM"),
         ),
     )
 }

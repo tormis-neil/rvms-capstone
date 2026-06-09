@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rvms.data.Session
+import com.example.rvms.ui.common.ScreenHeader
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.NavyBlue
@@ -75,16 +76,9 @@ fun DamageReportScreen(
             .verticalScroll(scrollState)
             .padding(16.dp),
     ) {
-        Text(
-            text = "Damage Report",
-            style = MaterialTheme.typography.headlineSmall,
-            color = TextPrimary,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = "Report vehicle damage or defects",
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary,
+        ScreenHeader(
+            title = "Damage Report",
+            subtitle = "Report vehicle damage or defects",
         )
 
         Spacer(modifier = Modifier.height(20.dp))
