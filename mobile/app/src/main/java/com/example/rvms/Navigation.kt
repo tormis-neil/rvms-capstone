@@ -15,6 +15,7 @@ import com.example.rvms.ui.inspection.InspectionHistoryScreen
 import com.example.rvms.ui.inspection.NewInspectionScreen
 import com.example.rvms.ui.shell.DriverShellScreen
 import com.example.rvms.ui.splash.SplashScreen
+import com.example.rvms.ui.vehicle.VehicleInfoScreen
 
 @Composable
 fun MainNavigation() {
@@ -71,6 +72,9 @@ fun MainNavigation() {
                         onNavigateToDamageReportList = {
                             backStack.add(DamageReportList)
                         },
+                        onNavigateToVehicleInfo = {
+                            backStack.add(VehicleInfo)
+                        },
                         onSignOut = {
                             backStack.clear()
                             backStack.add(SignIn)
@@ -88,12 +92,21 @@ fun MainNavigation() {
 
                 entry<InspectionHistory> {
                     InspectionHistoryScreen(
+                        onBack = { backStack.removeLastOrNull() },
                         modifier = Modifier.safeDrawingPadding(),
                     )
                 }
 
                 entry<DamageReportList> {
                     DamageReportListScreen(
+                        onBack = { backStack.removeLastOrNull() },
+                        modifier = Modifier.safeDrawingPadding(),
+                    )
+                }
+
+                entry<VehicleInfo> {
+                    VehicleInfoScreen(
+                        onBack = { backStack.removeLastOrNull() },
                         modifier = Modifier.safeDrawingPadding(),
                     )
                 }

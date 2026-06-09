@@ -199,7 +199,6 @@ fun DamageReportScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Submit Button
         Button(
             onClick = {
                 if (natureOfDamage.isBlank()) {
@@ -225,7 +224,6 @@ fun DamageReportScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // View Reports Button
         Button(
             onClick = onViewReports,
             modifier = Modifier

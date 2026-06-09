@@ -150,7 +150,7 @@ fun NewInspectionScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Progress
+            // Progress counter
             val marked = statuses.size
             Text(
                 text = "Marked $marked of ${items.size} items",

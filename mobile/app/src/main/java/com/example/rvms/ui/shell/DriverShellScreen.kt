@@ -48,6 +48,7 @@ fun DriverShellScreen(
     onNavigateToInspectionHistory: () -> Unit,
     onNavigateToNewInspection: () -> Unit,
     onNavigateToDamageReportList: () -> Unit,
+    onNavigateToVehicleInfo: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -119,7 +120,7 @@ fun DriverShellScreen(
             3 -> NotificationScreen(modifier = contentModifier)
             4 -> ProfileScreen(
                 onSignOut = onSignOut,
-                onNavigateToVehicle = { /* Handle vehicle navigation from Profile if needed */ },
+                onNavigateToVehicle = onNavigateToVehicleInfo,
                 modifier = contentModifier,
             )
         }
