@@ -211,7 +211,7 @@ fun HomeScreen(
         Session.current.recentActivity.forEach { activity ->
             val (activityIcon, iconTint) = when (activity.kind) {
                 ActivityKind.INSPECTION_SUBMITTED -> Icons.Default.List to NavyBlue
-                ActivityKind.DAMAGE_SUBMITTED -> Icons.Default.Warning to Gold
+                ActivityKind.DAMAGE_SUBMITTED -> Icons.Default.Warning to StatusUnderPM
                 ActivityKind.STATUS_UPDATE -> Icons.Default.CarRental to NavyBlue
                 ActivityKind.PM_REMINDER -> Icons.Default.Info to StatusUnderPM
             }

@@ -16,8 +16,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.CarRental
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,8 +29,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.rvms.data.NotificationType
 import com.example.rvms.data.Session
 import com.example.rvms.ui.common.ScreenHeader
 import com.example.rvms.ui.common.notificationColor
@@ -67,11 +73,16 @@ fun NotificationScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 items.forEach { notification ->
+                    val icon = when (notification.type) {
+                        NotificationType.PM_REMINDER -> Icons.Default.Build
+                        NotificationType.VEHICLE_STATUS_UPDATE -> Icons.Default.CarRental
+                    }
                     NotificationItem(
                         title = notification.title,
                         body = notification.body,
                         time = notification.time,
-                        dotColor = notificationColor(notification.type, notification.status),
+                        icon = icon,
+                        iconTint = notificationColor(notification.type, notification.status),
                         isRead = notification.isRead,
                     )
                 }
@@ -86,7 +97,8 @@ private fun NotificationItem(
     title: String,
     body: String,
     time: String,
-    dotColor: Color,
+    icon: ImageVector,
+    iconTint: Color,
     isRead: Boolean,
 ) {
     Card(
@@ -104,11 +116,18 @@ private fun NotificationItem(
         ) {
             Box(
                 modifier = Modifier
-                    .padding(top = 4.dp)
-                    .size(10.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
-                    .background(dotColor),
-            )
+                    .background(iconTint.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Row(
