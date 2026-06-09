@@ -47,6 +47,8 @@ data class BottomNavItem(
 fun DriverShellScreen(
     onNavigateToInspectionHistory: () -> Unit,
     onNavigateToDamageReportList: () -> Unit,
+    onNavigateToVehicleInfo: () -> Unit,
+    onNavigateToNewInspection: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -107,7 +109,7 @@ fun DriverShellScreen(
                 modifier = contentModifier,
             )
             1 -> InspectionScreen(
-                onStartInspection = { /* TODO: Navigate to new inspection form */ },
+                onStartInspection = onNavigateToNewInspection,
                 onViewHistory = onNavigateToInspectionHistory,
                 modifier = contentModifier,
             )
@@ -119,7 +121,7 @@ fun DriverShellScreen(
             3 -> NotificationScreen(modifier = contentModifier)
             4 -> ProfileScreen(
                 onSignOut = onSignOut,
-                onNavigateToVehicle = { /* Handle vehicle navigation from Profile if needed */ },
+                onNavigateToVehicle = onNavigateToVehicleInfo,
                 modifier = contentModifier,
             )
         }

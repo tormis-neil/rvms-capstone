@@ -12,8 +12,10 @@ import com.example.rvms.ui.auth.SignInScreen
 import com.example.rvms.ui.auth.SignUpScreen
 import com.example.rvms.ui.damage.DamageReportListScreen
 import com.example.rvms.ui.inspection.InspectionHistoryScreen
+import com.example.rvms.ui.inspection.NewInspectionScreen
 import com.example.rvms.ui.shell.DriverShellScreen
 import com.example.rvms.ui.splash.SplashScreen
+import com.example.rvms.ui.vehicle.VehicleInfoScreen
 
 @Composable
 fun MainNavigation() {
@@ -67,6 +69,12 @@ fun MainNavigation() {
                         onNavigateToDamageReportList = {
                             backStack.add(DamageReportList)
                         },
+                        onNavigateToVehicleInfo = {
+                            backStack.add(VehicleInfo)
+                        },
+                        onNavigateToNewInspection = {
+                            backStack.add(NewInspection)
+                        },
                         onSignOut = {
                             backStack.clear()
                             backStack.add(SignIn)
@@ -76,12 +84,28 @@ fun MainNavigation() {
 
                 entry<InspectionHistory> {
                     InspectionHistoryScreen(
+                        onBack = { backStack.removeLastOrNull() },
                         modifier = Modifier.safeDrawingPadding(),
                     )
                 }
 
                 entry<DamageReportList> {
                     DamageReportListScreen(
+                        onBack = { backStack.removeLastOrNull() },
+                        modifier = Modifier.safeDrawingPadding(),
+                    )
+                }
+
+                entry<VehicleInfo> {
+                    VehicleInfoScreen(
+                        onBack = { backStack.removeLastOrNull() },
+                        modifier = Modifier.safeDrawingPadding(),
+                    )
+                }
+
+                entry<NewInspection> {
+                    NewInspectionScreen(
+                        onBack = { backStack.removeLastOrNull() },
                         modifier = Modifier.safeDrawingPadding(),
                     )
                 }

@@ -96,7 +96,7 @@ fun NotificationScreen(
             title = "Vehicle Status Updated",
             body = "Your vehicle status has been changed to Under PM.",
             time = "2:30 PM",
-            dotColor = InfoBlue,
+            dotColor = WarningOrange,
             isRead = true,
         )
 

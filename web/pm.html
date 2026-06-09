@@ -49,6 +49,11 @@
                 <a href="drivers.html" class="nav-item">
                     <i class="bi bi-person-badge"></i> Drivers
                 </a>
+
+                <div class="px-4 pt-3 pb-2 small text-white-50 text-uppercase fw-semibold">Settings</div>
+                <a href="profile.html" class="nav-item">
+                    <i class="bi bi-person-gear"></i> Agency Profile
+                </a>
             </div>
         </nav>
 
@@ -73,7 +78,7 @@
                             <span class="fw-medium">Admin User</span>
                         </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                        <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
+                        <li><a class="dropdown-item" href="profile.html"><i class="bi bi-person me-2"></i>Profile</a></li>
                         <li><a class="dropdown-item text-danger" href="login.html"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</a></li>
                     </ul>
                 </div>
@@ -86,20 +91,25 @@
                         <h3 class="fw-bold mb-0" style="color: var(--primary);">Preventive Maintenance</h3>
                         <p class="text-secondary mb-0">Track and schedule vehicle maintenance cycles</p>
                     </div>
-                    <button class="btn btn-navy text-white fw-medium px-4 py-2 bg-navy rounded-3">
+                    <button class="btn btn-navy text-white fw-medium px-4 py-2 bg-navy rounded-3" data-bs-toggle="modal" data-bs-target="#createPmModal">
                         <i class="bi bi-plus-lg me-2"></i>Create PM Schedule
                     </button>
                 </div>
 
                 <!-- Tabs -->
-                <ul class="nav nav-tabs mb-4">
-                    <li class="nav-item">
-                        <a class="nav-link active fw-bold text-dark" href="#">Active Schedules <span class="badge bg-secondary ms-1">3</span></a>
+                <ul class="nav nav-tabs mb-4" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold text-dark" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab">Active Schedules <span class="badge bg-secondary ms-1">3</span></button>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-secondary" href="#">Completed Records</a>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-secondary" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">Completed Records</button>
                     </li>
                 </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content">
+                    <!-- Active Tab Pane -->
+                    <div class="tab-pane fade show active" id="active" role="tabpanel">
 
                 <!-- PM Table -->
                 <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
@@ -136,7 +146,7 @@
                                         <span class="badge bg-danger px-3 py-2 rounded-pill">Due</span>
                                     </td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-danger fw-medium">Mark Completed</button>
+                                        <button class="btn btn-sm btn-outline-danger fw-medium" data-bs-toggle="modal" data-bs-target="#markCompletedModal">Mark Completed</button>
                                     </td>
                                 </tr>
                                 <!-- Due Soon -->
@@ -159,7 +169,7 @@
                                         <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">Due Soon</span>
                                     </td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-warning text-dark fw-medium border-warning">Mark Completed</button>
+                                        <button class="btn btn-sm btn-outline-warning text-dark fw-medium border-warning" data-bs-toggle="modal" data-bs-target="#markCompletedModal">Mark Completed</button>
                                     </td>
                                 </tr>
                                 <!-- Scheduled -->
@@ -182,16 +192,185 @@
                                         <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Scheduled</span>
                                     </td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-light border"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#editPmModal"><i class="bi bi-pencil"></i></button>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
+                </div> <!-- End Active Tab Pane -->
+                
+                <!-- Completed Tab Pane -->
+                <div class="tab-pane fade" id="completed" role="tabpanel">
+                    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="py-3 text-secondary fw-semibold small">VEHICLE</th>
+                                        <th class="py-3 text-secondary fw-semibold small">MAINTENANCE PERFORMED</th>
+                                        <th class="py-3 text-secondary fw-semibold small">COMPLETED ON</th>
+                                        <th class="py-3 text-secondary fw-semibold small">MILEAGE</th>
+                                        <th class="py-3 text-secondary fw-semibold small">STATUS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold text-dark">DEF-5678</div>
+                                            <div class="small text-secondary">Rescue Tender</div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold text-dark">Brake Inspection & Fluid</div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-medium text-dark">May 20, 2026</div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-medium text-dark">32,500 km</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary px-3 py-2 rounded-pill">Completed</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div> <!-- End Completed Tab Pane -->
+                
+                </div> <!-- End Tab Content -->
 
             </div>
         </main>
+    </div>
+
+    <!-- Create PM Modal -->
+    <div class="modal fade" id="createPmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-navy text-white">
+                    <h5 class="modal-title fw-bold">Create PM Schedule</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Vehicle</label>
+                            <select class="form-select">
+                                <option>ABC-1234 (Fire Truck)</option>
+                                <option>XYZ-9876 (Fire Truck)</option>
+                                <option>LMN-4567 (Ambulance)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Maintenance Target</label>
+                            <input type="text" class="form-control" placeholder="e.g., Oil Change, Tire Replacement">
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Schedule Type</label>
+                                <select class="form-select">
+                                    <option>Mileage-Based</option>
+                                    <option>Time-Based</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Target Value</label>
+                                <input type="text" class="form-control" placeholder="e.g., 50000 km or Dec 1, 2026">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Notes</label>
+                            <textarea class="form-control" rows="2" placeholder="Optional notes..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-navy bg-navy text-white" data-bs-dismiss="modal">Create Schedule</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mark Completed Modal -->
+    <div class="modal fade" id="markCompletedModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold">Mark Maintenance Completed</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-secondary small mb-4">Record the completion of this preventive maintenance schedule.</p>
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Completion Date</label>
+                            <input type="date" class="form-control" value="2026-06-08">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Current Odometer/Mileage</label>
+                            <input type="number" class="form-control" placeholder="Enter current km">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Mechanic/Shop Name</label>
+                            <input type="text" class="form-control" placeholder="Who performed the maintenance?">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Remarks & Findings</label>
+                            <textarea class="form-control" rows="2" placeholder="Any additional notes..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">Mark Completed</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit PM Modal -->
+    <div class="modal fade" id="editPmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold">Edit PM Schedule</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Vehicle</label>
+                            <input type="text" class="form-control bg-light" value="XYZ-9876 (Fire Truck)" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Maintenance Target</label>
+                            <input type="text" class="form-control" value="Battery Replacement">
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Schedule Type</label>
+                                <select class="form-select">
+                                    <option>Mileage-Based</option>
+                                    <option selected>Time-Based</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Target Date</label>
+                                <input type="date" class="form-control" value="2026-12-10">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Save Changes</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
