@@ -116,6 +116,7 @@ fun InspectionHistoryScreen(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+        }
     }
 }
 
