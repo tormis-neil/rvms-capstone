@@ -1,6 +1,8 @@
 package com.example.rvms.ui.damage
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,18 +15,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,22 +36,36 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.rvms.data.SampleData
 import com.example.rvms.theme.Background
-import com.example.rvms.theme.Border
+import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.NavyBlue
+import com.example.rvms.theme.StatusOperational
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
 
+/**
+ * Damage report form (Plan §6.5, driver side).
+ *
+ * Vehicle info is auto-filled and read-only. Nature of Damage is required.
+ * Photo attachment is optional (mocked for the prototype). On submit a
+ * confirmation is shown and the form resets to Pending state.
+ */
 @Composable
 fun DamageReportScreen(
-    onSubmitReport: () -> Unit,
     onViewReports: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val vehicle = SampleData.currentVehicle
+    val driver = SampleData.currentDriver
+
     var natureOfDamage by remember { mutableStateOf("") }
     var suspectedParts by remember { mutableStateOf("") }
+    var photoAttached by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var showSuccess by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
     Column(
@@ -89,11 +103,11 @@ fun DamageReportScreen(
                     fontWeight = FontWeight.Bold,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                ReadOnlyField("Vehicle Type", "Fire Truck")
-                ReadOnlyField("Plate No.", "ABC-1234")
-                ReadOnlyField("Make / Model", "Isuzu FTR 850")
-                ReadOnlyField("Assigned Driver", "Juan Dela Cruz")
-                ReadOnlyField("Date Reported", "June 8, 2026")
+                ReadOnlyField("Vehicle Type", vehicle.type)
+                ReadOnlyField("Plate No.", vehicle.plateNo)
+                ReadOnlyField("Make / Model", "${vehicle.make} ${vehicle.model}")
+                ReadOnlyField("Assigned Driver", driver.name)
+                ReadOnlyField("Date Reported", "June 9, 2026")
             }
         }
 
@@ -116,10 +130,14 @@ fun DamageReportScreen(
 
                 OutlinedTextField(
                     value = natureOfDamage,
-                    onValueChange = { natureOfDamage = it },
+                    onValueChange = {
+                        natureOfDamage = it
+                        error = null
+                    },
                     label = { Text("Nature of Damage") },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
+                    isError = error != null && natureOfDamage.isBlank(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = NavyBlue,
                         focusedLabelColor = NavyBlue,
@@ -142,37 +160,54 @@ fun DamageReportScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Photo attachment placeholder
+                // Photo attachment (mocked toggle for the prototype)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(80.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Background),
+                        .background(if (photoAttached) StatusOperational.copy(alpha = 0.1f) else Background)
+                        .border(
+                            width = 1.dp,
+                            color = if (photoAttached) StatusOperational else TextSecondary.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(8.dp),
+                        )
+                        .clickable { photoAttached = !photoAttached },
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.CameraAlt,
-                            contentDescription = "Camera",
-                            tint = TextSecondary,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
+                        Text(text = if (photoAttached) "✓" else "📷", fontSize = 24.sp)
                         Text(
-                            text = "Tap to attach photo (optional)",
+                            text = if (photoAttached) "Photo attached (tap to remove)" else "Tap to attach photo (optional)",
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary,
+                            color = if (photoAttached) StatusOperational else TextSecondary,
                         )
                     }
                 }
             }
         }
 
+        if (error != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = error!!,
+                color = ErrorRed,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Submit Button
         Button(
-            onClick = onSubmitReport,
+            onClick = {
+                if (natureOfDamage.isBlank()) {
+                    error = "Nature of Damage is required."
+                } else {
+                    error = null
+                    showSuccess = true
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
@@ -189,7 +224,6 @@ fun DamageReportScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // View Reports Button
         Button(
             onClick = onViewReports,
             modifier = Modifier
@@ -209,6 +243,27 @@ fun DamageReportScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+
+    if (showSuccess) {
+        AlertDialog(
+            onDismissRequest = { /* require explicit action */ },
+            confirmButton = {
+                TextButton(onClick = {
+                    showSuccess = false
+                    natureOfDamage = ""
+                    suspectedParts = ""
+                    photoAttached = false
+                }) { Text("Done", color = NavyBlue, fontWeight = FontWeight.Bold) }
+            },
+            title = { Text("Report Submitted", fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "Your damage report for ${vehicle.plateNo} has been submitted with status Pending. " +
+                        "The agency administrator has been notified for review."
+                )
+            },
+        )
     }
 }
 

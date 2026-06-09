@@ -1,5 +1,6 @@
 package com.example.rvms.ui.profile
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,9 +28,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.rvms.data.SampleData
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.Gold
@@ -47,6 +51,7 @@ fun ProfileScreen(
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
+    val driver = SampleData.currentDriver
 
     Column(
         modifier = modifier
@@ -67,7 +72,7 @@ fun ProfileScreen(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "JD",
+                text = driver.initials,
                 color = White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
@@ -77,7 +82,7 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Juan Dela Cruz",
+            text = driver.name,
             style = MaterialTheme.typography.titleLarge,
             color = TextPrimary,
             fontWeight = FontWeight.Bold,
@@ -90,15 +95,26 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Agency Badge
-        Box(
+        // Agency Badge with official logo
+        Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(16.dp))
                 .background(Gold.copy(alpha = 0.15f))
-                .padding(horizontal = 16.dp, vertical = 6.dp),
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            Image(
+                painter = painterResource(id = driver.agency.logo),
+                contentDescription = "${driver.agency.code} logo",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(White),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Bureau of Fire Protection",
+                text = driver.agency.fullName,
                 color = Gold,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -122,11 +138,11 @@ fun ProfileScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                ProfileDetailRow("Full Name", "Juan Dela Cruz")
-                ProfileDetailRow("Email", "juan.delacruz@bfp.gov.ph")
-                ProfileDetailRow("Agency", "BFP")
-                ProfileDetailRow("License No.", "N01-12-345678")
-                ProfileDetailRow("License Expiry", "December 15, 2027")
+                ProfileDetailRow("Full Name", driver.name)
+                ProfileDetailRow("Email", driver.email)
+                ProfileDetailRow("Agency", driver.agency.code)
+                ProfileDetailRow("License No.", driver.licenseNo)
+                ProfileDetailRow("License Expiry", driver.licenseExpiry)
             }
         }
 

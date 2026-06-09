@@ -1,7 +1,9 @@
 package com.example.rvms.ui.inspection
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,129 +11,232 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.rvms.data.SampleData
 import com.example.rvms.theme.Background
+import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
+import com.example.rvms.theme.StatusNotOperational
+import com.example.rvms.theme.StatusOperational
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
+import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * The daily BLOWBAGETS inspection form (Plan §6.4, driver side).
+ *
+ * The assigned vehicle is auto-loaded. Each checklist item is marked OK or
+ * Has Issue; remarks are required for any flagged item. BFP vehicles include
+ * the two additional items (Hydraulic System, Fire Pump).
+ */
 @Composable
 fun NewInspectionScreen(
     onBack: () -> Unit,
+    onSubmitted: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val driver = SampleData.currentDriver
+    val vehicle = SampleData.currentVehicle
+    val items = remember { SampleData.inspectionItemsFor(driver.agency) }
+    val standardItems = SampleData.standardInspectionItems
+    val extraItems = items.filter { it !in standardItems }
+
+    // status: true = OK, false = Has Issue, absent = not yet marked
+    val statuses = remember { mutableStateMapOf<String, Boolean>() }
+    val remarks = remember { mutableStateMapOf<String, String>() }
+    var error by remember { mutableStateOf<String?>(null) }
+    var showSuccess by remember { mutableStateOf(false) }
+
     val scrollState = rememberScrollState()
 
-    val standardItems = listOf(
-        "Battery", "Lights", "Oil", "Water", "Brakes", "Air",
-        "Gas", "Engine", "Tires", "Power Steering",
-        "Horn/Siren", "Directional Signals",
-    )
-    val bfpItems = listOf("Hydraulic System", "Fire Pump")
-    
-    val checkedStates = remember { mutableStateMapOf<String, Boolean>() }
-
-    Scaffold(
-        modifier = modifier.safeDrawingPadding(),
-        topBar = {
-            TopAppBar(
-                title = { Text("New Inspection", color = TextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Background)
-            )
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Background),
+    ) {
+        // Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(NavyBlue)
+                .padding(horizontal = 4.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = White,
+                )
+            }
+            Column {
+                Text(
+                    text = "New Inspection",
+                    color = White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = "BLOWBAGETS Checklist",
+                    color = White.copy(alpha = 0.8f),
+                    fontSize = 12.sp,
+                )
+            }
         }
-    ) { innerPadding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Background)
                 .verticalScroll(scrollState)
-                .padding(innerPadding)
                 .padding(16.dp),
         ) {
-            Text(
-                text = "BLOWBAGETS Checklist",
-                style = MaterialTheme.typography.titleLarge,
-                color = TextPrimary,
-                fontWeight = FontWeight.Bold,
-            )
+            // Auto-loaded vehicle context
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Surface),
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Assigned Vehicle",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                    )
+                    Text(
+                        text = "${vehicle.type} • ${vehicle.plateNo}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = "${driver.agency.fullName} — ${driver.name}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Progress counter
+            val marked = statuses.size
+            Text(
+                text = "Marked $marked of ${items.size} items",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (marked == items.size) StatusOperational else TextSecondary,
+                fontWeight = FontWeight.SemiBold,
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = "Standard Items",
-                style = MaterialTheme.typography.titleMedium,
-                color = TextPrimary,
+                style = MaterialTheme.typography.titleSmall,
+                color = NavyBlue,
                 fontWeight = FontWeight.Bold,
             )
             Spacer(modifier = Modifier.height(8.dp))
 
             standardItems.forEach { item ->
-                ChecklistItem(
+                InspectionItemRow(
                     name = item,
-                    isChecked = checkedStates[item] ?: false,
-                    onCheckedChange = { checkedStates[item] = it }
+                    status = statuses[item],
+                    remark = remarks[item].orEmpty(),
+                    onStatusChange = { ok ->
+                        statuses[item] = ok
+                        if (ok) remarks.remove(item)
+                        error = null
+                    },
+                    onRemarkChange = { remarks[item] = it },
+                )
+            }
+
+            if (extraItems.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "${driver.agency.code} Additional Items",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Gold,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                extraItems.forEach { item ->
+                    InspectionItemRow(
+                        name = item,
+                        status = statuses[item],
+                        remark = remarks[item].orEmpty(),
+                        onStatusChange = { ok ->
+                            statuses[item] = ok
+                            if (ok) remarks.remove(item)
+                            error = null
+                        },
+                        onRemarkChange = { remarks[item] = it },
+                    )
+                }
+            }
+
+            if (error != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = error!!,
+                    color = ErrorRed,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = "BFP Additional Items",
-                style = MaterialTheme.typography.titleSmall,
-                color = Gold,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            bfpItems.forEach { item ->
-                ChecklistItem(
-                    name = item,
-                    isChecked = checkedStates[item] ?: false,
-                    onCheckedChange = { checkedStates[item] = it }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
             Button(
-                onClick = onBack,
+                onClick = {
+                    val unmarked = items.count { statuses[it] == null }
+                    val missingRemarks = items.any { statuses[it] == false && remarks[it].isNullOrBlank() }
+                    when {
+                        unmarked > 0 ->
+                            error = "Please mark all items — $unmarked remaining."
+                        missingRemarks ->
+                            error = "Remarks are required for every item marked Has Issue."
+                        else -> {
+                            error = null
+                            showSuccess = true
+                        }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(52.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = NavyBlue),
             ) {
@@ -146,41 +251,111 @@ fun NewInspectionScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
+
+    if (showSuccess) {
+        val issueCount = items.count { statuses[it] == false }
+        AlertDialog(
+            onDismissRequest = { /* require explicit action */ },
+            confirmButton = {
+                TextButton(onClick = {
+                    showSuccess = false
+                    onSubmitted()
+                }) { Text("Done", color = NavyBlue, fontWeight = FontWeight.Bold) }
+            },
+            title = { Text("Inspection Submitted", fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    if (issueCount == 0)
+                        "All ${items.size} items passed. The inspection has been recorded for ${vehicle.plateNo}."
+                    else
+                        "$issueCount item(s) flagged with issues. The inspection for ${vehicle.plateNo} has been submitted for admin review."
+                )
+            },
+        )
+    }
 }
 
 @Composable
-private fun ChecklistItem(
+private fun InspectionItemRow(
     name: String,
-    isChecked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    status: Boolean?,
+    remark: String,
+    onStatusChange: (Boolean) -> Unit,
+    onRemarkChange: (String) -> Unit,
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 6.dp),
-        shape = RoundedCornerShape(8.dp),
+            .padding(bottom = 8.dp),
+        shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextPrimary,
-            )
-            Checkbox(
-                checked = isChecked,
-                onCheckedChange = onCheckedChange,
-                colors = CheckboxDefaults.colors(
-                    checkedColor = NavyBlue,
-                    uncheckedColor = TextPrimary.copy(alpha = 0.5f)
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f),
                 )
-            )
+                ToggleChip(
+                    label = "OK",
+                    selected = status == true,
+                    selectedColor = StatusOperational,
+                    onClick = { onStatusChange(true) },
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                ToggleChip(
+                    label = "Has Issue",
+                    selected = status == false,
+                    selectedColor = StatusNotOperational,
+                    onClick = { onStatusChange(false) },
+                )
+            }
+
+            if (status == false) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = remark,
+                    onValueChange = onRemarkChange,
+                    label = { Text("Remarks (required)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    isError = remark.isBlank(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = NavyBlue,
+                        focusedLabelColor = NavyBlue,
+                    ),
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun ToggleChip(
+    label: String,
+    selected: Boolean,
+    selectedColor: androidx.compose.ui.graphics.Color,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (selected) selectedColor else Background)
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            color = if (selected) White else TextSecondary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }

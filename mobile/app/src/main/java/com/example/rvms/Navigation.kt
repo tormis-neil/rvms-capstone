@@ -66,19 +66,27 @@ fun MainNavigation() {
                         onNavigateToInspectionHistory = {
                             backStack.add(InspectionHistory)
                         },
+                        onNavigateToNewInspection = {
+                            backStack.add(NewInspection)
+                        },
                         onNavigateToDamageReportList = {
                             backStack.add(DamageReportList)
                         },
                         onNavigateToVehicleInfo = {
                             backStack.add(VehicleInfo)
                         },
-                        onNavigateToNewInspection = {
-                            backStack.add(NewInspection)
-                        },
                         onSignOut = {
                             backStack.clear()
                             backStack.add(SignIn)
                         },
+                    )
+                }
+
+                entry<NewInspection> {
+                    NewInspectionScreen(
+                        onBack = { backStack.removeLastOrNull() },
+                        onSubmitted = { backStack.removeLastOrNull() },
+                        modifier = Modifier.safeDrawingPadding(),
                     )
                 }
 
@@ -98,13 +106,6 @@ fun MainNavigation() {
 
                 entry<VehicleInfo> {
                     VehicleInfoScreen(
-                        onBack = { backStack.removeLastOrNull() },
-                        modifier = Modifier.safeDrawingPadding(),
-                    )
-                }
-
-                entry<NewInspection> {
-                    NewInspectionScreen(
                         onBack = { backStack.removeLastOrNull() },
                         modifier = Modifier.safeDrawingPadding(),
                     )

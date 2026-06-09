@@ -1,10 +1,8 @@
 package com.example.rvms.ui.vehicle
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,10 +31,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.rvms.data.SampleData
+import com.example.rvms.data.VehicleStatus
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
+import com.example.rvms.theme.StatusDispatched
+import com.example.rvms.theme.StatusNotOperational
 import com.example.rvms.theme.StatusOperational
+import com.example.rvms.theme.StatusUnderPM
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
@@ -48,7 +51,16 @@ fun VehicleInfoScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val vehicle = SampleData.currentVehicle
+    val driver = SampleData.currentDriver
     val scrollState = rememberScrollState()
+
+    val statusColor = when (vehicle.status) {
+        VehicleStatus.OPERATIONAL -> StatusOperational
+        VehicleStatus.DISPATCHED -> StatusDispatched
+        VehicleStatus.UNDER_PM -> StatusUnderPM
+        VehicleStatus.NOT_OPERATIONAL -> StatusNotOperational
+    }
 
     Scaffold(
         modifier = modifier,
@@ -84,13 +96,13 @@ fun VehicleInfoScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "Fire Truck",
+                    text = vehicle.type,
                     color = White,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = "ABC-1234",
+                    text = vehicle.plateNo,
                     color = Gold,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
@@ -99,12 +111,12 @@ fun VehicleInfoScreen(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
-                        .background(StatusOperational.copy(alpha = 0.2f))
+                        .background(statusColor.copy(alpha = 0.2f))
                         .padding(horizontal = 20.dp, vertical = 6.dp),
                 ) {
                     Text(
-                        text = "Operational",
-                        color = StatusOperational,
+                        text = vehicle.status.label,
+                        color = statusColor,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -129,13 +141,13 @@ fun VehicleInfoScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                DetailRow("Vehicle Type", "Fire Truck")
-                DetailRow("Plate Number", "ABC-1234")
-                DetailRow("Make", "Isuzu")
-                DetailRow("Model", "FTR 850")
-                DetailRow("Engine No.", "4HK1-TC-587234")
-                DetailRow("Chassis No.", "JALC4W14697100345")
-                DetailRow("Current Mileage", "45,230 km")
+                DetailRow("Vehicle Type", vehicle.type)
+                DetailRow("Plate Number", vehicle.plateNo)
+                DetailRow("Make", vehicle.make)
+                DetailRow("Model", vehicle.model)
+                DetailRow("Engine No.", vehicle.engineNo)
+                DetailRow("Chassis No.", vehicle.chassisNo)
+                DetailRow("Current Mileage", vehicle.mileage)
             }
         }
 
@@ -156,12 +168,13 @@ fun VehicleInfoScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                DetailRow("Assigned Driver", "Juan Dela Cruz")
-                DetailRow("Agency", "Bureau of Fire Protection")
+                DetailRow("Assigned Driver", driver.name)
+                DetailRow("Agency", driver.agency.fullName)
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+        }
     }
 }
 
