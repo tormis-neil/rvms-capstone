@@ -34,11 +34,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.rvms.data.Agency
+import com.example.rvms.data.Session
+import com.example.rvms.theme.Background
 import com.example.rvms.theme.DarkNavy
 import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.RVMSTheme
+import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
 
@@ -51,6 +55,7 @@ fun SignInScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    var selectedAgency by remember { mutableStateOf(Agency.BFP) }
 
     Column(
         modifier =
@@ -88,7 +93,32 @@ fun SignInScreen(
             textAlign = TextAlign.Center,
         )
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Demo agency selector (prototype only) — picks which agency account to sign in as
+        Text(
+            text = "Sign in as",
+            style = MaterialTheme.typography.labelMedium,
+            color = TextSecondary,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Agency.entries.forEach { agency ->
+                AgencyChip(
+                    label = agency.code,
+                    selected = selectedAgency == agency,
+                    onClick = { selectedAgency = agency },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Email Field
         OutlinedTextField(
@@ -143,6 +173,7 @@ fun SignInScreen(
                         error = "Please enter a valid email address."
                     else -> {
                         error = null
+                        Session.signInAs(selectedAgency)
                         onNavigateToHome()
                     }
                 }
@@ -182,6 +213,30 @@ fun SignInScreen(
                 modifier = Modifier.clickable { onNavigateToSignUp() },
             )
         }
+    }
+}
+
+@Composable
+private fun AgencyChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (selected) NavyBlue else Background)
+            .clickable { onClick() }
+            .padding(vertical = 10.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            color = if (selected) White else TextPrimary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }
 

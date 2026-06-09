@@ -33,12 +33,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.rvms.data.SampleData
+import com.example.rvms.data.Session
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.StatusOperational
+import com.example.rvms.theme.StatusUnderPM
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
@@ -51,7 +52,7 @@ fun ProfileScreen(
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
-    val driver = SampleData.currentDriver
+    val driver = Session.current.driver
 
     Column(
         modifier = modifier
@@ -149,6 +150,9 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         // License Status
+        val licenseColor = if (driver.licenseExpiringSoon) StatusUnderPM else StatusOperational
+        val licenseLabel = if (driver.licenseExpiringSoon) "Expiring Soon" else "Valid"
+        val licenseBadge = if (driver.licenseExpiringSoon) "Action Needed" else "Active"
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
@@ -168,21 +172,21 @@ fun ProfileScreen(
                         color = TextSecondary,
                     )
                     Text(
-                        text = "Valid",
+                        text = licenseLabel,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = StatusOperational,
+                        color = licenseColor,
                         fontWeight = FontWeight.Bold,
                     )
                 }
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
-                        .background(StatusOperational.copy(alpha = 0.1f))
+                        .background(licenseColor.copy(alpha = 0.1f))
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                 ) {
                     Text(
-                        text = "Active",
-                        color = StatusOperational,
+                        text = licenseBadge,
+                        color = licenseColor,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                     )

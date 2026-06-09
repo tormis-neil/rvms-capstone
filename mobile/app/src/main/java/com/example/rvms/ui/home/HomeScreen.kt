@@ -39,12 +39,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.rvms.data.SampleData
+import com.example.rvms.data.ActivityKind
+import com.example.rvms.data.Session
+import com.example.rvms.ui.common.statusColor
 import com.example.rvms.theme.Background
-import com.example.rvms.theme.Border
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
-import com.example.rvms.theme.StatusOperational
+import com.example.rvms.theme.StatusNotOperational
+import com.example.rvms.theme.StatusUnderPM
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
@@ -67,8 +69,8 @@ fun HomeScreen(
             .padding(16.dp),
     ) {
         // Greeting with agency logo
-        val driver = SampleData.currentDriver
-        val vehicle = SampleData.currentVehicle
+        val driver = Session.current.driver
+        val vehicle = Session.current.vehicle
         Row(verticalAlignment = Alignment.CenterVertically) {
             Image(
                 painter = painterResource(id = driver.agency.logo),
@@ -117,15 +119,16 @@ fun HomeScreen(
                         style = MaterialTheme.typography.bodySmall,
                     )
                     // Status Badge
+                    val vehicleStatusColor = statusColor(vehicle.status)
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
-                            .background(StatusOperational.copy(alpha = 0.2f))
+                            .background(vehicleStatusColor.copy(alpha = 0.2f))
                             .padding(horizontal = 12.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            text = "Operational",
-                            color = StatusOperational,
+                            text = vehicle.status.label,
+                            color = vehicleStatusColor,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                         )
@@ -207,24 +210,20 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        ActivityItem(
-            title = "Daily Inspection Submitted",
-            subtitle = "All items OK",
-            time = "Today, 7:30 AM",
-            dotColor = NavyBlue,
-        )
-        ActivityItem(
-            title = "Vehicle Status Updated",
-            subtitle = "Status changed to Operational",
-            time = "Yesterday, 4:00 PM",
-            dotColor = StatusOperational,
-        )
-        ActivityItem(
-            title = "PM Reminder",
-            subtitle = "Oil change due at 46,000 km",
-            time = "Jun 5, 2026",
-            dotColor = Color(0xFFD97706),
-        )
+        Session.current.recentActivity.forEach { activity ->
+            val dotColor = when (activity.kind) {
+                ActivityKind.INSPECTION_SUBMITTED -> NavyBlue
+                ActivityKind.STATUS_UPDATE -> activity.status?.let(::statusColor) ?: NavyBlue
+                ActivityKind.PM_REMINDER -> StatusUnderPM
+                ActivityKind.DAMAGE_SUBMITTED -> StatusNotOperational
+            }
+            ActivityItem(
+                title = activity.title,
+                subtitle = activity.subtitle,
+                time = activity.time,
+                dotColor = dotColor,
+            )
+        }
     }
 }
 

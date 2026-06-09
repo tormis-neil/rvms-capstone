@@ -38,8 +38,19 @@ cd mobile
   "Pending" confirmation and resets the form.
 - **Profile**: driver details + agency logo badge; Sign Out returns to Sign In.
 
-## Notes
-- The current session signs in as a **BFP** driver (Juan Dela Cruz). All four
-  agency logos (BFP, PNP, CDRRMO, CHO) are bundled in `res/drawable/` and defined
-  in `data/SampleData.kt` for future multi-agency demos.
-- History/notification lists are still static sample data.
+## Per-agency demo data
+On the **Sign In** screen, the "Sign in as" chips (BFP / PNP / CDRRMO / CHO)
+choose which agency account to enter. The whole app then reflects that agency:
+driver, assigned vehicle, logo, inspection history, damage reports, notifications,
+and recent activity. Each account is self-contained and exercises the full range
+of states:
+- **Current vehicle status differs per agency** — BFP Operational (green),
+  PNP Dispatched (blue), CDRRMO Under PM (orange), CHO Not Operational (red).
+- Inspection history mixes *All OK* and *Has Issues* results.
+- Damage reports include both *Pending* and *Reviewed*.
+- Notifications/recent activity walk the vehicle through all four statuses and
+  both driver notification types (PM Reminder, Vehicle Status Update).
+- PNP's driver (Mark Santos) has an **expiring license**, shown on Profile.
+
+All data lives in `data/SampleData.kt`; the signed-in account is held in
+`data/Session.kt`. To switch agencies, Sign Out and pick a different chip.

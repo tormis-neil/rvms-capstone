@@ -36,7 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.rvms.data.SampleData
+import com.example.rvms.data.Session
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.NavyBlue
@@ -58,8 +58,8 @@ fun DamageReportScreen(
     onViewReports: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val vehicle = SampleData.currentVehicle
-    val driver = SampleData.currentDriver
+    val vehicle = Session.current.vehicle
+    val driver = Session.current.driver
 
     var natureOfDamage by remember { mutableStateOf("") }
     var suspectedParts by remember { mutableStateOf("") }

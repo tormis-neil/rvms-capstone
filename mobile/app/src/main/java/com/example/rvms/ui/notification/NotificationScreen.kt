@@ -1,6 +1,7 @@
 package com.example.rvms.ui.notification
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,20 +27,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.rvms.data.Session
+import com.example.rvms.ui.common.notificationColor
 import com.example.rvms.theme.Background
-import com.example.rvms.theme.InfoBlue
 import com.example.rvms.theme.NavyBlue
-import com.example.rvms.theme.StatusOperational
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
-import com.example.rvms.theme.WarningOrange
 
 @Composable
 fun NotificationScreen(
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
+    val notifications = Session.current.notifications
 
     Column(
         modifier = modifier
@@ -57,76 +58,30 @@ fun NotificationScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Today
-        Text(
-            text = "Today",
-            style = MaterialTheme.typography.titleSmall,
-            color = TextSecondary,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
+        // Group by time bucket, preserving the data's order (Today, Yesterday, Earlier)
+        notifications
+            .groupBy { it.timeGroup }
+            .forEach { (group, items) ->
+                Text(
+                    text = group,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = TextSecondary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
 
-        NotificationItem(
-            title = "Vehicle Status Updated",
-            body = "Your vehicle status has been changed to Operational.",
-            time = "4:00 PM",
-            dotColor = StatusOperational,
-            isRead = false,
-        )
-        NotificationItem(
-            title = "PM Reminder",
-            body = "Oil change is due soon at 46,000 km. Current mileage: 45,230 km.",
-            time = "8:00 AM",
-            dotColor = WarningOrange,
-            isRead = false,
-        )
+                items.forEach { notification ->
+                    NotificationItem(
+                        title = notification.title,
+                        body = notification.body,
+                        time = notification.time,
+                        dotColor = notificationColor(notification.type, notification.status),
+                        isRead = notification.isRead,
+                    )
+                }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Yesterday
-        Text(
-            text = "Yesterday",
-            style = MaterialTheme.typography.titleSmall,
-            color = TextSecondary,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        NotificationItem(
-            title = "Vehicle Status Updated",
-            body = "Your vehicle status has been changed to Under PM.",
-            time = "2:30 PM",
-            dotColor = WarningOrange,
-            isRead = true,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Earlier
-        Text(
-            text = "Earlier",
-            style = MaterialTheme.typography.titleSmall,
-            color = TextSecondary,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        NotificationItem(
-            title = "PM Reminder",
-            body = "Tire rotation is due. Please coordinate with your agency admin.",
-            time = "Jun 5",
-            dotColor = WarningOrange,
-            isRead = true,
-        )
-        NotificationItem(
-            title = "Vehicle Status Updated",
-            body = "Your vehicle status has been changed to Operational.",
-            time = "Jun 3",
-            dotColor = StatusOperational,
-            isRead = true,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+            }
     }
 }
 
@@ -162,7 +117,7 @@ private fun NotificationItem(
             Column(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
                         text = title,

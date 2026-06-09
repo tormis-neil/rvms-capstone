@@ -31,7 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.rvms.data.SampleData
+import com.example.rvms.data.Session
 import com.example.rvms.data.VehicleStatus
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.Gold
@@ -51,8 +51,8 @@ fun VehicleInfoScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val vehicle = SampleData.currentVehicle
-    val driver = SampleData.currentDriver
+    val vehicle = Session.current.vehicle
+    val driver = Session.current.driver
     val scrollState = rememberScrollState()
 
     val statusColor = when (vehicle.status) {
