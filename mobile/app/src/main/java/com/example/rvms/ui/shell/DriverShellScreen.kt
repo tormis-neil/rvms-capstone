@@ -46,6 +46,7 @@ data class BottomNavItem(
 @Composable
 fun DriverShellScreen(
     onNavigateToInspectionHistory: () -> Unit,
+    onNavigateToNewInspection: () -> Unit,
     onNavigateToDamageReportList: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
@@ -107,12 +108,11 @@ fun DriverShellScreen(
                 modifier = contentModifier,
             )
             1 -> InspectionScreen(
-                onStartInspection = { /* TODO: Navigate to new inspection form */ },
+                onStartInspection = onNavigateToNewInspection,
                 onViewHistory = onNavigateToInspectionHistory,
                 modifier = contentModifier,
             )
             2 -> DamageReportScreen(
-                onSubmitReport = { /* TODO: Handle submission */ },
                 onViewReports = onNavigateToDamageReportList,
                 modifier = contentModifier,
             )

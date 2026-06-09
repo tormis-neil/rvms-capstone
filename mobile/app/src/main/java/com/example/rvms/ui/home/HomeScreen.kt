@@ -1,5 +1,6 @@
 package com.example.rvms.ui.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,10 +34,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.rvms.data.SampleData
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.Border
 import com.example.rvms.theme.Gold
@@ -63,18 +66,34 @@ fun HomeScreen(
             .verticalScroll(scrollState)
             .padding(16.dp),
     ) {
-        // Greeting
-        Text(
-            text = "Good day, Driver!",
-            style = MaterialTheme.typography.headlineSmall,
-            color = TextPrimary,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = "Bureau of Fire Protection",
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary,
-        )
+        // Greeting with agency logo
+        val driver = SampleData.currentDriver
+        val vehicle = SampleData.currentVehicle
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Image(
+                painter = painterResource(id = driver.agency.logo),
+                contentDescription = "${driver.agency.code} logo",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(White),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = "Good day, ${driver.name.substringBefore(' ')}!",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = driver.agency.fullName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -116,13 +135,13 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Fire Truck",
+                    text = vehicle.type,
                     color = White,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = "ABC-1234",
+                    text = vehicle.plateNo,
                     color = Gold,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
@@ -131,11 +150,11 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    InfoChip("Isuzu", Modifier.weight(1f))
+                    InfoChip(vehicle.make, Modifier.weight(1f))
                     Spacer(modifier = Modifier.width(8.dp))
-                    InfoChip("FTR 850", Modifier.weight(1f))
+                    InfoChip(vehicle.model, Modifier.weight(1f))
                     Spacer(modifier = Modifier.width(8.dp))
-                    InfoChip("45,230 km", Modifier.weight(1f))
+                    InfoChip(vehicle.mileage, Modifier.weight(1f))
                 }
             }
         }

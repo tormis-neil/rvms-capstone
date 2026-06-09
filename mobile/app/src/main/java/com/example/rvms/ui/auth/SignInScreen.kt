@@ -35,6 +35,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rvms.theme.DarkNavy
+import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.RVMSTheme
@@ -49,6 +50,7 @@ fun SignInScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier =
@@ -117,11 +119,34 @@ fun SignInScreen(
             )
         )
 
+        if (error != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = error!!,
+                color = ErrorRed,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
         Spacer(modifier = Modifier.height(32.dp))
 
         // Sign In Button
         Button(
-            onClick = onNavigateToHome,
+            onClick = {
+                when {
+                    email.isBlank() || password.isBlank() ->
+                        error = "Please enter your email and password."
+                    !email.contains("@") ->
+                        error = "Please enter a valid email address."
+                    else -> {
+                        error = null
+                        onNavigateToHome()
+                    }
+                }
+            },
             modifier =
                 Modifier
                     .fillMaxWidth()

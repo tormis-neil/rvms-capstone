@@ -39,7 +39,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
 import com.example.rvms.theme.DarkNavy
+import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.RVMSTheme
@@ -57,6 +59,7 @@ fun SignUpScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
 
     // Agency Dropdown State
     var expanded by remember { mutableStateOf(false) }
@@ -199,11 +202,40 @@ fun SignUpScreen(
             )
         )
 
+        if (error != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = error!!,
+                color = ErrorRed,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
         Spacer(modifier = Modifier.height(32.dp))
 
         // Sign Up Button
         Button(
-            onClick = onNavigateToHome,
+            onClick = {
+                when {
+                    fullName.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank() ->
+                        error = "Please complete all fields."
+                    !email.contains("@") ->
+                        error = "Please enter a valid email address."
+                    selectedAgency.isBlank() ->
+                        error = "Please select your agency."
+                    password.length < 6 ->
+                        error = "Password must be at least 6 characters."
+                    password != confirmPassword ->
+                        error = "Passwords do not match."
+                    else -> {
+                        error = null
+                        onNavigateToHome()
+                    }
+                }
+            },
             modifier =
                 Modifier
                     .fillMaxWidth()

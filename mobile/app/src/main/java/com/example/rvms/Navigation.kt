@@ -12,6 +12,7 @@ import com.example.rvms.ui.auth.SignInScreen
 import com.example.rvms.ui.auth.SignUpScreen
 import com.example.rvms.ui.damage.DamageReportListScreen
 import com.example.rvms.ui.inspection.InspectionHistoryScreen
+import com.example.rvms.ui.inspection.NewInspectionScreen
 import com.example.rvms.ui.shell.DriverShellScreen
 import com.example.rvms.ui.splash.SplashScreen
 
@@ -64,6 +65,9 @@ fun MainNavigation() {
                         onNavigateToInspectionHistory = {
                             backStack.add(InspectionHistory)
                         },
+                        onNavigateToNewInspection = {
+                            backStack.add(NewInspection)
+                        },
                         onNavigateToDamageReportList = {
                             backStack.add(DamageReportList)
                         },
@@ -71,6 +75,14 @@ fun MainNavigation() {
                             backStack.clear()
                             backStack.add(SignIn)
                         },
+                    )
+                }
+
+                entry<NewInspection> {
+                    NewInspectionScreen(
+                        onBack = { backStack.removeLastOrNull() },
+                        onSubmitted = { backStack.removeLastOrNull() },
+                        modifier = Modifier.safeDrawingPadding(),
                     )
                 }
 
