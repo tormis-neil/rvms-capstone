@@ -117,6 +117,8 @@ fun NewDamageReportScreen(
                     ReadOnlyField("Vehicle Type", vehicle.type)
                     ReadOnlyField("Plate No.", vehicle.plateNo)
                     ReadOnlyField("Make / Model", "${vehicle.make} ${vehicle.model}")
+                    ReadOnlyField("Engine No.", vehicle.engineNo)
+                    ReadOnlyField("Chassis No.", vehicle.chassisNo)
                     ReadOnlyField("Assigned Driver", driver.name)
                     ReadOnlyField("Date Reported", "June 9, 2026")
                 }

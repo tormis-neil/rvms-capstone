@@ -45,6 +45,7 @@ import com.example.rvms.ui.common.statusColor
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
+import com.example.rvms.theme.StatusOperational
 import com.example.rvms.theme.StatusUnderPM
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
@@ -156,6 +157,63 @@ fun HomeScreen(
                     InfoChip(vehicle.model, Modifier.weight(1f))
                     Spacer(modifier = Modifier.width(8.dp))
                     InfoChip(vehicle.mileage, Modifier.weight(1f))
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // License Status (moved from Profile — driver readiness shown alongside
+        // vehicle readiness; license details remain on the Profile screen)
+        val licenseColor = if (driver.licenseExpiringSoon) StatusUnderPM else StatusOperational
+        val licenseLabel = if (driver.licenseExpiringSoon) "Expiring Soon" else "Valid"
+        val licenseBadge = if (driver.licenseExpiringSoon) "Action Needed" else "Active"
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Surface),
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column {
+                        Text(
+                            text = "License Status",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary,
+                        )
+                        Text(
+                            text = licenseLabel,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = licenseColor,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(licenseColor.copy(alpha = 0.1f))
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                    ) {
+                        Text(
+                            text = licenseBadge,
+                            color = licenseColor,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+                if (driver.licenseExpiringSoon) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Expires ${driver.licenseExpiry}. Please coordinate with your " +
+                            "agency administrator for renewal.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                    )
                 }
             }
         }

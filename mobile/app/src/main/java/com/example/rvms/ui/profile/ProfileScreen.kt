@@ -2,7 +2,6 @@ package com.example.rvms.ui.profile
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,8 +37,6 @@ import com.example.rvms.theme.Background
 import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
-import com.example.rvms.theme.StatusOperational
-import com.example.rvms.theme.StatusUnderPM
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
@@ -144,53 +141,6 @@ fun ProfileScreen(
                 ProfileDetailRow("Agency", driver.agency.code)
                 ProfileDetailRow("License No.", driver.licenseNo)
                 ProfileDetailRow("License Expiry", driver.licenseExpiry)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // License Status
-        val licenseColor = if (driver.licenseExpiringSoon) StatusUnderPM else StatusOperational
-        val licenseLabel = if (driver.licenseExpiringSoon) "Expiring Soon" else "Valid"
-        val licenseBadge = if (driver.licenseExpiringSoon) "Action Needed" else "Active"
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Surface),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text(
-                        text = "License Status",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary,
-                    )
-                    Text(
-                        text = licenseLabel,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = licenseColor,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(licenseColor.copy(alpha = 0.1f))
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                ) {
-                    Text(
-                        text = licenseBadge,
-                        color = licenseColor,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
             }
         }
 
