@@ -21,9 +21,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,12 +29,11 @@ import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
-import com.example.rvms.ui.damage.DamageReportScreen
+import com.example.rvms.ui.damage.DamageScreen
 import com.example.rvms.ui.home.HomeScreen
 import com.example.rvms.ui.inspection.InspectionScreen
 import com.example.rvms.ui.notification.NotificationScreen
 import com.example.rvms.ui.profile.ProfileScreen
-import com.example.rvms.ui.vehicle.VehicleInfoScreen
 
 data class BottomNavItem(
     val label: String,
@@ -47,6 +44,7 @@ data class BottomNavItem(
 fun DriverShellScreen(
     onNavigateToInspectionHistory: () -> Unit,
     onNavigateToNewInspection: () -> Unit,
+    onNavigateToNewDamageReport: () -> Unit,
     onNavigateToDamageReportList: () -> Unit,
     onNavigateToVehicleInfo: () -> Unit,
     onSignOut: () -> Unit,
@@ -113,7 +111,8 @@ fun DriverShellScreen(
                 onViewHistory = onNavigateToInspectionHistory,
                 modifier = contentModifier,
             )
-            2 -> DamageReportScreen(
+            2 -> DamageScreen(
+                onSubmitNew = onNavigateToNewDamageReport,
                 onViewReports = onNavigateToDamageReportList,
                 modifier = contentModifier,
             )
