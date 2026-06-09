@@ -1,7 +1,6 @@
 package com.example.rvms.ui.inspection
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,10 +16,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,11 +33,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.rvms.data.SampleData
+import com.example.rvms.data.InspectionRecord
 import com.example.rvms.data.Session
 import com.example.rvms.ui.common.ScreenHeader
 import com.example.rvms.theme.Background
-import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.StatusNotOperational
 import com.example.rvms.theme.StatusOperational
@@ -46,12 +48,10 @@ import com.example.rvms.theme.White
 @Composable
 fun InspectionScreen(
     onStartInspection: () -> Unit,
-    onViewHistory: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
     val data = Session.current
-    val lastInspection = data.inspectionHistory.firstOrNull()
 
     Column(
         modifier = modifier
@@ -84,111 +84,32 @@ fun InspectionScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // View History Button
-        Button(
-            onClick = onViewHistory,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Surface,
-                contentColor = NavyBlue,
-            ),
-        ) {
-            Text(
-                text = "View Inspection History",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
-
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Today's Status
+        // Inspection History
         Text(
-            text = "Today's Status",
+            text = "Inspection History",
             style = MaterialTheme.typography.titleMedium,
             color = TextPrimary,
             fontWeight = FontWeight.Bold,
         )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Surface),
-        ) {
-            val passed = (lastInspection?.issueCount ?: 0) == 0
-            val statusColor = if (passed) StatusOperational else StatusNotOperational
-            Row(
-                modifier = Modifier.padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(statusColor.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = if (passed) "✓" else "!",
-                        color = statusColor,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text(
-                        text = "Last Inspection",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = TextPrimary,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = lastInspection?.let { "${it.date}, ${it.time} — ${it.resultLabel}" }
-                            ?: "No inspection submitted yet",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary,
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Checklist Items Preview
         Text(
-            text = "Standard Checklist Items",
-            style = MaterialTheme.typography.titleMedium,
-            color = TextPrimary,
-            fontWeight = FontWeight.Bold,
+            text = "${data.vehicle.type} — ${data.vehicle.plateNo}",
+            style = MaterialTheme.typography.bodySmall,
+            color = TextSecondary,
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        SampleData.standardInspectionItems.forEach { item ->
-            ChecklistPreviewItem(item)
-        }
-
-        // Agency-specific additional items (BFP only)
-        val extraItems = data.inspectionItems.filter { it !in SampleData.standardInspectionItems }
-        if (extraItems.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
+        if (data.inspectionHistory.isEmpty()) {
             Text(
-                text = "${data.driver.agency.code} Additional Items",
-                style = MaterialTheme.typography.titleSmall,
-                color = Gold,
-                fontWeight = FontWeight.Bold,
+                text = "No inspections submitted yet.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary,
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            extraItems.forEach { item ->
-                ChecklistPreviewItem(item)
+        } else {
+            data.inspectionHistory.forEach { record ->
+                InspectionHistoryItem(record)
             }
         }
 
@@ -197,35 +118,69 @@ fun InspectionScreen(
 }
 
 @Composable
-private fun ChecklistPreviewItem(name: String) {
+private fun InspectionHistoryItem(record: InspectionRecord) {
+    val passed = record.issueCount == 0
+    val statusColor = if (passed) StatusOperational else StatusNotOperational
+    val icon = if (passed) Icons.Default.CheckCircle else Icons.Default.Warning
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 6.dp),
-        shape = RoundedCornerShape(8.dp),
+            .padding(bottom = 10.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextPrimary,
-            )
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(statusColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = statusColor,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = record.date,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = "${record.time} • ${record.itemsChecked} items checked",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                )
+                if (record.flaggedItems.isNotEmpty()) {
+                    Text(
+                        text = "Flagged: ${record.flaggedItems.joinToString(", ")}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = statusColor,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(12.dp))
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(StatusOperational.copy(alpha = 0.1f))
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                    .background(statusColor.copy(alpha = 0.1f))
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
                 Text(
-                    text = "OK",
-                    color = StatusOperational,
+                    text = record.resultLabel,
+                    color = statusColor,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
