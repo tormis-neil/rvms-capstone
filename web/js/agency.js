@@ -37,7 +37,7 @@
 
   const AGENCIES = {
     BFP: {
-      name: "Bureau of Fire Protection", short: "BFP", logo: "assets/logos/bfp.svg",
+      name: "Bureau of Fire Protection", short: "BFP", logo: "agency-logo/bfp-logo.jpg",
       location: "Calbayog City", contact: "(055) 123-4567", domain: "bfp.gov.ph", avatar: "A",
       extraItems: ["Hydraulic System", "Fire Pump"], primaryMission: "Fire Response",
       vehicles: [
@@ -97,7 +97,7 @@
     },
 
     PNP: {
-      name: "Philippine National Police", short: "PNP", logo: "assets/logos/pnp.svg",
+      name: "Philippine National Police", short: "PNP", logo: "agency-logo/pnp-logo.jpg",
       location: "Calbayog City", contact: "(055) 209-1175", domain: "pnp.gov.ph", avatar: "A",
       extraItems: [], primaryMission: "Patrol",
       vehicles: [
@@ -157,7 +157,7 @@
     },
 
     CDRRMO: {
-      name: "City Disaster Risk Reduction and Management Office", short: "CDRRMO", logo: "assets/logos/cdrrmo.svg",
+      name: "City Disaster Risk Reduction and Management Office", short: "CDRRMO", logo: "agency-logo/cdrrmo-logo.jpg",
       location: "Calbayog City", contact: "(055) 301-2288", domain: "cdrrmo.calbayog.gov.ph", avatar: "A",
       extraItems: [], primaryMission: "Rescue Operation",
       vehicles: [
@@ -217,7 +217,7 @@
     },
 
     CHO: {
-      name: "City Health Office", short: "CHO", logo: "assets/logos/cho.svg",
+      name: "City Health Office", short: "CHO", logo: "agency-logo/cho-logo.png",
       location: "Calbayog City", contact: "(055) 412-3390", domain: "cho.calbayog.gov.ph", avatar: "A",
       extraItems: [], primaryMission: "Medical Response",
       vehicles: [
@@ -372,7 +372,8 @@
         '<td>' + d.vehicle + '</td>' +
         '<td class="text-end">' +
         '<button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button> ' +
-        '<button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>' +
+        '<button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button> ' +
+        '<button class="btn btn-sm btn-light border" title="Update License" data-bs-toggle="modal" data-bs-target="#updateLicenseModal"><i class="bi bi-arrow-clockwise"></i></button>' +
         '</td></tr>';
     }).join("");
     const valid = A.drivers.filter(d => d.status === "Valid").length;
@@ -390,15 +391,15 @@
     el.innerHTML = A.inspections.map(i => {
       const resBadge = i.result === "All OK" ? "badge-operational" : "badge-not-operational";
       const actions = i.review === "Pending"
-        ? '<button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button> ' +
-          '<button class="btn btn-sm bg-navy text-white fw-medium" data-bs-toggle="modal" data-bs-target="#reviewInspectionModal">Review</button>'
-        : '<button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>';
+        ? '<button class="btn btn-sm btn-light border w-100" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>' +
+          '<button class="btn btn-sm btn-danger fw-medium w-100" data-bs-toggle="modal" data-bs-target="#reviewInspectionModal">Review &amp; Assess</button>'
+        : '<button class="btn btn-sm btn-light border w-100" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>';
       return '<tr><td><div class="fw-bold text-dark">' + i.date + '</div><div class="small text-secondary">' + i.time + '</div></td>' +
         '<td><div class="fw-bold text-dark">' + i.plate + '</div><div class="small text-secondary">' + i.driver + '</div></td>' +
         '<td><span class="badge ' + resBadge + ' px-3 py-2 rounded-pill">' + i.result + '</span></td>' +
         '<td class="text-secondary">' + (i.remarks === "None" ? '<em class="small">None</em>' : esc(i.remarks)) + '</td>' +
         '<td><span class="badge ' + REVIEW_BADGE[i.review] + ' px-3 py-2 rounded-pill">' + i.review + '</span></td>' +
-        '<td class="text-end">' + actions + '</td></tr>';
+        '<td class="text-end"><div class="d-inline-flex flex-column gap-2" style="min-width:150px;">' + actions + '</div></td></tr>';
     }).join("");
     setText(".js-insp-pending", A.inspections.filter(i => i.review === "Pending").length + " Pending Review");
   }
@@ -411,7 +412,7 @@
         ? '<button class="btn btn-sm btn-light border"><i class="bi bi-image text-primary me-1"></i> View</button>'
         : '<em class="text-secondary small">None</em>';
       const actions = d.review === "Pending"
-        ? '<button class="btn btn-sm btn-danger fw-medium" data-bs-toggle="modal" data-bs-target="#reviewDamageModal">Review &amp; Assess</button>'
+        ? '<div class="d-inline-flex flex-column gap-2" style="min-width:150px;"><button class="btn btn-sm btn-danger fw-medium w-100" data-bs-toggle="modal" data-bs-target="#reviewDamageModal">Review &amp; Assess</button></div>'
         : '<em class="text-secondary small">Resolved — see Repair Logs</em>';
       return '<tr><td><div class="fw-bold text-dark">' + d.date + '</div><div class="small text-secondary">' + d.time + '</div></td>' +
         '<td><div class="fw-bold text-dark">' + d.plate + '</div><div class="small text-secondary">' + d.driver + '</div></td>' +
@@ -600,6 +601,30 @@
       const d = rowData(ev); if (!d) return;
       setVal("#edName", d.name); setVal("#edEmail", d.email); setVal("#edLicense", d.license);
     });
+    const lic = document.getElementById("updateLicenseModal");
+    if (lic) {
+      const newDate = document.getElementById("ulNewExpiry");
+      const result = document.getElementById("ulResult");
+      const computeStatus = str => {
+        if (!str) return null;
+        const days = (new Date(str) - new Date()) / 86400000;
+        return days < 0 ? "Expired" : days <= 60 ? "Expiring Soon" : "Valid";
+      };
+      const showResult = () => {
+        const st = computeStatus(newDate.value);
+        if (!st) { result.textContent = "—"; result.className = "fw-bold"; return; }
+        result.textContent = st;
+        result.className = "fw-bold text-" + LIC[st];
+      };
+      lic.addEventListener("show.bs.modal", ev => {
+        const d = rowData(ev); if (!d) return;
+        setText("#ulName", d.name); setText("#ulLicense", d.license); setVal("#ulCurrentExpiry", d.expiry);
+        const b = document.getElementById("ulCurrentBadge");
+        if (b) { b.className = "badge bg-" + LIC[d.status] + " bg-opacity-10 text-" + LIC[d.status] + " px-3 py-2 rounded-pill"; b.textContent = d.status; }
+        newDate.value = ""; showResult();
+      });
+      newDate.addEventListener("input", showResult);
+    }
   }
 
   /* ------------------------------ utils -------------------------------- */

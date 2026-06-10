@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="CHO logo">
-  <circle cx="50" cy="50" r="48" fill="#0F766E"/>
-  <circle cx="50" cy="50" r="48" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.35"/>
-  <path d="M44 28h12v10h10v12H56v10H44V50H34V38h10z" fill="#ffffff" opacity="0.92"/>
-  <text x="50" y="84" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#ffffff">CHO</text>
-</svg>
