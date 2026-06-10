@@ -65,16 +65,16 @@
             <!-- Topbar -->
             <header class="topbar">
                 <div class="d-flex align-items-center gap-3">
-                    <span class="badge bg-light text-dark border px-3 py-2 fs-6">Bureau of Fire Protection</span>
+                    <span class="badge bg-light text-dark border px-3 py-2 fs-6 js-agency-badge">Bureau of Fire Protection</span>
                 </div>
                 
                 <div class="d-flex align-items-center gap-3">
                     <div class="dropdown me-2">
                         <div class="position-relative" role="button" data-bs-toggle="dropdown" aria-label="Notifications">
                             <i class="bi bi-bell fs-5 text-secondary"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">5</span>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger js-bell-count" style="font-size: 0.6rem;">5</span>
                         </div>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-0 notif-dropdown">
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-0 notif-dropdown js-bell-list">
                             <li class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
                                 <h6 class="mb-0 fw-bold small">Notifications</h6>
                                 <span class="badge bg-danger rounded-pill">5 new</span>
@@ -152,7 +152,7 @@
                 <!-- Tabs -->
                 <ul class="nav nav-tabs mb-4" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active fw-bold text-dark" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab">Active Schedules <span class="badge bg-secondary ms-1">3</span></button>
+                        <button class="nav-link active fw-bold text-dark" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab">Active Schedules <span class="badge bg-secondary ms-1 js-pm-active-count">3</span></button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link text-secondary" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">Completed Records</button>
@@ -178,7 +178,7 @@
                                     <th class="py-3 text-secondary fw-semibold small text-end">ACTIONS</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="rows-pm-active">
                                 <!-- Due -->
                                 <tr>
                                     <td>
@@ -269,7 +269,7 @@
                                         <th class="py-3 text-secondary fw-semibold small">STATUS</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="rows-pm-completed">
                                     <tr>
                                         <td>
                                             <div class="fw-bold text-dark">GHI-6754</div>
@@ -315,7 +315,7 @@
                     <form>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Vehicle</label>
-                            <select class="form-select">
+                            <select class="form-select js-vehicle-options">
                                 <option>ABC-1234 (Fire Truck)</option>
                                 <option>BCD-2310 (Fire Truck)</option>
                                 <option>CDE-3421 (Rescue Van)</option>
@@ -453,5 +453,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/agency.js"></script>
 </body>
 </html>
