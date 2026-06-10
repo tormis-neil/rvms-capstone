@@ -184,6 +184,31 @@ body {
     flex-shrink: 0;
 }
 
+/* Repair Logs table — extra breathing room (more columns) */
+.repairs-table > :not(caption) > * > * {
+    padding-top: 0.9rem;
+    padding-bottom: 0.9rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    vertical-align: middle;
+}
+
+/* Agency logo (sidebar + topbar) */
+.agency-logo-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #fff;
+}
+
+.agency-badge-logo {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
 /* Badges */
 .badge-operational {
     background-color: rgba(22, 163, 74, 0.1);

@@ -180,7 +180,7 @@
                             </thead>
                             <tbody>
                                 <!-- Due -->
-                                <tr class="table-danger bg-opacity-10">
+                                <tr>
                                     <td>
                                         <div class="fw-bold">EFG-4532</div>
                                         <div class="small text-secondary">Water Tanker</div>
@@ -199,11 +199,11 @@
                                         <span class="badge bg-danger px-3 py-2 rounded-pill">Due</span>
                                     </td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-danger fw-medium" data-bs-toggle="modal" data-bs-target="#markCompletedModal">Mark Completed</button>
+                                        <button class="btn btn-sm btn-success fw-medium" data-bs-toggle="modal" data-bs-target="#markCompletedModal">Mark Completed</button>
                                     </td>
                                 </tr>
                                 <!-- Due Soon -->
-                                <tr class="table-warning bg-opacity-10">
+                                <tr>
                                     <td>
                                         <div class="fw-bold">ABC-1234</div>
                                         <div class="small text-secondary">Fire Truck</div>
@@ -222,7 +222,7 @@
                                         <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">Due Soon</span>
                                     </td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-warning text-dark fw-medium border-warning" data-bs-toggle="modal" data-bs-target="#markCompletedModal">Mark Completed</button>
+                                        <button class="btn btn-sm btn-success fw-medium" data-bs-toggle="modal" data-bs-target="#markCompletedModal">Mark Completed</button>
                                     </td>
                                 </tr>
                                 <!-- Scheduled -->
@@ -411,9 +411,9 @@
     <div class="modal fade" id="editPmModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-light">
+                <div class="modal-header bg-navy text-white">
                     <h5 class="modal-title fw-bold">Edit PM Schedule</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <form>
@@ -446,7 +446,7 @@
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Save Changes</button>
+                    <button type="button" class="btn btn-navy bg-navy text-white" data-bs-dismiss="modal">Save Changes</button>
                 </div>
             </div>
         </div>
