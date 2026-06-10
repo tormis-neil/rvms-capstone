@@ -65,16 +65,16 @@
             <!-- Topbar -->
             <header class="topbar">
                 <div class="d-flex align-items-center gap-3">
-                    <span class="badge bg-light text-dark border px-3 py-2 fs-6">Bureau of Fire Protection</span>
+                    <span class="badge bg-light text-dark border px-3 py-2 fs-6 js-agency-badge">Bureau of Fire Protection</span>
                 </div>
                 
                 <div class="d-flex align-items-center gap-3">
                     <div class="dropdown me-2">
                         <div class="position-relative" role="button" data-bs-toggle="dropdown" aria-label="Notifications">
                             <i class="bi bi-bell fs-5 text-secondary"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">5</span>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger js-bell-count" style="font-size: 0.6rem;">5</span>
                         </div>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-0 notif-dropdown">
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-0 notif-dropdown js-bell-list">
                             <li class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
                                 <h6 class="mb-0 fw-bold small">Notifications</h6>
                                 <span class="badge bg-danger rounded-pill">5 new</span>
@@ -152,7 +152,7 @@
                 <!-- Active Missions Alert -->
                 <div class="alert alert-primary border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
                     <i class="bi bi-broadcast fs-4 me-3"></i>
-                    <div>
+                    <div class="js-dispatch-alert">
                         <strong>Active Monitoring:</strong> There is currently <strong>1</strong> vehicle deployed in the field.
                     </div>
                 </div>
@@ -171,9 +171,9 @@
                                     <th class="py-3 text-secondary fw-semibold small text-end">ACTIONS</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="rows-dispatch">
                                 <!-- Active Dispatch -->
-                                <tr class="table-primary bg-opacity-10">
+                                <tr>
                                     <td>
                                         <div class="fw-bold">Fire Response</div>
                                         <div class="small text-secondary"><i class="bi bi-geo-alt me-1"></i>Brgy. Obrero, Calbayog</div>
@@ -190,10 +190,10 @@
                                         <em class="text-secondary small">--</em>
                                     </td>
                                     <td>
-                                        <span class="badge bg-primary px-3 py-2 rounded-pill"><span class="spinner-grow spinner-grow-sm me-2" style="width: 10px; height: 10px;"></span>Active</span>
+                                        <span class="badge bg-primary px-3 py-2 rounded-pill">Active</span>
                                     </td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-primary fw-medium" data-bs-toggle="modal" data-bs-target="#closeDispatchModal">Close Dispatch</button>
+                                        <button class="btn btn-sm btn-primary fw-medium" data-bs-toggle="modal" data-bs-target="#closeDispatchModal">Close Dispatch</button>
                                     </td>
                                 </tr>
                                 <!-- Completed Dispatch -->
@@ -398,5 +398,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/agency.js"></script>
 </body>
 </html>
