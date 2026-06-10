@@ -69,9 +69,58 @@
                 </div>
 
                 <div class="d-flex align-items-center gap-3">
-                    <div class="position-relative me-2" role="button">
-                        <i class="bi bi-bell fs-5 text-secondary"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                    <div class="dropdown me-2">
+                        <div class="position-relative" role="button" data-bs-toggle="dropdown" aria-label="Notifications">
+                            <i class="bi bi-bell fs-5 text-secondary"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">5</span>
+                        </div>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-0 notif-dropdown">
+                            <li class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                                <h6 class="mb-0 fw-bold small">Notifications</h6>
+                                <span class="badge bg-danger rounded-pill">5 new</span>
+                            </li>
+                            <li><a class="dropdown-item notif-item d-flex align-items-start gap-2 py-2 border-bottom" href="inspections-damage.html">
+                                <span class="notif-icon rounded-circle bg-danger bg-opacity-10 text-danger d-inline-flex justify-content-center align-items-center"><i class="bi bi-exclamation-triangle"></i></span>
+                                <span>
+                                    <span class="small fw-bold d-block">New Damage Report Submitted</span>
+                                    <span class="small text-secondary d-block">ABC-1234 &mdash; Cracked side mirror (driver side).</span>
+                                    <span class="text-secondary d-block" style="font-size: 0.7rem;">Today, 8:10 AM</span>
+                                </span>
+                            </a></li>
+                            <li><a class="dropdown-item notif-item d-flex align-items-start gap-2 py-2 border-bottom" href="inspections-damage.html">
+                                <span class="notif-icon rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex justify-content-center align-items-center"><i class="bi bi-clipboard-check"></i></span>
+                                <span>
+                                    <span class="small fw-bold d-block">Daily Inspection Submitted</span>
+                                    <span class="small text-secondary d-block">BCD-2310 &mdash; 1 item flagged: low tire pressure.</span>
+                                    <span class="text-secondary d-block" style="font-size: 0.7rem;">Today, 7:05 AM</span>
+                                </span>
+                            </a></li>
+                            <li><a class="dropdown-item notif-item d-flex align-items-start gap-2 py-2 border-bottom" href="inspections-damage.html">
+                                <span class="notif-icon rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex justify-content-center align-items-center"><i class="bi bi-clipboard-check"></i></span>
+                                <span>
+                                    <span class="small fw-bold d-block">Daily Inspection Submitted</span>
+                                    <span class="small text-secondary d-block">GHI-6754 &mdash; All items OK.</span>
+                                    <span class="text-secondary d-block" style="font-size: 0.7rem;">Today, 6:50 AM</span>
+                                </span>
+                            </a></li>
+                            <li><a class="dropdown-item notif-item d-flex align-items-start gap-2 py-2 border-bottom" href="drivers.html">
+                                <span class="notif-icon rounded-circle bg-warning bg-opacity-10 text-warning d-inline-flex justify-content-center align-items-center"><i class="bi bi-person-badge"></i></span>
+                                <span>
+                                    <span class="small fw-bold d-block">License Expiring Soon</span>
+                                    <span class="small text-secondary d-block">Ricardo Bautista &mdash; expires Jul 8, 2026.</span>
+                                    <span class="text-secondary d-block" style="font-size: 0.7rem;">Yesterday, 9:00 AM</span>
+                                </span>
+                            </a></li>
+                            <li><a class="dropdown-item notif-item d-flex align-items-start gap-2 py-2 border-bottom" href="pm.html">
+                                <span class="notif-icon rounded-circle bg-warning bg-opacity-10 text-warning d-inline-flex justify-content-center align-items-center"><i class="bi bi-wrench-adjustable"></i></span>
+                                <span>
+                                    <span class="small fw-bold d-block">PM Due</span>
+                                    <span class="small text-secondary d-block">EFG-4532 &mdash; engine service has reached its due mileage.</span>
+                                    <span class="text-secondary d-block" style="font-size: 0.7rem;">Yesterday, 8:00 AM</span>
+                                </span>
+                            </a></li>
+                            <li><a class="dropdown-item text-center small text-primary fw-semibold py-2" href="notifications.html">View All Notifications</a></li>
+                        </ul>
                     </div>
                     <div class="dropdown">
                         <a href="#" class="d-flex align-items-center text-decoration-none text-dark dropdown-toggle" data-bs-toggle="dropdown">
@@ -105,7 +154,7 @@
                     <i class="bi bi-info-circle text-primary fs-5 me-3"></i>
                     <div class="small text-secondary">
                         Repair logs are saved permanently to the vehicle's maintenance history.
-                        The vehicle's operational status is updated <strong>separately</strong> in Vehicle Management after repair.
+                        The vehicle's operational status is updated <strong>separately</strong> after repair &mdash; use the <strong>Update Vehicle Status</strong> action on each log entry.
                     </div>
                 </div>
 
@@ -152,6 +201,7 @@
                                     <th class="py-3 text-secondary fw-semibold small">COST</th>
                                     <th class="py-3 text-secondary fw-semibold small">REPAIR SOURCE</th>
                                     <th class="py-3 text-secondary fw-semibold small">REMARKS</th>
+                                    <th class="py-3 text-secondary fw-semibold small text-end">VEHICLE STATUS</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -166,6 +216,12 @@
                                     <td><em class="text-secondary small">—</em></td>
                                     <td><span class="badge bg-light text-dark border">External Repair Shop</span></td>
                                     <td class="small text-secondary">Overhaul required; vehicle remains Not Operational</td>
+                                    <td class="text-end">
+                                        <div class="d-flex align-items-center justify-content-end gap-2">
+                                            <span class="badge badge-not-operational px-3 py-2 rounded-pill">Not Operational</span>
+                                            <button class="btn btn-sm btn-light border" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                        </div>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td class="fw-medium">May 30, 2026</td>
@@ -178,6 +234,12 @@
                                     <td>₱4,800</td>
                                     <td><span class="badge bg-light text-dark border">Internal Office</span></td>
                                     <td class="small text-secondary">From damage report dated May 28; resolved</td>
+                                    <td class="text-end">
+                                        <div class="d-flex align-items-center justify-content-end gap-2">
+                                            <span class="badge badge-operational px-3 py-2 rounded-pill">Operational</span>
+                                            <button class="btn btn-sm btn-light border" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                        </div>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td class="fw-medium">May 22, 2026</td>
@@ -190,6 +252,12 @@
                                     <td>₱2,500</td>
                                     <td><span class="badge bg-light text-dark border">GSO Motorpool</span></td>
                                     <td class="small text-secondary">Cooling restored after medical transport run</td>
+                                    <td class="text-end">
+                                        <div class="d-flex align-items-center justify-content-end gap-2">
+                                            <span class="badge badge-operational px-3 py-2 rounded-pill">Operational</span>
+                                            <button class="btn btn-sm btn-light border" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                        </div>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td class="fw-medium">May 16, 2026</td>
@@ -202,6 +270,12 @@
                                     <td>₱350</td>
                                     <td><span class="badge bg-light text-dark border">Internal Office</span></td>
                                     <td class="small text-secondary">From damage report dated May 15; resolved</td>
+                                    <td class="text-end">
+                                        <div class="d-flex align-items-center justify-content-end gap-2">
+                                            <span class="badge badge-operational px-3 py-2 rounded-pill">Operational</span>
+                                            <button class="btn btn-sm btn-light border" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                        </div>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -277,13 +351,53 @@
                         </div>
                         <div class="form-text">
                             <i class="bi bi-info-circle me-1"></i>Saving this log does not change the vehicle's status.
-                            Update the operational status separately in Vehicle Management.
+                            After saving, use <strong>Update Vehicle Status</strong> in the log table (or Vehicle Management) as a separate step.
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-navy bg-navy text-white" data-bs-dismiss="modal">Save Repair Log</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Vehicle Status Modal -->
+    <div class="modal fade" id="updateStatusModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-navy text-white">
+                    <h5 class="modal-title fw-bold">Update Vehicle Status</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-4">
+                        <div>
+                            <div class="fw-bold">FGH-5643 (Service Vehicle)</div>
+                            <div class="small text-secondary">Ramon Cruz &middot; Last repair: Jun 6, 2026</div>
+                        </div>
+                        <span class="badge badge-not-operational px-3 py-2 rounded-pill">Not Operational</span>
+                    </div>
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">New Operational Status</label>
+                            <select class="form-select">
+                                <option>Operational (repair completed)</option>
+                                <option selected>Not Operational (repair still ongoing)</option>
+                                <option>Under Preventive Maintenance (follow-up maintenance needed)</option>
+                            </select>
+                            <div class="form-text">Dispatched status is set automatically by the Dispatch module and cannot be assigned here.</div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold">Remarks (Optional)</label>
+                            <textarea class="form-control" rows="2" placeholder="Reason for the status change..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn bg-navy text-white" data-bs-dismiss="modal">Update Status</button>
                 </div>
             </div>
         </div>

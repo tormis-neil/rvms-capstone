@@ -69,9 +69,58 @@
                 </div>
                 
                 <div class="d-flex align-items-center gap-3">
-                    <div class="position-relative me-2" role="button">
-                        <i class="bi bi-bell fs-5 text-secondary"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                    <div class="dropdown me-2">
+                        <div class="position-relative" role="button" data-bs-toggle="dropdown" aria-label="Notifications">
+                            <i class="bi bi-bell fs-5 text-secondary"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">5</span>
+                        </div>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-0 notif-dropdown">
+                            <li class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                                <h6 class="mb-0 fw-bold small">Notifications</h6>
+                                <span class="badge bg-danger rounded-pill">5 new</span>
+                            </li>
+                            <li><a class="dropdown-item notif-item d-flex align-items-start gap-2 py-2 border-bottom" href="inspections-damage.html">
+                                <span class="notif-icon rounded-circle bg-danger bg-opacity-10 text-danger d-inline-flex justify-content-center align-items-center"><i class="bi bi-exclamation-triangle"></i></span>
+                                <span>
+                                    <span class="small fw-bold d-block">New Damage Report Submitted</span>
+                                    <span class="small text-secondary d-block">ABC-1234 &mdash; Cracked side mirror (driver side).</span>
+                                    <span class="text-secondary d-block" style="font-size: 0.7rem;">Today, 8:10 AM</span>
+                                </span>
+                            </a></li>
+                            <li><a class="dropdown-item notif-item d-flex align-items-start gap-2 py-2 border-bottom" href="inspections-damage.html">
+                                <span class="notif-icon rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex justify-content-center align-items-center"><i class="bi bi-clipboard-check"></i></span>
+                                <span>
+                                    <span class="small fw-bold d-block">Daily Inspection Submitted</span>
+                                    <span class="small text-secondary d-block">BCD-2310 &mdash; 1 item flagged: low tire pressure.</span>
+                                    <span class="text-secondary d-block" style="font-size: 0.7rem;">Today, 7:05 AM</span>
+                                </span>
+                            </a></li>
+                            <li><a class="dropdown-item notif-item d-flex align-items-start gap-2 py-2 border-bottom" href="inspections-damage.html">
+                                <span class="notif-icon rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex justify-content-center align-items-center"><i class="bi bi-clipboard-check"></i></span>
+                                <span>
+                                    <span class="small fw-bold d-block">Daily Inspection Submitted</span>
+                                    <span class="small text-secondary d-block">GHI-6754 &mdash; All items OK.</span>
+                                    <span class="text-secondary d-block" style="font-size: 0.7rem;">Today, 6:50 AM</span>
+                                </span>
+                            </a></li>
+                            <li><a class="dropdown-item notif-item d-flex align-items-start gap-2 py-2 border-bottom" href="drivers.html">
+                                <span class="notif-icon rounded-circle bg-warning bg-opacity-10 text-warning d-inline-flex justify-content-center align-items-center"><i class="bi bi-person-badge"></i></span>
+                                <span>
+                                    <span class="small fw-bold d-block">License Expiring Soon</span>
+                                    <span class="small text-secondary d-block">Ricardo Bautista &mdash; expires Jul 8, 2026.</span>
+                                    <span class="text-secondary d-block" style="font-size: 0.7rem;">Yesterday, 9:00 AM</span>
+                                </span>
+                            </a></li>
+                            <li><a class="dropdown-item notif-item d-flex align-items-start gap-2 py-2 border-bottom" href="pm.html">
+                                <span class="notif-icon rounded-circle bg-warning bg-opacity-10 text-warning d-inline-flex justify-content-center align-items-center"><i class="bi bi-wrench-adjustable"></i></span>
+                                <span>
+                                    <span class="small fw-bold d-block">PM Due</span>
+                                    <span class="small text-secondary d-block">EFG-4532 &mdash; engine service has reached its due mileage.</span>
+                                    <span class="text-secondary d-block" style="font-size: 0.7rem;">Yesterday, 8:00 AM</span>
+                                </span>
+                            </a></li>
+                            <li><a class="dropdown-item text-center small text-primary fw-semibold py-2" href="notifications.html">View All Notifications</a></li>
+                        </ul>
                     </div>
                     <div class="dropdown">
                         <a href="#" class="d-flex align-items-center text-decoration-none text-dark dropdown-toggle" data-bs-toggle="dropdown">
@@ -98,7 +147,10 @@
                 </div>
 
                 <!-- Daily Inspections Section -->
-                <h5 class="fw-bold mb-3"><i class="bi bi-card-checklist me-2"></i>Daily BLOWBAGETS Inspections</h5>
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-card-checklist me-2"></i>Daily BLOWBAGETS Inspections</h5>
+                    <span class="badge badge-dispatched rounded-pill px-3 py-2">2 Pending Review</span>
+                </div>
                 <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-5">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
@@ -106,8 +158,9 @@
                                 <tr>
                                     <th class="py-3 text-secondary fw-semibold small">DATE SUBMITTED</th>
                                     <th class="py-3 text-secondary fw-semibold small">VEHICLE & DRIVER</th>
-                                    <th class="py-3 text-secondary fw-semibold small">STATUS</th>
+                                    <th class="py-3 text-secondary fw-semibold small">RESULT</th>
                                     <th class="py-3 text-secondary fw-semibold small">REMARKS</th>
+                                    <th class="py-3 text-secondary fw-semibold small">REVIEW STATUS</th>
                                     <th class="py-3 text-secondary fw-semibold small text-end">ACTIONS</th>
                                 </tr>
                             </thead>
@@ -123,7 +176,11 @@
                                     </td>
                                     <td><span class="badge badge-operational px-3 py-2 rounded-pill">All OK</span></td>
                                     <td class="text-secondary"><em class="small">None</em></td>
-                                    <td class="text-end"><button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button></td>
+                                    <td><span class="badge badge-dispatched px-3 py-2 rounded-pill">Pending</span></td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>
+                                        <button class="btn btn-sm bg-navy text-white fw-medium" data-bs-toggle="modal" data-bs-target="#reviewInspectionModal">Review</button>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>
@@ -136,7 +193,11 @@
                                     </td>
                                     <td><span class="badge badge-not-operational px-3 py-2 rounded-pill">Has Issue</span></td>
                                     <td class="text-secondary">Low tire pressure (front right)</td>
-                                    <td class="text-end"><button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button></td>
+                                    <td><span class="badge badge-dispatched px-3 py-2 rounded-pill">Pending</span></td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>
+                                        <button class="btn btn-sm bg-navy text-white fw-medium" data-bs-toggle="modal" data-bs-target="#reviewInspectionModal">Review</button>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>
@@ -149,7 +210,10 @@
                                     </td>
                                     <td><span class="badge badge-operational px-3 py-2 rounded-pill">All OK</span></td>
                                     <td class="text-secondary"><em class="small">None</em></td>
-                                    <td class="text-end"><button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button></td>
+                                    <td><span class="badge badge-operational px-3 py-2 rounded-pill">Reviewed</span></td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>
@@ -162,7 +226,10 @@
                                     </td>
                                     <td><span class="badge badge-not-operational px-3 py-2 rounded-pill">Has Issue</span></td>
                                     <td class="text-secondary">Brakes — unusual noise during braking</td>
-                                    <td class="text-end"><button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button></td>
+                                    <td><span class="badge badge-operational px-3 py-2 rounded-pill">Reviewed</span></td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -170,7 +237,10 @@
                 </div>
 
                 <!-- Damage Reports Section -->
-                <h5 class="fw-bold mb-3 mt-5"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Damage Reports</h5>
+                <div class="d-flex align-items-center gap-2 mb-3 mt-5">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Damage Reports</h5>
+                    <span class="badge badge-dispatched rounded-pill px-3 py-2">2 Pending Review</span>
+                </div>
 
                 <!-- Damage Table -->
                 <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
@@ -183,11 +253,12 @@
                                     <th class="py-3 text-secondary fw-semibold small w-25">NATURE OF DAMAGE</th>
                                     <th class="py-3 text-secondary fw-semibold small">SUSPECTED PARTS</th>
                                     <th class="py-3 text-secondary fw-semibold small">ATTACHMENT</th>
+                                    <th class="py-3 text-secondary fw-semibold small">REVIEW STATUS</th>
                                     <th class="py-3 text-secondary fw-semibold small text-end">ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr class="table-danger bg-opacity-10 border-start border-4 border-danger">
+                                <tr>
                                     <td>
                                         <div class="fw-bold text-dark">Today</div>
                                         <div class="small text-secondary">08:10 AM</div>
@@ -203,11 +274,12 @@
                                     <td>
                                         <button class="btn btn-sm btn-light border"><i class="bi bi-image text-primary me-1"></i> View</button>
                                     </td>
+                                    <td><span class="badge badge-dispatched px-3 py-2 rounded-pill">Pending</span></td>
                                     <td class="text-end">
                                         <button class="btn btn-sm btn-danger fw-medium" data-bs-toggle="modal" data-bs-target="#reviewDamageModal">Review & Assess</button>
                                     </td>
                                 </tr>
-                                <tr class="table-danger bg-opacity-10 border-start border-4 border-danger">
+                                <tr>
                                     <td>
                                         <div class="fw-bold text-dark">Yesterday</div>
                                         <div class="small text-secondary">04:45 PM</div>
@@ -223,6 +295,7 @@
                                     <td>
                                         <em class="text-secondary small">None</em>
                                     </td>
+                                    <td><span class="badge badge-dispatched px-3 py-2 rounded-pill">Pending</span></td>
                                     <td class="text-end">
                                         <button class="btn btn-sm btn-danger fw-medium" data-bs-toggle="modal" data-bs-target="#reviewDamageModal">Review & Assess</button>
                                     </td>
@@ -243,8 +316,9 @@
                                     <td>
                                         <em class="text-secondary small">None</em>
                                     </td>
+                                    <td><span class="badge badge-operational px-3 py-2 rounded-pill">Reviewed</span></td>
                                     <td class="text-end">
-                                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Reviewed</span>
+                                        <em class="text-secondary small">Resolved — see Repair Logs</em>
                                     </td>
                                 </tr>
                             </tbody>
@@ -298,6 +372,46 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Inspection Modal -->
+    <div class="modal fade" id="reviewInspectionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-navy text-white">
+                    <h5 class="modal-title fw-bold">Review Inspection</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-4">
+                        <div>
+                            <div class="fw-bold">BCD-2310 (Fire Truck)</div>
+                            <div class="small text-secondary">Ricardo Bautista &middot; Today, 07:05 AM</div>
+                        </div>
+                        <span class="badge badge-not-operational px-3 py-2 rounded-pill">Has Issue</span>
+                    </div>
+                    <p class="text-secondary small mb-4">Evaluate the findings, update the vehicle's operational status if action is required, and mark the inspection as Reviewed.</p>
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Vehicle Status</label>
+                            <select class="form-select">
+                                <option>Leave as Operational (no action needed)</option>
+                                <option>Not Operational (unsafe for deployment)</option>
+                                <option>Under Preventive Maintenance (maintenance required)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Admin Remarks (Optional)</label>
+                            <textarea class="form-control" rows="3" placeholder="Enter review notes..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn bg-navy text-white" data-bs-dismiss="modal">Mark Reviewed & Update Status</button>
                 </div>
             </div>
         </div>

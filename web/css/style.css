@@ -169,6 +169,21 @@ body {
     transform: translateY(-2px);
 }
 
+/* Notification Bell */
+.notif-dropdown {
+    width: 340px;
+}
+
+.notif-item {
+    white-space: normal;
+}
+
+.notif-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+}
+
 /* Badges */
 .badge-operational {
     background-color: rgba(22, 163, 74, 0.1);
