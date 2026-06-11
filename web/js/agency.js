@@ -394,7 +394,8 @@
         ? '<button class="btn btn-sm btn-light border w-100" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>' +
           '<button class="btn btn-sm btn-danger fw-medium w-100" data-bs-toggle="modal" data-bs-target="#reviewInspectionModal">Review &amp; Assess</button>'
         : '<button class="btn btn-sm btn-light border w-100" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>';
-      return '<tr><td><div class="fw-bold text-dark">' + i.date + '</div><div class="small text-secondary">' + i.time + '</div></td>' +
+      return '<tr data-plate="' + i.plate + '" data-type="' + vtypeOf(i.plate) + '" data-driver="' + esc(i.driver) + '" data-when="' + i.date + ', ' + i.time + '" data-result="' + i.result + '" data-remarks="' + esc(i.remarks) + '">' +
+        '<td><div class="fw-bold text-dark">' + i.date + '</div><div class="small text-secondary">' + i.time + '</div></td>' +
         '<td><div class="fw-bold text-dark">' + i.plate + '</div><div class="small text-secondary">' + i.driver + '</div></td>' +
         '<td><span class="badge ' + resBadge + ' px-3 py-2 rounded-pill">' + i.result + '</span></td>' +
         '<td class="text-secondary">' + (i.remarks === "None" ? '<em class="small">None</em>' : esc(i.remarks)) + '</td>' +
@@ -414,7 +415,8 @@
       const actions = d.review === "Pending"
         ? '<div class="d-inline-flex flex-column gap-2" style="min-width:150px;"><button class="btn btn-sm btn-danger fw-medium w-100" data-bs-toggle="modal" data-bs-target="#reviewDamageModal">Review &amp; Assess</button></div>'
         : '<em class="text-secondary small">Resolved — see Repair Logs</em>';
-      return '<tr><td><div class="fw-bold text-dark">' + d.date + '</div><div class="small text-secondary">' + d.time + '</div></td>' +
+      return '<tr data-plate="' + d.plate + '" data-type="' + vtypeOf(d.plate) + '" data-driver="' + esc(d.driver) + '" data-when="' + d.date + ', ' + d.time + '" data-nature="' + esc(d.nature) + '" data-parts="' + esc(d.parts) + '" data-attachment="' + d.attachment + '">' +
+        '<td><div class="fw-bold text-dark">' + d.date + '</div><div class="small text-secondary">' + d.time + '</div></td>' +
         '<td><div class="fw-bold text-dark">' + d.plate + '</div><div class="small text-secondary">' + d.driver + '</div></td>' +
         '<td><div class="fw-medium text-dark text-truncate" style="max-width:250px;">' + esc(d.nature) + '</div></td>' +
         '<td class="text-secondary">' + esc(d.parts) + '</td>' +
@@ -472,13 +474,16 @@
       const statusBadge = d.status === "Active"
         ? '<span class="badge bg-primary px-3 py-2 rounded-pill">Active</span>'
         : '<span class="badge bg-secondary px-3 py-2 rounded-pill">Completed</span>';
-      const action = d.status === "Active"
+      const editBtn = '<button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDispatchModal"><i class="bi bi-pencil"></i></button>';
+      const mainBtn = d.status === "Active"
         ? '<button class="btn btn-sm btn-primary fw-medium" data-bs-toggle="modal" data-bs-target="#closeDispatchModal">Close Dispatch</button>'
-        : '<button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewDispatchModal"><i class="bi bi-eye"></i></button>';
-      return '<tr><td><div class="fw-bold text-dark">' + esc(d.mission) + '</div><div class="small text-secondary"><i class="bi bi-geo-alt me-1"></i>' + esc(d.location) + '</div></td>' +
+        : '<button class="btn btn-sm btn-light border" title="View" data-bs-toggle="modal" data-bs-target="#viewDispatchModal"><i class="bi bi-eye"></i></button>';
+      return '<tr data-mission="' + esc(d.mission) + '" data-location="' + esc(d.location) + '" data-plate="' + d.plate + '" data-type="' + vtypeOf(d.plate) + '" data-driver="' + esc(d.driver) + '" data-out="' + d.out[0] + ', ' + d.out[1] + '" data-in="' + (d.in ? d.in[0] + ', ' + d.in[1] : '') + '" data-status="' + d.status + '">' +
+        '<td><div class="fw-bold text-dark">' + esc(d.mission) + '</div><div class="small text-secondary"><i class="bi bi-geo-alt me-1"></i>' + esc(d.location) + '</div></td>' +
         '<td><div class="fw-semibold text-dark">' + d.plate + '</div><div class="small text-secondary">' + d.driver + '</div></td>' +
         '<td><div class="fw-medium text-dark">' + d.out[0] + '</div><div class="small text-secondary">' + d.out[1] + '</div></td>' +
-        '<td>' + timeIn + '</td><td>' + statusBadge + '</td><td class="text-end">' + action + '</td></tr>';
+        '<td>' + timeIn + '</td><td>' + statusBadge + '</td>' +
+        '<td class="text-end"><div class="d-inline-flex gap-2 justify-content-end">' + editBtn + mainBtn + '</div></td></tr>';
     }).join("");
     const active = A.dispatch.filter(d => d.status === "Active").length;
     const alert = document.querySelector(".js-dispatch-alert");
@@ -489,15 +494,17 @@
     const el = document.getElementById("rows-repairs");
     if (!el) return;
     el.innerHTML = A.repairs.map(r =>
-      '<tr><td class="fw-medium">' + r.date + '</td>' +
+      '<tr data-date="' + r.date + '" data-plate="' + r.plate + '" data-type="' + vtypeOf(r.plate) + '" data-driver="' + esc(r.driver) + '" data-scope="' + esc(r.scope) + '" data-parts="' + esc(r.parts) + '" data-cost="' + r.cost + '" data-source="' + r.source + '" data-remarks="' + esc(r.remarks) + '" data-vstatus="' + r.vstatus + '" data-badge="' + STATUS_BADGE[r.vstatus] + '">' +
+      '<td class="fw-medium">' + r.date + '</td>' +
       '<td><div class="fw-bold">' + r.plate + '</div><div class="small text-secondary">' + r.driver + '</div></td>' +
       '<td>' + esc(r.scope) + '</td>' +
       '<td>' + (r.parts.startsWith("None") ? '<em class="text-secondary small">' + esc(r.parts) + '</em>' : esc(r.parts)) + '</td>' +
       '<td>' + (r.cost === "—" ? '<em class="text-secondary small">—</em>' : r.cost) + '</td>' +
       '<td><span class="badge bg-light text-dark border">' + r.source + '</span></td>' +
       '<td class="small text-secondary">' + esc(r.remarks) + '</td>' +
-      '<td class="text-end"><div class="d-flex align-items-center justify-content-end gap-2">' +
-      '<span class="badge ' + STATUS_BADGE[r.vstatus] + ' px-3 py-2 rounded-pill">' + r.vstatus + '</span>' +
+      '<td><span class="badge ' + STATUS_BADGE[r.vstatus] + ' px-3 py-2 rounded-pill">' + r.vstatus + '</span></td>' +
+      '<td class="text-end"><div class="d-inline-flex gap-2 justify-content-end">' +
+      '<button class="btn btn-sm btn-light border" title="Edit Log" data-bs-toggle="modal" data-bs-target="#editRepairModal"><i class="bi bi-pencil"></i></button>' +
       '<button class="btn btn-sm btn-light border" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>' +
       '</div></td></tr>'
     ).join("");
@@ -624,7 +631,85 @@
         newDate.value = ""; showResult();
       });
       newDate.addEventListener("input", showResult);
+      const addYears = y => {
+        const dt = new Date();
+        dt.setFullYear(dt.getFullYear() + y);
+        newDate.value = dt.toISOString().slice(0, 10);
+        showResult();
+      };
+      const p5 = document.getElementById("ulPlus5"); if (p5) p5.addEventListener("click", () => addYears(5));
+      const p10 = document.getElementById("ulPlus10"); if (p10) p10.addEventListener("click", () => addYears(10));
     }
+  }
+
+  /* --------------- data-driven review / edit modals -------------------- */
+  function modalRow(ev) { const r = ev.relatedTarget && ev.relatedTarget.closest("tr"); return r ? r.dataset : null; }
+
+  function wireReviewModals() {
+    const ri = document.getElementById("reviewInspectionModal");
+    if (ri) ri.addEventListener("show.bs.modal", ev => {
+      const d = modalRow(ev); if (!d) return;
+      setText("#riVehicle", d.plate + " (" + d.type + ")");
+      setText("#riDriver", d.driver); setText("#riWhen", d.when);
+      const b = document.getElementById("riResultBadge");
+      if (b) { const ok = d.result === "All OK"; b.className = "badge " + (ok ? "badge-operational" : "badge-not-operational") + " px-3 py-2 rounded-pill"; b.textContent = d.result; }
+      setText("#riRemarks", (d.remarks && d.remarks !== "None") ? d.remarks : "No issues reported — all BLOWBAGETS items OK.");
+    });
+    const rd = document.getElementById("reviewDamageModal");
+    if (rd) rd.addEventListener("show.bs.modal", ev => {
+      const d = modalRow(ev); if (!d) return;
+      setText("#rdVehicle", d.plate + " (" + d.type + ")");
+      setText("#rdDriver", d.driver); setText("#rdWhen", d.when);
+      setText("#rdNature", d.nature); setText("#rdParts", d.parts);
+      const att = document.getElementById("rdAttachment");
+      if (att) att.innerHTML = d.attachment === "true"
+        ? '<span class="badge bg-primary bg-opacity-10 text-primary"><i class="bi bi-image me-1"></i>Photo attached</span>'
+        : '<span class="text-secondary small">None</span>';
+    });
+  }
+
+  function wireRepairModals() {
+    if (!document.getElementById("rows-repairs")) return;
+    const er = document.getElementById("editRepairModal");
+    if (er) er.addEventListener("show.bs.modal", ev => {
+      const d = modalRow(ev); if (!d) return;
+      setVal("#erVehicle", d.plate + " (" + d.type + ")"); setVal("#erDriver", d.driver);
+      setVal("#erDate", d.date); setVal("#erScope", d.scope);
+      setVal("#erParts", d.parts.indexOf("None") === 0 ? "" : d.parts);
+      setVal("#erCost", d.cost === "—" ? "" : d.cost);
+      setVal("#erRemarks", d.remarks);
+      selectByText("#erSource", d.source);
+    });
+    const us = document.getElementById("updateStatusModal");
+    if (us) us.addEventListener("show.bs.modal", ev => {
+      const d = modalRow(ev); if (!d) return;
+      setText("#usVehicle", d.plate + " (" + d.type + ")");
+      setText("#usMeta", d.driver + " · Last repair: " + d.date);
+      const b = document.getElementById("usBadge");
+      if (b && d.badge) { b.className = "badge " + d.badge + " px-3 py-2 rounded-pill"; b.textContent = d.vstatus; }
+    });
+  }
+
+  function wireDispatchModals() {
+    const ed = document.getElementById("editDispatchModal");
+    if (!ed) return;
+    ed.addEventListener("show.bs.modal", ev => {
+      const d = modalRow(ev); if (!d) return;
+      setText("#edVehicle", d.plate + " (" + d.type + ")");
+      setText("#edDriver", d.driver);
+      const b = document.getElementById("edStatusBadge");
+      if (b) { const active = d.status === "Active"; b.className = "badge " + (active ? "bg-primary" : "bg-secondary") + " px-3 py-2 rounded-pill"; b.textContent = d.status; }
+      selectByText("#edMission", d.mission);
+      setVal("#edLocation", d.location);
+      setVal("#edTimeOut", d.out);
+      setVal("#edTimeIn", d.in || "");
+      const wrap = document.getElementById("edTimeInWrap");
+      if (wrap) wrap.style.display = d.in ? "" : "none";
+    });
+  }
+  function selectByText(sel, text) {
+    const el = document.querySelector(sel);
+    if (el) Array.prototype.forEach.call(el.options, o => { if (o.text === text) o.selected = true; });
   }
 
   /* ------------------------------ utils -------------------------------- */
@@ -647,6 +732,9 @@
     renderNotificationsPage();
     renderOptionLists();
     wireDriverModals();
+    wireReviewModals();
+    wireRepairModals();
+    wireDispatchModals();
     decorateLinks();
   });
 
