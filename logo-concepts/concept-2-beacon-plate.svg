@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Concept 2 — The Beacon Plate: modern app icon, emergency beacon over the wordmark -->
+  <rect x="56" y="56" width="400" height="400" rx="92" fill="#1B2F72"/>
+  <rect x="56" y="56" width="400" height="400" rx="92" fill="none" stroke="#0E1C4A" stroke-width="10"/>
+  <!-- beacon dome -->
+  <path d="M232 196 a24 24 0 0 1 48 0 v10 h-48 Z" fill="#D4A017"/>
+  <rect x="222" y="206" width="68" height="10" rx="5" fill="#E8BA3C"/>
+  <!-- beacon waves -->
+  <path d="M196 178 a62 62 0 0 1 24 -44" fill="none" stroke="#D4A017" stroke-width="9" stroke-linecap="round"/>
+  <path d="M316 178 a62 62 0 0 0 -24 -44" fill="none" stroke="#D4A017" stroke-width="9" stroke-linecap="round"/>
+  <path d="M170 190 a96 96 0 0 1 36 -68" fill="none" stroke="#D4A017" stroke-width="7" stroke-linecap="round" opacity="0.55"/>
+  <path d="M342 190 a96 96 0 0 0 -36 -68" fill="none" stroke="#D4A017" stroke-width="7" stroke-linecap="round" opacity="0.55"/>
+  <!-- wordmark -->
+  <text x="256" y="312" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="800" fill="#FFFFFF" letter-spacing="3">RVMS</text>
+  <!-- road baseline with center dashes -->
+  <rect x="124" y="352" width="264" height="14" rx="7" fill="#D4A017"/>
+  <line x1="150" y1="359" x2="362" y2="359" stroke="#1B2F72" stroke-width="4" stroke-dasharray="18 14"/>
+</svg>
