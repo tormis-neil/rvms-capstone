@@ -388,12 +388,16 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-4">
+                    <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-3">
                         <div>
-                            <div class="fw-bold">BCD-2310 (Fire Truck)</div>
-                            <div class="small text-secondary">Ricardo Bautista &middot; Today, 07:05 AM</div>
+                            <div class="fw-bold" id="riVehicle">—</div>
+                            <div class="small text-secondary"><span id="riDriver">—</span> &middot; <span id="riWhen">—</span></div>
                         </div>
-                        <span class="badge badge-not-operational px-3 py-2 rounded-pill">Has Issue</span>
+                        <span class="badge px-3 py-2 rounded-pill" id="riResultBadge">—</span>
+                    </div>
+                    <div class="border rounded-3 p-3 mb-4">
+                        <div class="small text-secondary fw-semibold mb-1">Driver's Submission</div>
+                        <div class="fw-medium" id="riRemarks">—</div>
                     </div>
                     <p class="text-secondary small mb-4">Evaluate the findings, update the vehicle's operational status if action is required, and mark the inspection as Reviewed.</p>
                     <form>
@@ -428,6 +432,18 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
+                    <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-3">
+                        <div>
+                            <div class="fw-bold" id="rdVehicle">—</div>
+                            <div class="small text-secondary"><span id="rdDriver">—</span> &middot; <span id="rdWhen">—</span></div>
+                        </div>
+                        <span class="badge badge-dispatched px-3 py-2 rounded-pill">Pending</span>
+                    </div>
+                    <ul class="list-group list-group-flush border rounded-3 mb-4">
+                        <li class="list-group-item d-flex justify-content-between"><span class="text-secondary small fw-semibold">Nature of Damage</span><span class="fw-medium text-end ms-3" id="rdNature">—</span></li>
+                        <li class="list-group-item d-flex justify-content-between"><span class="text-secondary small fw-semibold">Suspected Parts</span><span class="fw-medium" id="rdParts">—</span></li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center"><span class="text-secondary small fw-semibold">Photo Attachment</span><span id="rdAttachment">—</span></li>
+                    </ul>
                     <p class="text-secondary small mb-4">Assess severity, update the vehicle's operational status, and mark the report as Reviewed.</p>
                     <form>
                         <div class="mb-3">
