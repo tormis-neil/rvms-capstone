@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <path d="M256 44 L432 102 V268 C432 376 352 442 256 478 C160 442 80 376 80 268 V102 Z" fill="#0E1C4A"/>
+  <path d="M256 60 L416 113 V266 C416 364 344 425 256 459 C168 425 96 364 96 266 V113 Z" fill="#1B2F72" stroke="#D4A017" stroke-width="7"/>
+  <polygon points="178.0,101.0 181.3,110.5 191.3,110.7 183.3,116.7 186.2,126.3 178.0,120.6 169.8,126.3 172.7,116.7 164.7,110.7 174.7,110.5" fill="#E8BA3C"/>
+  <polygon points="230.0,101.0 233.3,110.5 243.3,110.7 235.3,116.7 238.2,126.3 230.0,120.6 221.8,126.3 224.7,116.7 216.7,110.7 226.7,110.5" fill="#E8BA3C"/>
+  <polygon points="282.0,101.0 285.3,110.5 295.3,110.7 287.3,116.7 290.2,126.3 282.0,120.6 273.8,126.3 276.7,116.7 268.7,110.7 278.7,110.5" fill="#E8BA3C"/>
+  <polygon points="334.0,101.0 337.3,110.5 347.3,110.7 339.3,116.7 342.2,126.3 334.0,120.6 325.8,126.3 328.7,116.7 320.7,110.7 330.7,110.5" fill="#E8BA3C"/>
+  <path d="M126 152 L386 152" stroke="#D4A017" stroke-width="4" opacity="0.9"/>
+  <text x="256" y="278" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="800" fill="#FFFFFF" letter-spacing="4">RVMS</text>
+  <path d="M196 330 L256 360 L316 330" fill="none" stroke="#D4A017" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M212 374 L256 396 L300 374" fill="none" stroke="#D4A017" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.75"/>
+  <path d="M226 412 L256 427 L286 412" fill="none" stroke="#D4A017" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+</svg>

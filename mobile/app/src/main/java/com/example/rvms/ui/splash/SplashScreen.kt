@@ -1,5 +1,6 @@
 package com.example.rvms.ui.splash
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,20 +9,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.rvms.theme.DarkNavy
-import com.example.rvms.theme.Gold
+import com.example.rvms.R
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.RVMSTheme
 import com.example.rvms.theme.White
@@ -49,37 +48,14 @@ fun SplashScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // Logo mark — circular gold container with "RVMS" text
-            Box(
-                modifier =
-                    Modifier
-                        .size(100.dp)
-                        .clip(CircleShape)
-                        .background(Gold),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "RVMS",
-                    color = DarkNavy,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.sp,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // App name
-            Text(
-                text = "RVMS",
-                color = White,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 4.sp,
-                textAlign = TextAlign.Center,
+            // Command Shield logo
+            Image(
+                painter = painterResource(id = R.drawable.rvms_logo),
+                contentDescription = "RVMS logo",
+                modifier = Modifier.size(140.dp),
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Full system name
             Text(
