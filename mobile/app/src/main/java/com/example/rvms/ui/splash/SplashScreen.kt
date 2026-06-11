@@ -24,7 +24,6 @@ import com.example.rvms.theme.DarkNavy
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.RVMSTheme
-import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
 import kotlinx.coroutines.delay
 
@@ -90,18 +89,6 @@ fun SplashScreen(
                 fontWeight = FontWeight.Normal,
                 textAlign = TextAlign.Center,
                 lineHeight = 20.sp,
-            )
-
-            Spacer(modifier = Modifier.height(48.dp))
-
-            // Subtitle
-            Text(
-                text = "Vehicle Monitoring & Maintenance Platform",
-                color = TextSecondary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Normal,
-                textAlign = TextAlign.Center,
-                letterSpacing = 0.5.sp,
             )
         }
     }
