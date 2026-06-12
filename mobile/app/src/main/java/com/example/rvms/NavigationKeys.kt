@@ -22,3 +22,6 @@ import kotlinx.serialization.Serializable
 // Sub-screens
 @Serializable data object NewInspection : NavKey
 @Serializable data object NewDamageReport : NavKey
+
+/** Detail view of one record in [com.example.rvms.data.Session.inspectionHistory]. */
+@Serializable data class InspectionDetail(val historyIndex: Int) : NavKey

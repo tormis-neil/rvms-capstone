@@ -32,7 +32,7 @@ enum class Agency(
 enum class VehicleStatus(val label: String) {
     OPERATIONAL("Operational"),
     DISPATCHED("Dispatched"),
-    UNDER_PM("Under PM"),
+    UNDER_PM("Under Preventive Maintenance"),
     NOT_OPERATIONAL("Not Operational"),
 }
 
@@ -83,6 +83,8 @@ data class InspectionRecord(
     val itemsChecked: Int,
     val issueCount: Int,
     val flaggedItems: List<String> = emptyList(),
+    /** Remarks keyed by flagged item name, shown on the detail view. */
+    val flaggedRemarks: Map<String, String> = emptyMap(),
 ) {
     val resultLabel: String
         get() = when (issueCount) {
@@ -133,11 +135,25 @@ data class AgencyData(
 
 object SampleData {
 
+    /** The prototype's fixed "today" — matches the sample records dated June 8. */
+    const val todayLabel = "June 8, 2026"
+
     /** Standard BLOWBAGETS checklist — applies to all agencies (12 items). */
     val standardInspectionItems = listOf(
         "Battery", "Lights", "Oil", "Water", "Brakes", "Air",
         "Gas", "Engine", "Tires", "Power Steering",
         "Horn/Siren", "Directional Signals",
+    )
+
+    /**
+     * BLOWBAGETS acronym letter for each of the ten acronym items, mirroring
+     * the paper checklist drivers already know. Horn/Siren and Directional
+     * Signals are standard items outside the acronym and have no letter.
+     */
+    val blowbagetsLetters = mapOf(
+        "Battery" to "B", "Lights" to "L", "Oil" to "O", "Water" to "W",
+        "Brakes" to "B", "Air" to "A", "Gas" to "G", "Engine" to "E",
+        "Tires" to "T", "Power Steering" to "S",
     )
 
     /** Additional items required only for BFP vehicles (2 items). */
@@ -177,9 +193,18 @@ object SampleData {
         ),
         inspectionHistory = listOf(
             InspectionRecord("June 8, 2026", "7:30 AM", 14, 0),
-            InspectionRecord("June 7, 2026", "7:15 AM", 14, 1, listOf("Brakes")),
+            InspectionRecord(
+                "June 7, 2026", "7:15 AM", 14, 1, listOf("Brakes"),
+                mapOf("Brakes" to "Brake pedal feels soft and travels too far."),
+            ),
             InspectionRecord("June 6, 2026", "7:45 AM", 14, 0),
-            InspectionRecord("June 4, 2026", "7:35 AM", 14, 2, listOf("Tires", "Fire Pump")),
+            InspectionRecord(
+                "June 4, 2026", "7:35 AM", 14, 2, listOf("Tires", "Fire Pump"),
+                mapOf(
+                    "Tires" to "Front-right tire visibly worn, needs replacement.",
+                    "Fire Pump" to "Low pressure reading during the morning test.",
+                ),
+            ),
         ),
         damageReports = listOf(
             DamageReport("June 8, 2026", "Cracked side mirror (driver side)", "Side mirror assembly", DamageStatus.PENDING),
@@ -220,11 +245,21 @@ object SampleData {
             mileage = "32,150 km",
             status = VehicleStatus.DISPATCHED,
         ),
+        // No June 8 record on purpose: the PNP account demos the
+        // "no inspection submitted yet today" state on the Inspect tab.
         inspectionHistory = listOf(
-            InspectionRecord("June 8, 2026", "6:50 AM", 12, 0),
-            InspectionRecord("June 7, 2026", "6:40 AM", 12, 1, listOf("Lights")),
+            InspectionRecord(
+                "June 7, 2026", "6:40 AM", 12, 1, listOf("Lights"),
+                mapOf("Lights" to "Left headlight flickering intermittently."),
+            ),
             InspectionRecord("June 5, 2026", "7:00 AM", 12, 0),
-            InspectionRecord("June 3, 2026", "6:55 AM", 12, 2, listOf("Battery", "Brakes")),
+            InspectionRecord(
+                "June 3, 2026", "6:55 AM", 12, 2, listOf("Battery", "Brakes"),
+                mapOf(
+                    "Battery" to "Slow crank on cold start.",
+                    "Brakes" to "Squealing noise when braking at low speed.",
+                ),
+            ),
         ),
         damageReports = listOf(
             DamageReport("June 7, 2026", "Dent on rear bumper after patrol", "Rear bumper", DamageStatus.PENDING),
@@ -239,7 +274,7 @@ object SampleData {
             DriverNotification(NotificationType.VEHICLE_STATUS_UPDATE, "Vehicle Status Updated", "Status changed to Not Operational pending repair.", "Earlier", "Jun 1", VehicleStatus.NOT_OPERATIONAL, isRead = true),
         ),
         recentActivity = listOf(
-            RecentActivity(ActivityKind.INSPECTION_SUBMITTED, "Daily Inspection Submitted", "All items OK", "Today, 6:50 AM"),
+            RecentActivity(ActivityKind.INSPECTION_SUBMITTED, "Daily Inspection Submitted", "1 issue found", "Jun 7, 6:40 AM"),
             RecentActivity(ActivityKind.DAMAGE_SUBMITTED, "Damage Report Submitted", "Dent on rear bumper after patrol", "Jun 7, 3:30 PM"),
         ),
     )
@@ -265,9 +300,18 @@ object SampleData {
             status = VehicleStatus.UNDER_PM,
         ),
         inspectionHistory = listOf(
-            InspectionRecord("June 8, 2026", "7:10 AM", 12, 2, listOf("Oil", "Brakes")),
+            InspectionRecord(
+                "June 8, 2026", "7:10 AM", 12, 2, listOf("Oil", "Brakes"),
+                mapOf(
+                    "Oil" to "Oil level below the minimum mark on the dipstick.",
+                    "Brakes" to "Grinding noise when braking.",
+                ),
+            ),
             InspectionRecord("June 6, 2026", "7:20 AM", 12, 0),
-            InspectionRecord("June 4, 2026", "7:05 AM", 12, 1, listOf("Water")),
+            InspectionRecord(
+                "June 4, 2026", "7:05 AM", 12, 1, listOf("Water"),
+                mapOf("Water" to "Coolant slightly below the low mark."),
+            ),
             InspectionRecord("June 2, 2026", "7:25 AM", 12, 0),
         ),
         damageReports = listOf(
@@ -309,8 +353,18 @@ object SampleData {
             status = VehicleStatus.NOT_OPERATIONAL,
         ),
         inspectionHistory = listOf(
-            InspectionRecord("June 8, 2026", "6:30 AM", 12, 3, listOf("Battery", "Brakes", "Lights")),
-            InspectionRecord("June 7, 2026", "6:35 AM", 12, 1, listOf("Battery")),
+            InspectionRecord(
+                "June 8, 2026", "6:30 AM", 12, 3, listOf("Battery", "Brakes", "Lights"),
+                mapOf(
+                    "Battery" to "Battery drains overnight; needed a jump start.",
+                    "Brakes" to "Weak braking response under load.",
+                    "Lights" to "Rear brake light not working.",
+                ),
+            ),
+            InspectionRecord(
+                "June 7, 2026", "6:35 AM", 12, 1, listOf("Battery"),
+                mapOf("Battery" to "Slow crank in the morning."),
+            ),
             InspectionRecord("June 5, 2026", "6:40 AM", 12, 0),
             InspectionRecord("June 3, 2026", "6:45 AM", 12, 0),
         ),

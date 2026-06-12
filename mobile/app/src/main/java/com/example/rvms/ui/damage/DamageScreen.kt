@@ -39,8 +39,8 @@ import com.example.rvms.data.Session
 import com.example.rvms.ui.common.ScreenHeader
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.NavyBlue
-import com.example.rvms.theme.StatusDispatched
-import com.example.rvms.theme.StatusOperational
+import com.example.rvms.theme.ReportPending
+import com.example.rvms.theme.ReportReviewed
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
@@ -118,8 +118,9 @@ fun DamageScreen(
 
 @Composable
 private fun DamageHistoryItem(report: DamageReport) {
+    // Report review statuses use their own colors, never the vehicle palette
     val isPending = report.status == DamageStatus.PENDING
-    val statusColor = if (isPending) StatusDispatched else StatusOperational
+    val statusColor = if (isPending) ReportPending else ReportReviewed
     val icon = if (isPending) Icons.Default.Info else Icons.Default.CheckCircle
 
     Card(

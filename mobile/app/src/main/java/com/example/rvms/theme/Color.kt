@@ -22,6 +22,11 @@ val Border = Color(0xFFE2E8F0)
 val TextPrimary = Color(0xFF0F172A)
 val TextSecondary = Color(0xFF64748B)
 
+// Damage report review status colors — deliberately distinct from the vehicle
+// status palette so the four vehicle status colors keep a single meaning.
+val ReportPending = Color(0xFF64748B)
+val ReportReviewed = Color(0xFF1B2F72)
+
 // Additional UI Colors
 val White = Color(0xFFFFFFFF)
 val ErrorRed = Color(0xFFDC2626)

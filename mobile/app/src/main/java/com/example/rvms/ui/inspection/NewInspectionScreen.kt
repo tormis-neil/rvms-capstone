@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +26,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -44,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.rvms.data.InspectionRecord
 import com.example.rvms.data.SampleData
 import com.example.rvms.data.Session
 import com.example.rvms.theme.Background
@@ -56,13 +60,18 @@ import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * The daily BLOWBAGETS inspection form (Plan §6.4, driver side).
  *
  * The assigned vehicle is auto-loaded. Each checklist item is marked OK or
  * Has Issue; remarks are required for any flagged item. BFP vehicles include
- * the two additional items (Hydraulic System, Fire Pump).
+ * the two additional items (Hydraulic System, Fire Pump). The submit button
+ * and progress indicator stay pinned at the bottom so the driver always
+ * knows how far along the checklist they are.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,9 +91,10 @@ fun NewInspectionScreen(
     val statuses = remember { mutableStateMapOf<String, Boolean>() }
     val remarks = remember { mutableStateMapOf<String, String>() }
     var error by remember { mutableStateOf<String?>(null) }
-    var showSuccess by remember { mutableStateOf(false) }
+    var submittedRecord by remember { mutableStateOf<InspectionRecord?>(null) }
 
     val scrollState = rememberScrollState()
+    val marked = statuses.size
 
     Scaffold(
         modifier = modifier,
@@ -98,6 +108,82 @@ fun NewInspectionScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Background),
             )
+        },
+        bottomBar = {
+            // Sticky progress + submit so the action is always reachable
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                colors = CardDefaults.cardColors(containerColor = Surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Marked $marked of ${items.size} items",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (marked == items.size) StatusOperational else TextSecondary,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    LinearProgressIndicator(
+                        progress = { if (items.isEmpty()) 0f else marked / items.size.toFloat() },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = if (marked == items.size) StatusOperational else NavyBlue,
+                        trackColor = Background,
+                    )
+                    if (error != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = error!!,
+                            color = ErrorRed,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            val unmarked = items.count { statuses[it] == null }
+                            val missingRemarks =
+                                items.any { statuses[it] == false && remarks[it].isNullOrBlank() }
+                            when {
+                                unmarked > 0 ->
+                                    error = "Please mark all items — $unmarked remaining."
+                                missingRemarks ->
+                                    error = "Remarks are required for every item marked Has Issue."
+                                else -> {
+                                    error = null
+                                    val flagged = items.filter { statuses[it] == false }
+                                    val record = InspectionRecord(
+                                        date = SampleData.todayLabel,
+                                        time = SimpleDateFormat("h:mm a", Locale.US).format(Date()),
+                                        itemsChecked = items.size,
+                                        issueCount = flagged.size,
+                                        flaggedItems = flagged,
+                                        flaggedRemarks = flagged.associateWith {
+                                            remarks[it].orEmpty()
+                                        },
+                                    )
+                                    Session.submitInspection(record)
+                                    submittedRecord = record
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = NavyBlue),
+                    ) {
+                        Text(
+                            text = "Submit Inspection",
+                            color = White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            }
         },
     ) { innerPadding ->
         Column(
@@ -136,17 +222,6 @@ fun NewInspectionScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Progress counter
-            val marked = statuses.size
-            Text(
-                text = "Marked $marked of ${items.size} items",
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (marked == items.size) StatusOperational else TextSecondary,
-                fontWeight = FontWeight.SemiBold,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
             Text(
                 text = "Standard Items",
                 style = MaterialTheme.typography.titleSmall,
@@ -158,6 +233,7 @@ fun NewInspectionScreen(
             standardItems.forEach { item ->
                 InspectionItemRow(
                     name = item,
+                    letter = SampleData.blowbagetsLetters[item],
                     status = statuses[item],
                     remark = remarks[item].orEmpty(),
                     onStatusChange = { ok ->
@@ -181,6 +257,7 @@ fun NewInspectionScreen(
                 extraItems.forEach { item ->
                     InspectionItemRow(
                         name = item,
+                        letter = null,
                         status = statuses[item],
                         remark = remarks[item].orEmpty(),
                         onStatusChange = { ok ->
@@ -193,68 +270,29 @@ fun NewInspectionScreen(
                 }
             }
 
-            if (error != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = error!!,
-                    color = ErrorRed,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    val unmarked = items.count { statuses[it] == null }
-                    val missingRemarks = items.any { statuses[it] == false && remarks[it].isNullOrBlank() }
-                    when {
-                        unmarked > 0 ->
-                            error = "Please mark all items — $unmarked remaining."
-                        missingRemarks ->
-                            error = "Remarks are required for every item marked Has Issue."
-                        else -> {
-                            error = null
-                            showSuccess = true
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = NavyBlue),
-            ) {
-                Text(
-                    text = "Submit Inspection",
-                    color = White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 
-    if (showSuccess) {
-        val issueCount = items.count { statuses[it] == false }
+    submittedRecord?.let { record ->
         AlertDialog(
             onDismissRequest = { /* require explicit action */ },
             confirmButton = {
                 TextButton(onClick = {
-                    showSuccess = false
+                    submittedRecord = null
                     onSubmitted()
                 }) { Text("Done", color = NavyBlue, fontWeight = FontWeight.Bold) }
             },
             title = { Text("Inspection Submitted", fontWeight = FontWeight.Bold) },
             text = {
                 Text(
-                    if (issueCount == 0)
-                        "All ${items.size} items passed. The inspection has been recorded for ${vehicle.plateNo}."
+                    if (record.issueCount == 0)
+                        "All ${record.itemsChecked} items passed. The inspection for " +
+                            "${vehicle.plateNo} has been submitted for admin review."
                     else
-                        "$issueCount item(s) flagged with issues. The inspection for ${vehicle.plateNo} has been submitted for admin review."
+                        "${record.issueCount} item(s) flagged. The inspection for " +
+                            "${vehicle.plateNo} has been submitted for admin review.\n\n" +
+                            "Flagged items: ${record.flaggedItems.joinToString(", ")}"
                 )
             },
         )
@@ -264,6 +302,7 @@ fun NewInspectionScreen(
 @Composable
 private fun InspectionItemRow(
     name: String,
+    letter: String?,
     status: Boolean?,
     remark: String,
     onStatusChange: (Boolean) -> Unit,
@@ -281,6 +320,24 @@ private fun InspectionItemRow(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // BLOWBAGETS acronym letter, mirroring the paper checklist
+                if (letter != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(NavyBlue.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = letter,
+                            color = NavyBlue,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
                 Text(
                     text = name,
                     style = MaterialTheme.typography.bodyMedium,
@@ -309,6 +366,7 @@ private fun InspectionItemRow(
                     value = remark,
                     onValueChange = onRemarkChange,
                     label = { Text("Remarks (required)") },
+                    placeholder = { Text("Describe the issue / Ilarawan ang problema") },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2,
                     isError = remark.isBlank(),
@@ -329,18 +387,20 @@ private fun ToggleChip(
     selectedColor: androidx.compose.ui.graphics.Color,
     onClick: () -> Unit,
 ) {
+    // 48dp minimum touch target — field staff may be wearing gloves
     Box(
         modifier = Modifier
+            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(if (selected) selectedColor else Background)
             .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 14.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
             color = if (selected) White else TextSecondary,
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
         )
     }

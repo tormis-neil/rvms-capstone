@@ -21,10 +21,17 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CarRental
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,7 +48,10 @@ import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationScreen(
     modifier: Modifier = Modifier,
@@ -49,10 +59,26 @@ fun NotificationScreen(
     val scrollState = rememberScrollState()
     val notifications = Session.current.notifications
 
-    Column(
+    // Simulated refresh — with the backend this will re-fetch notifications
+    var isRefreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = {
+            isRefreshing = true
+            scope.launch {
+                delay(900)
+                isRefreshing = false
+            }
+        },
         modifier = modifier
             .fillMaxSize()
-            .background(Background)
+            .background(Background),
+    ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
             .verticalScroll(scrollState)
             .padding(16.dp),
     ) {
@@ -89,6 +115,7 @@ fun NotificationScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
             }
+    }
     }
 }
 

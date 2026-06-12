@@ -1,7 +1,7 @@
 package com.example.rvms.ui.inspection
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -26,7 +27,12 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,10 +54,14 @@ import com.example.rvms.theme.White
 @Composable
 fun InspectionScreen(
     onStartInspection: () -> Unit,
+    onOpenDetail: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
     val data = Session.current
+    val history = Session.inspectionHistory
+    val todaysInspection = Session.todaysInspection()
+    var showResubmitWarning by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -67,21 +77,55 @@ fun InspectionScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Start Inspection Button
-        Button(
-            onClick = onStartInspection,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = NavyBlue),
-        ) {
-            Text(
-                text = "Start New Inspection",
-                color = White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
+        if (todaysInspection == null) {
+            // No inspection yet today — primary call to action
+            Button(
+                onClick = onStartInspection,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = NavyBlue),
+            ) {
+                Text(
+                    text = "Start New Inspection",
+                    color = White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        } else {
+            // Daily inspection already done (Plan §6.4): show today's state
+            TodaysInspectionBanner(record = todaysInspection)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = { onOpenDetail(history.indexOf(todaysInspection)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = NavyBlue),
+            ) {
+                Text(
+                    text = "View Today's Inspection",
+                    color = White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+
+            TextButton(
+                onClick = { showResubmitWarning = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = "Submit Another Inspection",
+                    color = TextSecondary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -101,24 +145,85 @@ fun InspectionScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        if (data.inspectionHistory.isEmpty()) {
+        if (history.isEmpty()) {
             Text(
                 text = "No inspections submitted yet.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
             )
         } else {
-            data.inspectionHistory.forEach { record ->
-                InspectionHistoryItem(record)
+            history.forEachIndexed { index, record ->
+                InspectionHistoryItem(record, onClick = { onOpenDetail(index) })
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
     }
+
+    if (showResubmitWarning && todaysInspection != null) {
+        AlertDialog(
+            onDismissRequest = { showResubmitWarning = false },
+            title = { Text("Inspection Already Submitted", fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "You already submitted today's inspection at ${todaysInspection.time}. " +
+                        "Are you sure you want to submit another one?"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showResubmitWarning = false
+                    onStartInspection()
+                }) { Text("Submit Anyway", color = NavyBlue, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResubmitWarning = false }) {
+                    Text("Cancel", color = TextSecondary)
+                }
+            },
+        )
+    }
 }
 
 @Composable
-private fun InspectionHistoryItem(record: InspectionRecord) {
+private fun TodaysInspectionBanner(record: InspectionRecord) {
+    val passed = record.issueCount == 0
+    val statusColor = if (passed) StatusOperational else StatusNotOperational
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = statusColor.copy(alpha = 0.08f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = if (passed) Icons.Default.CheckCircle else Icons.Default.Warning,
+                contentDescription = null,
+                tint = statusColor,
+                modifier = Modifier.size(28.dp),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = "Inspection submitted today",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = "${record.time} • ${record.itemsChecked} items checked • ${record.resultLabel}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InspectionHistoryItem(record: InspectionRecord, onClick: () -> Unit) {
     val passed = record.issueCount == 0
     val statusColor = if (passed) StatusOperational else StatusNotOperational
     val icon = if (passed) Icons.Default.CheckCircle else Icons.Default.Warning
@@ -126,7 +231,8 @@ private fun InspectionHistoryItem(record: InspectionRecord) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 10.dp),
+            .padding(bottom = 10.dp)
+            .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
     ) {
