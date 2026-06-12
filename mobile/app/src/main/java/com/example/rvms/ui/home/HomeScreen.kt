@@ -25,11 +25,18 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,8 +47,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rvms.data.ActivityKind
+import com.example.rvms.data.SampleData
 import com.example.rvms.data.Session
 import com.example.rvms.ui.common.statusColor
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
@@ -52,6 +62,7 @@ import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onNavigateToVehicle: () -> Unit,
@@ -61,10 +72,26 @@ fun HomeScreen(
 ) {
     val scrollState = rememberScrollState()
 
-    Column(
+    // Simulated refresh — with the backend this will re-fetch driver data
+    var isRefreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = {
+            isRefreshing = true
+            scope.launch {
+                delay(900)
+                isRefreshing = false
+            }
+        },
         modifier = modifier
             .fillMaxSize()
-            .background(Background)
+            .background(Background),
+    ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
             .verticalScroll(scrollState)
             .padding(16.dp),
     ) {
@@ -158,6 +185,23 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     InfoChip(vehicle.mileage, Modifier.weight(1f))
                 }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Readiness at a glance: when the vehicle was last inspected
+                val lastInspection = Session.inspectionHistory.firstOrNull()
+                Text(
+                    text = when {
+                        lastInspection == null ->
+                            "No inspections submitted yet"
+                        lastInspection.date == SampleData.todayLabel ->
+                            "Last inspected today, ${lastInspection.time}"
+                        else ->
+                            "Last inspected ${lastInspection.date}, ${lastInspection.time}"
+                    },
+                    color = White.copy(alpha = 0.85f),
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
         }
 
@@ -281,6 +325,7 @@ fun HomeScreen(
                 iconTint = iconTint,
             )
         }
+    }
     }
 }
 

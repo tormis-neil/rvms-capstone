@@ -11,6 +11,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.example.rvms.ui.auth.SignInScreen
 import com.example.rvms.ui.auth.SignUpScreen
 import com.example.rvms.ui.damage.NewDamageReportScreen
+import com.example.rvms.ui.inspection.InspectionDetailScreen
 import com.example.rvms.ui.inspection.NewInspectionScreen
 import com.example.rvms.ui.shell.DriverShellScreen
 import com.example.rvms.ui.splash.SplashScreen
@@ -71,6 +72,9 @@ fun MainNavigation() {
                         onNavigateToVehicleInfo = {
                             backStack.add(VehicleInfo)
                         },
+                        onNavigateToInspectionDetail = { index ->
+                            backStack.add(InspectionDetail(index))
+                        },
                         onSignOut = {
                             backStack.clear()
                             backStack.add(SignIn)
@@ -96,6 +100,14 @@ fun MainNavigation() {
 
                 entry<VehicleInfo> {
                     VehicleInfoScreen(
+                        onBack = { backStack.removeLastOrNull() },
+                        modifier = Modifier.safeDrawingPadding(),
+                    )
+                }
+
+                entry<InspectionDetail> { key ->
+                    InspectionDetailScreen(
+                        historyIndex = key.historyIndex,
                         onBack = { backStack.removeLastOrNull() },
                         modifier = Modifier.safeDrawingPadding(),
                     )

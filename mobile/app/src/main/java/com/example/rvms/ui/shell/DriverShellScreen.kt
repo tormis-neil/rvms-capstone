@@ -8,6 +8,8 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -25,8 +27,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.rvms.data.Session
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
+import com.example.rvms.theme.StatusNotOperational
 import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
 import com.example.rvms.ui.damage.DamageScreen
@@ -45,10 +49,12 @@ fun DriverShellScreen(
     onNavigateToNewInspection: () -> Unit,
     onNavigateToNewDamageReport: () -> Unit,
     onNavigateToVehicleInfo: () -> Unit,
+    onNavigateToInspectionDetail: (Int) -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    val unreadAlerts = Session.current.notifications.count { !it.isRead }
 
     val navItems = listOf(
         BottomNavItem("Home", Icons.Default.Home),
@@ -70,10 +76,27 @@ fun DriverShellScreen(
                         selected = selectedTab == index,
                         onClick = { selectedTab = index },
                         icon = {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.label,
-                            )
+                            // Unread count badge on the Alerts tab
+                            if (item.label == "Alerts" && unreadAlerts > 0) {
+                                BadgedBox(
+                                    badge = {
+                                        Badge(
+                                            containerColor = StatusNotOperational,
+                                            contentColor = White,
+                                        ) { Text("$unreadAlerts") }
+                                    },
+                                ) {
+                                    Icon(
+                                        imageVector = item.icon,
+                                        contentDescription = item.label,
+                                    )
+                                }
+                            } else {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = item.label,
+                                )
+                            }
                         },
                         label = {
                             Text(
@@ -99,13 +122,14 @@ fun DriverShellScreen(
 
         when (selectedTab) {
             0 -> HomeScreen(
-                onNavigateToVehicle = { selectedTab = 4 }, // Vehicle info now in profile
+                onNavigateToVehicle = onNavigateToVehicleInfo,
                 onNavigateToInspection = { selectedTab = 1 },
                 onNavigateToDamageReport = { selectedTab = 2 },
                 modifier = contentModifier,
             )
             1 -> InspectionScreen(
                 onStartInspection = onNavigateToNewInspection,
+                onOpenDetail = onNavigateToInspectionDetail,
                 modifier = contentModifier,
             )
             2 -> DamageScreen(
