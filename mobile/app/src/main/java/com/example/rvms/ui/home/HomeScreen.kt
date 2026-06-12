@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rvms.data.ActivityKind
@@ -136,27 +137,31 @@ fun HomeScreen(
             Column(modifier = Modifier.padding(20.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = "Assigned Vehicle",
                         color = White.copy(alpha = 0.8f),
                         style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f),
                     )
-                    // Status Badge
+                    Spacer(modifier = Modifier.width(8.dp))
+                    // Status Badge — long labels (e.g. "Under Preventive
+                    // Maintenance") wrap centered inside the pill
                     val vehicleStatusColor = statusColor(vehicle.status)
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
                             .background(vehicleStatusColor.copy(alpha = 0.2f))
-                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
                     ) {
                         Text(
                             text = vehicle.status.label,
                             color = vehicleStatusColor,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 16.sp,
                         )
                     }
                 }
@@ -407,6 +412,8 @@ private fun ActivityItem(
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
     ) {
+        // Single left-aligned text column (title, subtitle, then time) so
+        // every card lays out identically regardless of text length
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.Top,
@@ -438,12 +445,13 @@ private fun ActivityItem(
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = time,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextSecondary,
+                )
             }
-            Text(
-                text = time,
-                style = MaterialTheme.typography.labelSmall,
-                color = TextSecondary,
-            )
         }
     }
 }

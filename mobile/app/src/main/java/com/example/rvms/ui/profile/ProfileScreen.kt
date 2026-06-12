@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rvms.data.Session
@@ -96,6 +97,7 @@ fun ProfileScreen(
         // Agency Badge with official logo
         Row(
             modifier = Modifier
+                .padding(horizontal = 24.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(Gold.copy(alpha = 0.15f))
                 .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -116,6 +118,8 @@ fun ProfileScreen(
                 color = Gold,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f, fill = false),
             )
         }
 
