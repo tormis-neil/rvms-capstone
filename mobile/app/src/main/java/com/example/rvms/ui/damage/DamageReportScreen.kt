@@ -53,6 +53,9 @@ import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Damage report form (Plan §6.5, driver side).
@@ -77,6 +80,11 @@ fun NewDamageReportScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var showSuccess by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
+
+    // Auto-filled by the system (Plan §6.5): the device's current date
+    val dateReported = remember {
+        SimpleDateFormat("MMMM d, yyyy", Locale.US).format(Date())
+    }
 
     Scaffold(
         modifier = modifier,
@@ -120,7 +128,7 @@ fun NewDamageReportScreen(
                     ReadOnlyField("Engine No.", vehicle.engineNo)
                     ReadOnlyField("Chassis No.", vehicle.chassisNo)
                     ReadOnlyField("Assigned Driver", driver.name)
-                    ReadOnlyField("Date Reported", "June 9, 2026")
+                    ReadOnlyField("Date Reported", dateReported)
                 }
             }
 
