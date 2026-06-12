@@ -187,21 +187,21 @@ fun InspectionScreen(
 
 @Composable
 private fun TodaysInspectionBanner(record: InspectionRecord) {
-    val passed = record.issueCount == 0
-    val statusColor = if (passed) StatusOperational else StatusNotOperational
+    // Always green: the banner confirms the daily inspection is done.
+    // Any flagged items still show through the result label below.
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = statusColor.copy(alpha = 0.08f)),
+        colors = CardDefaults.cardColors(containerColor = StatusOperational.copy(alpha = 0.08f)),
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = if (passed) Icons.Default.CheckCircle else Icons.Default.Warning,
+                imageVector = Icons.Default.CheckCircle,
                 contentDescription = null,
-                tint = statusColor,
+                tint = StatusOperational,
                 modifier = Modifier.size(28.dp),
             )
             Spacer(modifier = Modifier.width(12.dp))
