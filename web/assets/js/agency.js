@@ -516,14 +516,14 @@
         : '<span class="badge bg-secondary px-3 py-2 rounded-pill">Completed</span>';
       const editBtn = '<button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDispatchModal"><i class="bi bi-pencil"></i></button>';
       const mainBtn = d.status === "Active"
-        ? '<button class="btn btn-sm btn-primary fw-medium" data-bs-toggle="modal" data-bs-target="#closeDispatchModal">Close Dispatch</button>'
+        ? '<button class="btn btn-sm btn-primary fw-medium text-nowrap" data-bs-toggle="modal" data-bs-target="#closeDispatchModal">Close Dispatch</button>'
         : '<button class="btn btn-sm btn-light border" title="View" data-bs-toggle="modal" data-bs-target="#viewDispatchModal"><i class="bi bi-eye"></i></button>';
       return '<tr data-mission="' + esc(d.mission) + '" data-mission-other="' + esc(d.missionOther || "") + '" data-location="' + esc(d.location) + '" data-plate="' + d.plate + '" data-type="' + vtypeOf(d.plate) + '" data-driver="' + esc(d.driver) + '" data-out="' + d.out[0] + ', ' + d.out[1] + '" data-in="' + (d.in ? d.in[0] + ', ' + d.in[1] : '') + '" data-status="' + d.status + '">' +
         '<td><div class="fw-bold text-dark">' + esc(missionLabel(d)) + '</div><div class="small text-secondary"><i class="bi bi-geo-alt me-1"></i>' + esc(d.location) + '</div></td>' +
         '<td><div class="fw-semibold text-dark">' + d.plate + '</div><div class="small text-secondary">' + d.driver + '</div></td>' +
         '<td><div class="fw-medium text-dark">' + d.out[0] + '</div><div class="small text-secondary">' + d.out[1] + '</div></td>' +
         '<td>' + timeIn + '</td><td>' + statusBadge + '</td>' +
-        '<td class="text-end"><div class="d-inline-flex gap-2 justify-content-end">' + editBtn + mainBtn + '</div></td></tr>';
+        '<td class="text-end"><div class="d-inline-flex flex-nowrap gap-2 justify-content-end">' + editBtn + mainBtn + '</div></td></tr>';
     }).join("");
     const active = A.dispatch.filter(d => d.status === "Active").length;
     const alert = document.querySelector(".js-dispatch-alert");
