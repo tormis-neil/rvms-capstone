@@ -47,7 +47,7 @@
 
   const AGENCIES = {
     BFP: {
-      name: "Bureau of Fire Protection", short: "BFP", logo: "agency-logo/bfp-logo.jpg",
+      name: "Bureau of Fire Protection", short: "BFP", logo: "../assets/img/agency/bfp-logo.jpg",
       location: "Calbayog City", contact: "(055) 123-4567", domain: "bfp.gov.ph", avatar: "A",
       extraItems: ["Hydraulic System", "Fire Pump"], primaryMission: "Fire Response",
       frequentIssues: [
@@ -114,7 +114,7 @@
     },
 
     PNP: {
-      name: "Philippine National Police", short: "PNP", logo: "agency-logo/pnp-logo.jpg",
+      name: "Philippine National Police", short: "PNP", logo: "../assets/img/agency/pnp-logo.jpg",
       location: "Calbayog City", contact: "(055) 209-1175", domain: "pnp.gov.ph", avatar: "A",
       extraItems: [], primaryMission: "Patrol",
       frequentIssues: [
@@ -181,7 +181,7 @@
     },
 
     CDRRMO: {
-      name: "City Disaster Risk Reduction and Management Office", short: "CDRRMO", logo: "agency-logo/cdrrmo-logo.jpg",
+      name: "City Disaster Risk Reduction and Management Office", short: "CDRRMO", logo: "../assets/img/agency/cdrrmo-logo.jpg",
       location: "Calbayog City", contact: "(055) 301-2288", domain: "cdrrmo.calbayog.gov.ph", avatar: "A",
       extraItems: [], primaryMission: "Rescue Operation",
       frequentIssues: [
@@ -248,7 +248,7 @@
     },
 
     CHO: {
-      name: "City Health Office", short: "CHO", logo: "agency-logo/cho-logo.png",
+      name: "City Health Office", short: "CHO", logo: "../assets/img/agency/cho-logo.png",
       location: "Calbayog City", contact: "(055) 412-3390", domain: "cho.calbayog.gov.ph", avatar: "A",
       extraItems: [], primaryMission: "Medical Response",
       frequentIssues: [
@@ -328,7 +328,9 @@
   function decorateLinks() {
     document.querySelectorAll('a[href$=".html"]').forEach(a => {
       const href = a.getAttribute("href");
-      if (/^https?:/i.test(href) || href.startsWith("login") || href.startsWith("signup") || href.startsWith("index")) return;
+      // Match on the file name so paths like ../login.html are still skipped.
+      const base = href.split("/").pop();
+      if (/^https?:/i.test(href) || base.startsWith("login") || base.startsWith("signup") || base.startsWith("index")) return;
       if (href.includes("agency=")) return;
       a.setAttribute("href", href + (href.includes("?") ? "&" : "?") + "agency=" + KEY);
     });
