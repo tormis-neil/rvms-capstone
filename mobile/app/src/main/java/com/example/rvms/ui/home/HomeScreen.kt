@@ -48,7 +48,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rvms.data.ActivityKind
-import com.example.rvms.data.SampleData
 import com.example.rvms.data.Session
 import com.example.rvms.ui.common.statusColor
 import kotlinx.coroutines.delay
@@ -190,23 +189,6 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     InfoChip(vehicle.mileage, Modifier.weight(1f))
                 }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Readiness at a glance: when the vehicle was last inspected
-                val lastInspection = Session.inspectionHistory.firstOrNull()
-                Text(
-                    text = when {
-                        lastInspection == null ->
-                            "No inspections submitted yet"
-                        lastInspection.date == SampleData.todayLabel ->
-                            "Last inspected today, ${lastInspection.time}"
-                        else ->
-                            "Last inspected ${lastInspection.date}, ${lastInspection.time}"
-                    },
-                    color = White.copy(alpha = 0.85f),
-                    style = MaterialTheme.typography.bodySmall,
-                )
             }
         }
 

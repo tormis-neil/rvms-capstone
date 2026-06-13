@@ -106,28 +106,7 @@
                     <div class="form-text">Your account will only access this agency's records.</div>
                 </div>
 
-                <div class="mb-3">
-                    <label for="password" class="form-label text-secondary small fw-semibold">Password</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                        <input type="password" class="form-control py-2" id="password" placeholder="Create a password" minlength="8" required>
-                        <button type="button" class="btn btn-light border" id="togglePassword" tabindex="-1" aria-label="Show password">
-                            <i class="bi bi-eye" id="togglePasswordIcon"></i>
-                        </button>
-                    </div>
-                    <div class="form-text">At least 8 characters.</div>
-                </div>
-
-                <div class="mb-4">
-                    <label for="confirmPassword" class="form-label text-secondary small fw-semibold">Confirm Password</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
-                        <input type="password" class="form-control py-2" id="confirmPassword" placeholder="Re-enter your password" required>
-                    </div>
-                    <div class="invalid-feedback d-block d-none" id="confirmError">Passwords do not match.</div>
-                </div>
-
-                <button type="submit" class="btn btn-navy w-100 py-2 mb-4">Submit Request</button>
+                <button type="submit" class="btn btn-navy w-100 py-2 mb-4 mt-2">Submit Request</button>
 
                 <div class="text-center text-secondary small">
                     Already have an account?
@@ -138,36 +117,11 @@
     </div>
 
     <script>
-        const passwordInput = document.getElementById('password');
-        const confirmInput = document.getElementById('confirmPassword');
-        const confirmError = document.getElementById('confirmError');
-        const toggleBtn = document.getElementById('togglePassword');
-        const toggleIcon = document.getElementById('togglePasswordIcon');
-
-        toggleBtn.addEventListener('click', () => {
-            const hidden = passwordInput.type === 'password';
-            passwordInput.type = hidden ? 'text' : 'password';
-            toggleIcon.className = hidden ? 'bi bi-eye-slash' : 'bi bi-eye';
-        });
-
-        function validateMatch() {
-            const mismatch = confirmInput.value !== '' && confirmInput.value !== passwordInput.value;
-            confirmInput.classList.toggle('is-invalid', mismatch);
-            confirmError.classList.toggle('d-none', !mismatch);
-            return !mismatch;
-        }
-        confirmInput.addEventListener('input', validateMatch);
-        passwordInput.addEventListener('input', validateMatch);
-
+        // Account request: only Full Name, Email, and Agency are collected.
+        // No password — the administrator creates the account after approval.
+        // Submitting never signs the user in or opens the dashboard.
         document.getElementById('signupForm').addEventListener('submit', event => {
             event.preventDefault();
-            if (!validateMatch() || confirmInput.value === '') {
-                confirmInput.classList.add('is-invalid');
-                confirmError.classList.remove('d-none');
-                return;
-            }
-            // No self-registration: submitting only records a request for the
-            // administrator. It never signs the user in or opens the dashboard.
             document.getElementById('signupForm').classList.add('d-none');
             document.getElementById('requestSuccess').classList.remove('d-none');
         });
