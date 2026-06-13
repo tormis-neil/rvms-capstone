@@ -1,0 +1,8 @@
+# JetBrains IDEs (Android Studio / IntelliJ) — per-developer settings,
+# should not be version-controlled. Tracking them causes pull/merge conflicts.
+.idea/
+*.iml
+
+# OS-generated files
+.DS_Store
+Thumbs.db
