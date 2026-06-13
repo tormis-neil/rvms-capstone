@@ -191,12 +191,12 @@ fun SignInScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "Don't have an account? ",
+                text = "Need an account? ",
                 color = TextSecondary,
                 style = MaterialTheme.typography.bodyMedium,
             )
             Text(
-                text = "Sign Up",
+                text = "Request one",
                 color = NavyBlue,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
