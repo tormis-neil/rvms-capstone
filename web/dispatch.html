@@ -285,7 +285,7 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Mission Type</label>
-                            <select class="form-select">
+                            <select class="form-select" id="ndMission">
                                 <option>Fire Response</option>
                                 <option>Medical Response</option>
                                 <option>Rescue Operation</option>
@@ -293,6 +293,10 @@
                                 <option>Administrative Travel</option>
                                 <option>Others (Specify)</option>
                             </select>
+                        </div>
+                        <div class="mb-3" id="ndMissionOtherWrap" style="display:none;">
+                            <label class="form-label fw-semibold">Specify Mission</label>
+                            <input type="text" class="form-control" id="ndMissionOther" placeholder="Describe the mission type">
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Destination / Location</label>
@@ -380,6 +384,10 @@
                                 <option>Administrative Travel</option>
                                 <option>Others (Specify)</option>
                             </select>
+                        </div>
+                        <div class="mb-3" id="edMissionOtherWrap" style="display:none;">
+                            <label class="form-label fw-semibold">Specify Mission</label>
+                            <input type="text" class="form-control" id="edMissionOther" placeholder="Describe the mission type">
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Destination / Location</label>

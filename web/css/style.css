@@ -241,7 +241,7 @@ body {
     object-fit: cover;
 }
 
-/* Badges */
+/* Vehicle status badges — colors match the driver mobile app exactly */
 .badge-operational {
     background-color: rgba(22, 163, 74, 0.1);
     color: var(--status-operational);
@@ -257,5 +257,45 @@ body {
 .badge-not-operational {
     background-color: rgba(220, 38, 38, 0.1);
     color: var(--status-not-operational);
+}
+
+/* Review status badges (Pending / Reviewed) — kept off the four vehicle
+   status colors so green/blue/red/orange keep a single meaning, matching the
+   driver mobile app (Pending = slate gray, Reviewed = navy). */
+.badge-pending {
+    background-color: rgba(100, 116, 139, 0.12);
+    color: var(--text-secondary);
+}
+.badge-reviewed {
+    background-color: rgba(27, 47, 114, 0.1);
+    color: var(--primary);
+}
+
+/* Preventive maintenance "Upcoming" status — a calm slate that reads clearly
+   as scheduled-but-not-yet-due, distinct from the green "ready/done" signal. */
+.badge-upcoming {
+    background-color: #EEF2F7;
+    color: #475569;
+}
+
+/* Status pills stay on one line so the full "Under Preventive Maintenance"
+   label does not break awkwardly inside table cells. */
+.status-badge {
+    white-space: nowrap;
+}
+
+/* Print: isolate the generated report so the sidebar, topbar, report-type
+   cards, and action buttons are excluded from the printout / saved PDF. */
+@media print {
+    body * { visibility: hidden; }
+    #reportPrintArea, #reportPrintArea * { visibility: visible; }
+    #reportPrintArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        box-shadow: none !important;
+    }
+    .no-print { display: none !important; }
 }
 

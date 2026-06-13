@@ -150,7 +150,7 @@
                 <!-- Daily Inspections Section -->
                 <div class="d-flex align-items-center gap-2 mb-3">
                     <h5 class="fw-bold mb-0"><i class="bi bi-card-checklist me-2"></i>Daily BLOWBAGETS Inspections</h5>
-                    <span class="badge badge-dispatched rounded-pill px-3 py-2 js-insp-pending">2 Pending Review</span>
+                    <span class="badge badge-pending rounded-pill px-3 py-2 js-insp-pending">2 Pending Review</span>
                 </div>
                 <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-5">
                     <div class="table-responsive">
@@ -177,7 +177,7 @@
                                     </td>
                                     <td><span class="badge badge-operational px-3 py-2 rounded-pill">All OK</span></td>
                                     <td class="text-secondary"><em class="small">None</em></td>
-                                    <td><span class="badge badge-dispatched px-3 py-2 rounded-pill">Pending</span></td>
+                                    <td><span class="badge badge-pending px-3 py-2 rounded-pill">Pending</span></td>
                                     <td class="text-end">
                                         <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>
                                         <button class="btn btn-sm bg-navy text-white fw-medium" data-bs-toggle="modal" data-bs-target="#reviewInspectionModal">Review</button>
@@ -194,7 +194,7 @@
                                     </td>
                                     <td><span class="badge badge-not-operational px-3 py-2 rounded-pill">Has Issue</span></td>
                                     <td class="text-secondary">Low tire pressure (front right)</td>
-                                    <td><span class="badge badge-dispatched px-3 py-2 rounded-pill">Pending</span></td>
+                                    <td><span class="badge badge-pending px-3 py-2 rounded-pill">Pending</span></td>
                                     <td class="text-end">
                                         <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>
                                         <button class="btn btn-sm bg-navy text-white fw-medium" data-bs-toggle="modal" data-bs-target="#reviewInspectionModal">Review</button>
@@ -211,7 +211,7 @@
                                     </td>
                                     <td><span class="badge badge-operational px-3 py-2 rounded-pill">All OK</span></td>
                                     <td class="text-secondary"><em class="small">None</em></td>
-                                    <td><span class="badge badge-operational px-3 py-2 rounded-pill">Reviewed</span></td>
+                                    <td><span class="badge badge-reviewed px-3 py-2 rounded-pill">Reviewed</span></td>
                                     <td class="text-end">
                                         <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>
                                     </td>
@@ -227,7 +227,7 @@
                                     </td>
                                     <td><span class="badge badge-not-operational px-3 py-2 rounded-pill">Has Issue</span></td>
                                     <td class="text-secondary">Brakes — unusual noise during braking</td>
-                                    <td><span class="badge badge-operational px-3 py-2 rounded-pill">Reviewed</span></td>
+                                    <td><span class="badge badge-reviewed px-3 py-2 rounded-pill">Reviewed</span></td>
                                     <td class="text-end">
                                         <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>
                                     </td>
@@ -237,10 +237,22 @@
                     </div>
                 </div>
 
+                <!-- Frequently Reported Issues (aggregated from inspections & damage) -->
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-graph-up-arrow me-2"></i>Frequently Reported Issues</h5>
+                    <span class="badge bg-light text-dark border rounded-pill px-3 py-2">This agency</span>
+                </div>
+                <div class="card border-0 shadow-sm rounded-3 mb-5">
+                    <div class="card-body p-4">
+                        <p class="text-secondary small mb-3">Recurring vehicle issues across recent BLOWBAGETS inspections and damage reports, ranked by how often they appear. Use this to spot fleet-wide maintenance patterns.</p>
+                        <div id="freq-issues"></div>
+                    </div>
+                </div>
+
                 <!-- Damage Reports Section -->
                 <div class="d-flex align-items-center gap-2 mb-3 mt-5">
                     <h5 class="fw-bold mb-0"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Damage Reports</h5>
-                    <span class="badge badge-dispatched rounded-pill px-3 py-2 js-damage-pending">2 Pending Review</span>
+                    <span class="badge badge-pending rounded-pill px-3 py-2 js-damage-pending">2 Pending Review</span>
                 </div>
 
                 <!-- Damage Table -->
@@ -275,7 +287,7 @@
                                     <td>
                                         <button class="btn btn-sm btn-light border"><i class="bi bi-image text-primary me-1"></i> View</button>
                                     </td>
-                                    <td><span class="badge badge-dispatched px-3 py-2 rounded-pill">Pending</span></td>
+                                    <td><span class="badge badge-pending px-3 py-2 rounded-pill">Pending</span></td>
                                     <td class="text-end">
                                         <button class="btn btn-sm btn-danger fw-medium" data-bs-toggle="modal" data-bs-target="#reviewDamageModal">Review & Assess</button>
                                     </td>
@@ -296,7 +308,7 @@
                                     <td>
                                         <em class="text-secondary small">None</em>
                                     </td>
-                                    <td><span class="badge badge-dispatched px-3 py-2 rounded-pill">Pending</span></td>
+                                    <td><span class="badge badge-pending px-3 py-2 rounded-pill">Pending</span></td>
                                     <td class="text-end">
                                         <button class="btn btn-sm btn-danger fw-medium" data-bs-toggle="modal" data-bs-target="#reviewDamageModal">Review & Assess</button>
                                     </td>
@@ -317,7 +329,7 @@
                                     <td>
                                         <em class="text-secondary small">None</em>
                                     </td>
-                                    <td><span class="badge badge-operational px-3 py-2 rounded-pill">Reviewed</span></td>
+                                    <td><span class="badge badge-reviewed px-3 py-2 rounded-pill">Reviewed</span></td>
                                     <td class="text-end">
                                         <em class="text-secondary small">Resolved — see Repair Logs</em>
                                     </td>
@@ -438,7 +450,7 @@
                             <div class="fw-bold" id="rdVehicle">—</div>
                             <div class="small text-secondary"><span id="rdDriver">—</span> &middot; <span id="rdWhen">—</span></div>
                         </div>
-                        <span class="badge badge-dispatched px-3 py-2 rounded-pill">Pending</span>
+                        <span class="badge badge-pending px-3 py-2 rounded-pill">Pending</span>
                     </div>
                     <ul class="list-group list-group-flush border rounded-3 mb-4">
                         <li class="list-group-item d-flex justify-content-between"><span class="text-secondary small fw-semibold">Nature of Damage</span><span class="fw-medium text-end ms-3" id="rdNature">—</span></li>

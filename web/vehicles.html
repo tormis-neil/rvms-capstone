@@ -172,7 +172,7 @@
                                     <option value="">All Statuses</option>
                                     <option value="Operational">Operational</option>
                                     <option value="Dispatched">Dispatched</option>
-                                    <option value="Under PM">Under PM</option>
+                                    <option value="Under PM">Under Preventive Maintenance</option>
                                     <option value="Not Operational">Not Operational</option>
                                 </select>
                             </div>
@@ -258,7 +258,7 @@
                                     <td>Carlos Mendoza</td>
                                     <td>81,650 km</td>
                                     <td>
-                                        <span class="badge badge-pm px-3 py-2 rounded-pill">Under PM</span>
+                                        <span class="badge status-badge badge-pm px-3 py-2 rounded-pill">Under Preventive Maintenance</span>
                                     </td>
                                     <td class="text-end">
                                         <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
@@ -562,6 +562,9 @@
     <script>
         // Populate modals from the clicked row's data attributes
         const badgeClasses = ['badge-operational', 'badge-dispatched', 'badge-pm', 'badge-not-operational'];
+        // Full status label — matches the driver mobile app wording.
+        const STATUS_DISPLAY = { 'Under PM': 'Under Preventive Maintenance' };
+        const showStatus = s => STATUS_DISPLAY[s] || s;
 
         function rowData(event) {
             const row = event.relatedTarget && event.relatedTarget.closest('tr');
@@ -580,8 +583,8 @@
             document.getElementById('vvChassis').textContent = d.chassis;
             const badge = document.getElementById('vvStatus');
             badge.classList.remove(...badgeClasses);
-            badge.classList.add(d.badge);
-            badge.textContent = d.status;
+            badge.classList.add('status-badge', d.badge);
+            badge.textContent = showStatus(d.status);
         });
 
         document.getElementById('editVehicleModal').addEventListener('show.bs.modal', event => {
@@ -600,8 +603,8 @@
             document.getElementById('usDriver').textContent = d.driver;
             const badge = document.getElementById('usStatus');
             badge.classList.remove(...badgeClasses);
-            badge.classList.add(d.badge);
-            badge.textContent = d.status;
+            badge.classList.add('status-badge', d.badge);
+            badge.textContent = showStatus(d.status);
         });
     </script>
     <script src="js/agency.js"></script>

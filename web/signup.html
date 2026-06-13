@@ -62,11 +62,18 @@
             <img src="assets/rvms-logo.svg" alt="RVMS" width="72" height="72" class="d-block mx-auto mb-3">
 
             <!-- Title -->
-            <h4 class="text-center text-navy fw-bold mb-1">Create Account</h4>
-            <p class="text-center text-secondary small mb-4">Register an agency admin account</p>
+            <h4 class="text-center text-navy fw-bold mb-1">Request an Account</h4>
+            <p class="text-center text-secondary small mb-4">Submit a request — a system administrator reviews and creates the account. This form does not grant access.</p>
+
+            <!-- Success state (shown after submitting) -->
+            <div id="requestSuccess" class="alert alert-success d-none" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong>Request submitted.</strong> Your account request has been sent to the system administrator for review.
+                <a href="login.html" class="alert-link d-block mt-2">Back to Sign In</a>
+            </div>
 
             <!-- Form -->
-            <form action="dashboard.html" method="GET" id="signupForm">
+            <form id="signupForm">
                 <div class="mb-3">
                     <label for="fullName" class="form-label text-secondary small fw-semibold">Full Name</label>
                     <div class="input-group">
@@ -120,7 +127,7 @@
                     <div class="invalid-feedback d-block d-none" id="confirmError">Passwords do not match.</div>
                 </div>
 
-                <button type="submit" class="btn btn-navy w-100 py-2 mb-4">Sign Up</button>
+                <button type="submit" class="btn btn-navy w-100 py-2 mb-4">Submit Request</button>
 
                 <div class="text-center text-secondary small">
                     Already have an account?
@@ -153,11 +160,16 @@
         passwordInput.addEventListener('input', validateMatch);
 
         document.getElementById('signupForm').addEventListener('submit', event => {
+            event.preventDefault();
             if (!validateMatch() || confirmInput.value === '') {
-                event.preventDefault();
                 confirmInput.classList.add('is-invalid');
                 confirmError.classList.remove('d-none');
+                return;
             }
+            // No self-registration: submitting only records a request for the
+            // administrator. It never signs the user in or opens the dashboard.
+            document.getElementById('signupForm').classList.add('d-none');
+            document.getElementById('requestSuccess').classList.remove('d-none');
         });
     </script>
 </body>

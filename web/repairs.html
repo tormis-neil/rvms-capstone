@@ -326,12 +326,16 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Repair Source</label>
-                                <select class="form-select">
+                                <select class="form-select" id="lrSource">
                                     <option>Internal Office</option>
                                     <option>GSO Motorpool</option>
                                     <option>External Repair Shop</option>
                                 </select>
                             </div>
+                        </div>
+                        <div class="mb-3" id="lrShopWrap" style="display:none;">
+                            <label class="form-label fw-semibold">External Shop Name</label>
+                            <input type="text" class="form-control" id="lrShop" placeholder="Name of the external repair shop">
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Scope of Work</label>
@@ -398,6 +402,10 @@
                                     <option>External Repair Shop</option>
                                 </select>
                             </div>
+                        </div>
+                        <div class="mb-3" id="erShopWrap" style="display:none;">
+                            <label class="form-label fw-semibold">External Shop Name</label>
+                            <input type="text" class="form-control" id="erShop" placeholder="Name of the external repair shop">
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Scope of Work</label>

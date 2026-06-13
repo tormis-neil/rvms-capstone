@@ -14,11 +14,21 @@
     "Under PM": "badge-pm",
     "Not Operational": "badge-not-operational"
   };
+  // Full vehicle-status display label — matches the driver mobile app wording.
+  const STATUS_LABEL = { "Under PM": "Under Preventive Maintenance" };
+  const statusLabel = s => STATUS_LABEL[s] || s;
+  // Shows the named external shop when the repair source is an external shop.
+  const repairSourceLabel = r => (r.source === "External Repair Shop" && r.shop)
+    ? r.source + " — " + r.shop : r.source;
+  // Shows the admin-specified detail when the dispatch mission type is "Others".
+  const missionLabel = d => (d.mission === "Others" && d.missionOther)
+    ? d.mission + " — " + d.missionOther : d.mission;
   const LIC = { "Valid": "success", "Expiring Soon": "warning", "Expired": "danger" };
-  const REVIEW_BADGE = { "Pending": "badge-dispatched", "Reviewed": "badge-operational" };
+  // Review status colors mirror the mobile app: Pending = slate, Reviewed = navy.
+  const REVIEW_BADGE = { "Pending": "badge-pending", "Reviewed": "badge-reviewed" };
   const PM_BADGE = {
     "Due": "bg-danger", "Due Soon": "bg-warning text-dark",
-    "Scheduled": "bg-success bg-opacity-10 text-success", "Completed": "bg-secondary"
+    "Upcoming": "badge-upcoming", "Completed": "bg-secondary"
   };
   const NOTIF = {
     damage:     { icon: "bi-exclamation-triangle", tone: "danger",  title: "New Damage Report Submitted", link: "inspections-damage.html" },
@@ -40,6 +50,12 @@
       name: "Bureau of Fire Protection", short: "BFP", logo: "agency-logo/bfp-logo.jpg",
       location: "Calbayog City", contact: "(055) 123-4567", domain: "bfp.gov.ph", avatar: "A",
       extraItems: ["Hydraulic System", "Fire Pump"], primaryMission: "Fire Response",
+      frequentIssues: [
+        { issue: "Brakes — noise / pad wear", count: 5, last: "May 28, 2026", systemTag: "Brakes" },
+        { issue: "Tires — low pressure / wear", count: 4, last: "Today", systemTag: "Tires" },
+        { issue: "Lights — alignment / busted bulb", count: 3, last: "May 16, 2026", systemTag: "Lights" },
+        { issue: "Cooling / aircon performance", count: 2, last: "May 22, 2026", systemTag: "Cooling" }
+      ],
       vehicles: [
         { plate: "ABC-1234", type: "Fire Truck", mm: "Isuzu FTR 850", driver: "Juan Dela Cruz", km: "45,230 km", status: "Operational", engine: "4HK1-TC-587234", chassis: "JALC4W14697100345" },
         { plate: "BCD-2310", type: "Fire Truck", mm: "Hino 500", driver: "Ricardo Bautista", km: "38,420 km", status: "Dispatched", engine: "J08E-WD-441203", chassis: "JHDFG8JL5GX128466" },
@@ -70,7 +86,7 @@
       pmActive: [
         { plate: "EFG-4532", vtype: "Water Tanker", target: "Engine Service", schedType: "Mileage-Based", dueMain: "81,000 km", dueSub: "Current: 81,650 km — overdue", status: "Due" },
         { plate: "ABC-1234", vtype: "Fire Truck", target: "Oil Change & Filter", schedType: "Mileage-Based", dueMain: "46,000 km", dueSub: "Current: 45,230 km", status: "Due Soon" },
-        { plate: "BCD-2310", vtype: "Fire Truck", target: "Brake Fluid Flush", schedType: "Time-Based", dueMain: "Dec 10, 2026", dueSub: "6 months away", status: "Scheduled" }
+        { plate: "BCD-2310", vtype: "Fire Truck", target: "Brake Fluid Flush", schedType: "Time-Based", dueMain: "Dec 10, 2026", dueSub: "6 months away", status: "Upcoming" }
       ],
       pmCompleted: [
         { plate: "GHI-6754", vtype: "Ambulance", performed: "Brake Inspection & Fluid", date: "May 20, 2026", source: "GSO Motorpool", parts: "Brake fluid" }
@@ -78,10 +94,11 @@
       dispatch: [
         { mission: "Fire Response", location: "Brgy. Obrero, Calbayog", plate: "BCD-2310", driver: "Ricardo Bautista", out: ["Today", "09:40 AM"], in: null, status: "Active" },
         { mission: "Fire Response", location: "Brgy. Aguit-itan, Calbayog", plate: "ABC-1234", driver: "Juan Dela Cruz", out: ["Jun 5, 2026", "02:10 PM"], in: ["Jun 5, 2026", "05:35 PM"], status: "Completed" },
-        { mission: "Medical Response", location: "Brgy. Carayman, Calbayog", plate: "GHI-6754", driver: "Felipe Ramos", out: ["Jun 3, 2026", "09:00 AM"], in: ["Jun 3, 2026", "11:20 AM"], status: "Completed" }
+        { mission: "Medical Response", location: "Brgy. Carayman, Calbayog", plate: "GHI-6754", driver: "Felipe Ramos", out: ["Jun 3, 2026", "09:00 AM"], in: ["Jun 3, 2026", "11:20 AM"], status: "Completed" },
+        { mission: "Others", missionOther: "Fire Safety Awareness Parade", location: "Calbayog City Plaza", plate: "CDE-3421", driver: "Allan Reyes", out: ["Jun 2, 2026", "01:00 PM"], in: ["Jun 2, 2026", "04:00 PM"], status: "Completed" }
       ],
       repairs: [
-        { date: "Jun 6, 2026", plate: "FGH-5643", driver: "Ramon Cruz", scope: "Transmission assessment and teardown", parts: "None (assessment only)", cost: "—", source: "External Repair Shop", remarks: "Overhaul required; vehicle remains Not Operational", vstatus: "Not Operational" },
+        { date: "Jun 6, 2026", plate: "FGH-5643", driver: "Ramon Cruz", scope: "Transmission assessment and teardown", parts: "None (assessment only)", cost: "—", source: "External Repair Shop", shop: "Calbayog Diesel & Truck Works", remarks: "Overhaul required; vehicle remains Not Operational", vstatus: "Not Operational" },
         { date: "May 30, 2026", plate: "ABC-1234", driver: "Juan Dela Cruz", scope: "Front brake pad replacement", parts: "Brake pads (front set)", cost: "₱4,800", source: "Internal Office", remarks: "From damage report dated May 28; resolved", vstatus: "Operational" },
         { date: "May 22, 2026", plate: "GHI-6754", driver: "Felipe Ramos", scope: "Aircon compressor belt replacement", parts: "Compressor belt", cost: "₱2,500", source: "GSO Motorpool", remarks: "Cooling restored after medical transport run", vstatus: "Operational" },
         { date: "May 16, 2026", plate: "ABC-1234", driver: "Juan Dela Cruz", scope: "Headlight bulb replacement (left)", parts: "H4 halogen bulb", cost: "₱350", source: "Internal Office", remarks: "From damage report dated May 15; resolved", vstatus: "Operational" }
@@ -100,6 +117,12 @@
       name: "Philippine National Police", short: "PNP", logo: "agency-logo/pnp-logo.jpg",
       location: "Calbayog City", contact: "(055) 209-1175", domain: "pnp.gov.ph", avatar: "A",
       extraItems: [], primaryMission: "Patrol",
+      frequentIssues: [
+        { issue: "Tires — pressure / tread wear", count: 5, last: "Today", systemTag: "Tires" },
+        { issue: "Lights — headlight alignment", count: 3, last: "Yesterday", systemTag: "Lights" },
+        { issue: "Drive chain slack (motorcycles)", count: 3, last: "Today", systemTag: "Drivetrain" },
+        { issue: "Brakes — response / pad wear", count: 2, last: "May 21, 2026", systemTag: "Brakes" }
+      ],
       vehicles: [
         { plate: "PNP-1021", type: "Patrol Car", mm: "Toyota Vios", driver: "Eduardo Lim", km: "72,300 km", status: "Operational", engine: "2NR-FE-118723", chassis: "MR053KKB401029384" },
         { plate: "PNP-1045", type: "Patrol SUV", mm: "Mitsubishi Montero", driver: "Roberto Salazar", km: "88,410 km", status: "Dispatched", engine: "4N15-CB-552310", chassis: "MMBJYKL10KH041527" },
@@ -130,7 +153,7 @@
       pmActive: [
         { plate: "PNP-1088", vtype: "Personnel Carrier", target: "Engine Service", schedType: "Mileage-Based", dueMain: "102,000 km", dueSub: "Current: 102,560 km — overdue", status: "Due" },
         { plate: "PNP-1021", vtype: "Patrol Car", target: "Oil Change & Filter", schedType: "Mileage-Based", dueMain: "73,000 km", dueSub: "Current: 72,300 km", status: "Due Soon" },
-        { plate: "PNP-1067", vtype: "Mobile Patrol", target: "Tire Rotation", schedType: "Time-Based", dueMain: "Nov 15, 2026", dueSub: "5 months away", status: "Scheduled" }
+        { plate: "PNP-1067", vtype: "Mobile Patrol", target: "Tire Rotation", schedType: "Time-Based", dueMain: "Nov 15, 2026", dueSub: "5 months away", status: "Upcoming" }
       ],
       pmCompleted: [
         { plate: "PNP-2210", vtype: "Patrol Motorcycle", performed: "Chain & Sprocket Service", date: "May 18, 2026", source: "Internal Office", parts: "Drive chain" }
@@ -138,11 +161,12 @@
       dispatch: [
         { mission: "Patrol", location: "Brgy. Trinidad, Calbayog", plate: "PNP-1045", driver: "Roberto Salazar", out: ["Today", "08:30 AM"], in: null, status: "Active" },
         { mission: "Patrol", location: "Brgy. Central, Calbayog", plate: "PNP-1021", driver: "Eduardo Lim", out: ["Jun 5, 2026", "06:00 AM"], in: ["Jun 5, 2026", "02:00 PM"], status: "Completed" },
-        { mission: "Administrative Travel", location: "Provincial HQ, Catbalogan", plate: "PNP-1067", driver: "Manuel Tan", out: ["Jun 2, 2026", "08:00 AM"], in: ["Jun 2, 2026", "04:30 PM"], status: "Completed" }
+        { mission: "Administrative Travel", location: "Provincial HQ, Catbalogan", plate: "PNP-1067", driver: "Manuel Tan", out: ["Jun 2, 2026", "08:00 AM"], in: ["Jun 2, 2026", "04:30 PM"], status: "Completed" },
+        { mission: "Others", missionOther: "VIP Security Escort", location: "City Hall, Calbayog", plate: "PNP-2210", driver: "Andres Villamor", out: ["Jun 1, 2026", "09:00 AM"], in: ["Jun 1, 2026", "12:00 PM"], status: "Completed" }
       ],
       repairs: [
-        { date: "Jun 6, 2026", plate: "PNP-1088", driver: "Pedro Castillo", scope: "Radiator assessment — coolant leak", parts: "None (assessment only)", cost: "—", source: "External Repair Shop", remarks: "Radiator replacement pending; remains Not Operational", vstatus: "Not Operational" },
-        { date: "May 29, 2026", plate: "PNP-1045", driver: "Roberto Salazar", scope: "Windshield replacement", parts: "Front windshield", cost: "₱5,200", source: "External Repair Shop", remarks: "From damage report dated May 26; resolved", vstatus: "Operational" },
+        { date: "Jun 6, 2026", plate: "PNP-1088", driver: "Pedro Castillo", scope: "Radiator assessment — coolant leak", parts: "None (assessment only)", cost: "—", source: "External Repair Shop", shop: "Northbay Auto Radiator Center", remarks: "Radiator replacement pending; remains Not Operational", vstatus: "Not Operational" },
+        { date: "May 29, 2026", plate: "PNP-1045", driver: "Roberto Salazar", scope: "Windshield replacement", parts: "Front windshield", cost: "₱5,200", source: "External Repair Shop", shop: "ClearView Auto Glass Calbayog", remarks: "From damage report dated May 26; resolved", vstatus: "Operational" },
         { date: "May 21, 2026", plate: "PNP-2210", driver: "Andres Villamor", scope: "Brake adjustment and pad check", parts: "Brake pads (rear)", cost: "₱900", source: "Internal Office", remarks: "Routine motorcycle servicing", vstatus: "Operational" },
         { date: "May 14, 2026", plate: "PNP-1021", driver: "Eduardo Lim", scope: "Aircon recharge", parts: "Refrigerant", cost: "₱1,200", source: "GSO Motorpool", remarks: "Cabin cooling restored", vstatus: "Operational" }
       ],
@@ -160,6 +184,12 @@
       name: "City Disaster Risk Reduction and Management Office", short: "CDRRMO", logo: "agency-logo/cdrrmo-logo.jpg",
       location: "Calbayog City", contact: "(055) 301-2288", domain: "cdrrmo.calbayog.gov.ph", avatar: "A",
       extraItems: [], primaryMission: "Rescue Operation",
+      frequentIssues: [
+        { issue: "Hydraulic / winch system", count: 4, last: "Today", systemTag: "Hydraulics" },
+        { issue: "Tires — sidewall / tread wear", count: 3, last: "May 24, 2026", systemTag: "Tires" },
+        { issue: "Trailer / auxiliary lights", count: 3, last: "Yesterday", systemTag: "Lights" },
+        { issue: "Battery — cold-start / charging", count: 2, last: "May 13, 2026", systemTag: "Battery" }
+      ],
       vehicles: [
         { plate: "CDR-3301", type: "Rescue Truck", mm: "Isuzu ELF", driver: "Noel Ferrer", km: "47,800 km", status: "Operational", engine: "4HF1-RT-330218", chassis: "JAANKR55LH7700213" },
         { plate: "CDR-3312", type: "Rescue Boat Hauler", mm: "Ford Ranger", driver: "Victor Guevarra", km: "61,230 km", status: "Dispatched", engine: "P4AT-BH-551209", chassis: "MNCLMFF50JW440187" },
@@ -190,7 +220,7 @@
       pmActive: [
         { plate: "CDR-3370", vtype: "Service Truck", target: "Engine Service", schedType: "Mileage-Based", dueMain: "91,000 km", dueSub: "Current: 91,200 km — overdue", status: "Due" },
         { plate: "CDR-3301", vtype: "Rescue Truck", target: "Oil Change & Filter", schedType: "Mileage-Based", dueMain: "48,000 km", dueSub: "Current: 47,800 km", status: "Due Soon" },
-        { plate: "CDR-3325", vtype: "6-Wheeler Rescue", target: "Hydraulic System Check", schedType: "Time-Based", dueMain: "Oct 30, 2026", dueSub: "4 months away", status: "Scheduled" }
+        { plate: "CDR-3325", vtype: "6-Wheeler Rescue", target: "Hydraulic System Check", schedType: "Time-Based", dueMain: "Oct 30, 2026", dueSub: "4 months away", status: "Upcoming" }
       ],
       pmCompleted: [
         { plate: "CDR-3340", vtype: "Rescue Ambulance", performed: "Coolant Flush & Inspection", date: "May 17, 2026", source: "GSO Motorpool", parts: "Coolant" }
@@ -198,11 +228,12 @@
       dispatch: [
         { mission: "Rescue Operation", location: "Brgy. Tinambacan, Calbayog", plate: "CDR-3312", driver: "Victor Guevarra", out: ["Today", "07:50 AM"], in: null, status: "Active" },
         { mission: "Rescue Operation", location: "Brgy. Oquendo, Calbayog", plate: "CDR-3301", driver: "Noel Ferrer", out: ["Jun 4, 2026", "01:20 PM"], in: ["Jun 4, 2026", "06:10 PM"], status: "Completed" },
-        { mission: "Administrative Travel", location: "Regional DRRM Council, Tacloban", plate: "CDR-3356", driver: "Arnel Pascua", out: ["Jun 1, 2026", "07:30 AM"], in: ["Jun 1, 2026", "05:00 PM"], status: "Completed" }
+        { mission: "Administrative Travel", location: "Regional DRRM Council, Tacloban", plate: "CDR-3356", driver: "Arnel Pascua", out: ["Jun 1, 2026", "07:30 AM"], in: ["Jun 1, 2026", "05:00 PM"], status: "Completed" },
+        { mission: "Others", missionOther: "Tree-Planting Logistics Support", location: "Brgy. Cagsalay, Calbayog", plate: "CDR-3325", driver: "Danilo Reyes", out: ["May 31, 2026", "06:30 AM"], in: ["May 31, 2026", "01:00 PM"], status: "Completed" }
       ],
       repairs: [
-        { date: "Jun 6, 2026", plate: "CDR-3370", driver: "Benigno Lopez", scope: "Clutch assembly assessment", parts: "None (assessment only)", cost: "—", source: "External Repair Shop", remarks: "Clutch overhaul pending; remains Not Operational", vstatus: "Not Operational" },
-        { date: "May 28, 2026", plate: "CDR-3301", driver: "Noel Ferrer", scope: "Tire replacement (rear)", parts: "1x heavy-duty tire", cost: "₱8,400", source: "External Repair Shop", remarks: "From damage report dated May 24; resolved", vstatus: "Operational" },
+        { date: "Jun 6, 2026", plate: "CDR-3370", driver: "Benigno Lopez", scope: "Clutch assembly assessment", parts: "None (assessment only)", cost: "—", source: "External Repair Shop", shop: "Samar Heavy Equipment Services", remarks: "Clutch overhaul pending; remains Not Operational", vstatus: "Not Operational" },
+        { date: "May 28, 2026", plate: "CDR-3301", driver: "Noel Ferrer", scope: "Tire replacement (rear)", parts: "1x heavy-duty tire", cost: "₱8,400", source: "External Repair Shop", shop: "RoadGrip Tire Supply & Service", remarks: "From damage report dated May 24; resolved", vstatus: "Operational" },
         { date: "May 20, 2026", plate: "CDR-3325", driver: "Danilo Reyes", scope: "Hydraulic hose replacement", parts: "Hydraulic hose set", cost: "₱6,100", source: "Internal Office", remarks: "Restored winch operation", vstatus: "Operational" },
         { date: "May 13, 2026", plate: "CDR-3356", driver: "Arnel Pascua", scope: "Battery replacement", parts: "12V heavy-duty battery", cost: "₱5,500", source: "GSO Motorpool", remarks: "Cold-start issue resolved", vstatus: "Operational" }
       ],
@@ -220,6 +251,12 @@
       name: "City Health Office", short: "CHO", logo: "agency-logo/cho-logo.png",
       location: "Calbayog City", contact: "(055) 412-3390", domain: "cho.calbayog.gov.ph", avatar: "A",
       extraItems: [], primaryMission: "Medical Response",
+      frequentIssues: [
+        { issue: "Aircon / cabin cooling", count: 4, last: "Today", systemTag: "Cooling" },
+        { issue: "Siren / signaling system", count: 3, last: "Yesterday", systemTag: "Signaling" },
+        { issue: "Doors / stretcher latch", count: 3, last: "Today", systemTag: "Body" },
+        { issue: "Brakes — fluid / pad wear", count: 2, last: "May 19, 2026", systemTag: "Brakes" }
+      ],
       vehicles: [
         { plate: "CHO-4401", type: "Ambulance", mm: "Toyota Hiace", driver: "Grace Manalo", km: "58,400 km", status: "Operational", engine: "1KD-AM-441120", chassis: "JTFSK22P9L0119033" },
         { plate: "CHO-4412", type: "Ambulance", mm: "Nissan Urvan", driver: "Lourdes Bautista", km: "47,250 km", status: "Dispatched", engine: "YD25-AM-552031", chassis: "JN1TG4E26M0072145" },
@@ -250,7 +287,7 @@
       pmActive: [
         { plate: "CHO-4456", vtype: "Service Vehicle", target: "Engine Service", schedType: "Mileage-Based", dueMain: "94,000 km", dueSub: "Current: 94,300 km — overdue", status: "Due" },
         { plate: "CHO-4401", vtype: "Ambulance", target: "Oil Change & Filter", schedType: "Mileage-Based", dueMain: "59,000 km", dueSub: "Current: 58,400 km", status: "Due Soon" },
-        { plate: "CHO-4423", vtype: "Medical Van", target: "Aircon Servicing", schedType: "Time-Based", dueMain: "Dec 5, 2026", dueSub: "6 months away", status: "Scheduled" }
+        { plate: "CHO-4423", vtype: "Medical Van", target: "Aircon Servicing", schedType: "Time-Based", dueMain: "Dec 5, 2026", dueSub: "6 months away", status: "Upcoming" }
       ],
       pmCompleted: [
         { plate: "CHO-4445", vtype: "Patient Transport", performed: "Brake Inspection & Fluid", date: "May 19, 2026", source: "GSO Motorpool", parts: "Brake fluid" }
@@ -258,12 +295,13 @@
       dispatch: [
         { mission: "Medical Response", location: "Brgy. Bagacay, Calbayog", plate: "CHO-4412", driver: "Lourdes Bautista", out: ["Today", "09:10 AM"], in: null, status: "Active" },
         { mission: "Medical Response", location: "Brgy. Hamorawon, Calbayog", plate: "CHO-4401", driver: "Grace Manalo", out: ["Jun 5, 2026", "10:30 AM"], in: ["Jun 5, 2026", "01:15 PM"], status: "Completed" },
-        { mission: "Medical Response", location: "Brgy. Dagum, Calbayog", plate: "CHO-4423", driver: "Teresa Domingo", out: ["Jun 3, 2026", "02:00 PM"], in: ["Jun 3, 2026", "04:40 PM"], status: "Completed" }
+        { mission: "Medical Response", location: "Brgy. Dagum, Calbayog", plate: "CHO-4423", driver: "Teresa Domingo", out: ["Jun 3, 2026", "02:00 PM"], in: ["Jun 3, 2026", "04:40 PM"], status: "Completed" },
+        { mission: "Others", missionOther: "Community Health Caravan Support", location: "Brgy. Tinambacan, Calbayog", plate: "CHO-4445", driver: "Cynthia Flores", out: ["Jun 2, 2026", "07:00 AM"], in: ["Jun 2, 2026", "03:30 PM"], status: "Completed" }
       ],
       repairs: [
-        { date: "Jun 6, 2026", plate: "CHO-4456", driver: "Alberto Reyes", scope: "Alternator assessment — no-start", parts: "None (assessment only)", cost: "—", source: "External Repair Shop", remarks: "Alternator replacement pending; remains Not Operational", vstatus: "Not Operational" },
+        { date: "Jun 6, 2026", plate: "CHO-4456", driver: "Alberto Reyes", scope: "Alternator assessment — no-start", parts: "None (assessment only)", cost: "—", source: "External Repair Shop", shop: "PowerLine Auto Electrical Shop", remarks: "Alternator replacement pending; remains Not Operational", vstatus: "Not Operational" },
         { date: "May 30, 2026", plate: "CHO-4412", driver: "Lourdes Bautista", scope: "Stretcher rail straightening", parts: "Stretcher rail", cost: "₱2,300", source: "Internal Office", remarks: "From damage report dated May 27; resolved", vstatus: "Operational" },
-        { date: "May 23, 2026", plate: "CHO-4401", driver: "Grace Manalo", scope: "Siren control unit replacement", parts: "Siren controller", cost: "₱3,700", source: "External Repair Shop", remarks: "Emergency signaling restored", vstatus: "Operational" },
+        { date: "May 23, 2026", plate: "CHO-4401", driver: "Grace Manalo", scope: "Siren control unit replacement", parts: "Siren controller", cost: "₱3,700", source: "External Repair Shop", shop: "Siren & Signal Specialists Inc.", remarks: "Emergency signaling restored", vstatus: "Operational" },
         { date: "May 15, 2026", plate: "CHO-4423", driver: "Teresa Domingo", scope: "Aircon compressor service", parts: "Compressor seal kit", cost: "₱4,100", source: "GSO Motorpool", remarks: "Patient cabin cooling restored", vstatus: "Operational" }
       ],
       notifications: [
@@ -348,7 +386,7 @@
       '<td class="fw-bold">' + v.plate + '</td>' +
       '<td><div class="fw-semibold">' + v.type + '</div><div class="small text-secondary">' + v.mm + '</div></td>' +
       '<td>' + v.driver + '</td><td>' + v.km + '</td>' +
-      '<td><span class="badge ' + STATUS_BADGE[v.status] + ' px-3 py-2 rounded-pill">' + v.status + '</span></td>' +
+      '<td><span class="badge status-badge ' + STATUS_BADGE[v.status] + ' px-3 py-2 rounded-pill">' + statusLabel(v.status) + '</span></td>' +
       '<td class="text-end">' +
       '<button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button> ' +
       '<button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button> ' +
@@ -441,7 +479,7 @@
     if (act) {
       act.innerHTML = A.pmActive.map(p => {
         const dueColor = p.status === "Due" ? "text-danger" : p.status === "Due Soon" ? "text-warning text-dark" : "text-dark";
-        const action = p.status === "Scheduled"
+        const action = p.status === "Upcoming"
           ? '<button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#editPmModal"><i class="bi bi-pencil"></i></button>'
           : '<button class="btn btn-sm btn-success fw-medium" data-bs-toggle="modal" data-bs-target="#markCompletedModal">Mark Completed</button>';
         return '<tr><td><div class="fw-bold">' + p.plate + '</div><div class="small text-secondary">' + p.vtype + '</div></td>' +
@@ -478,8 +516,8 @@
       const mainBtn = d.status === "Active"
         ? '<button class="btn btn-sm btn-primary fw-medium" data-bs-toggle="modal" data-bs-target="#closeDispatchModal">Close Dispatch</button>'
         : '<button class="btn btn-sm btn-light border" title="View" data-bs-toggle="modal" data-bs-target="#viewDispatchModal"><i class="bi bi-eye"></i></button>';
-      return '<tr data-mission="' + esc(d.mission) + '" data-location="' + esc(d.location) + '" data-plate="' + d.plate + '" data-type="' + vtypeOf(d.plate) + '" data-driver="' + esc(d.driver) + '" data-out="' + d.out[0] + ', ' + d.out[1] + '" data-in="' + (d.in ? d.in[0] + ', ' + d.in[1] : '') + '" data-status="' + d.status + '">' +
-        '<td><div class="fw-bold text-dark">' + esc(d.mission) + '</div><div class="small text-secondary"><i class="bi bi-geo-alt me-1"></i>' + esc(d.location) + '</div></td>' +
+      return '<tr data-mission="' + esc(d.mission) + '" data-mission-other="' + esc(d.missionOther || "") + '" data-location="' + esc(d.location) + '" data-plate="' + d.plate + '" data-type="' + vtypeOf(d.plate) + '" data-driver="' + esc(d.driver) + '" data-out="' + d.out[0] + ', ' + d.out[1] + '" data-in="' + (d.in ? d.in[0] + ', ' + d.in[1] : '') + '" data-status="' + d.status + '">' +
+        '<td><div class="fw-bold text-dark">' + esc(missionLabel(d)) + '</div><div class="small text-secondary"><i class="bi bi-geo-alt me-1"></i>' + esc(d.location) + '</div></td>' +
         '<td><div class="fw-semibold text-dark">' + d.plate + '</div><div class="small text-secondary">' + d.driver + '</div></td>' +
         '<td><div class="fw-medium text-dark">' + d.out[0] + '</div><div class="small text-secondary">' + d.out[1] + '</div></td>' +
         '<td>' + timeIn + '</td><td>' + statusBadge + '</td>' +
@@ -494,15 +532,15 @@
     const el = document.getElementById("rows-repairs");
     if (!el) return;
     el.innerHTML = A.repairs.map(r =>
-      '<tr data-date="' + r.date + '" data-plate="' + r.plate + '" data-type="' + vtypeOf(r.plate) + '" data-driver="' + esc(r.driver) + '" data-scope="' + esc(r.scope) + '" data-parts="' + esc(r.parts) + '" data-cost="' + r.cost + '" data-source="' + r.source + '" data-remarks="' + esc(r.remarks) + '" data-vstatus="' + r.vstatus + '" data-badge="' + STATUS_BADGE[r.vstatus] + '">' +
+      '<tr data-date="' + r.date + '" data-plate="' + r.plate + '" data-type="' + vtypeOf(r.plate) + '" data-driver="' + esc(r.driver) + '" data-scope="' + esc(r.scope) + '" data-parts="' + esc(r.parts) + '" data-cost="' + r.cost + '" data-source="' + r.source + '" data-shop="' + esc(r.shop || "") + '" data-remarks="' + esc(r.remarks) + '" data-vstatus="' + r.vstatus + '" data-badge="' + STATUS_BADGE[r.vstatus] + '">' +
       '<td class="fw-medium">' + r.date + '</td>' +
       '<td><div class="fw-bold">' + r.plate + '</div><div class="small text-secondary">' + r.driver + '</div></td>' +
       '<td>' + esc(r.scope) + '</td>' +
       '<td>' + (r.parts.startsWith("None") ? '<em class="text-secondary small">' + esc(r.parts) + '</em>' : esc(r.parts)) + '</td>' +
       '<td>' + (r.cost === "—" ? '<em class="text-secondary small">—</em>' : r.cost) + '</td>' +
-      '<td><span class="badge bg-light text-dark border">' + r.source + '</span></td>' +
+      '<td><span class="badge bg-light text-dark border">' + repairSourceLabel(r) + '</span></td>' +
       '<td class="small text-secondary">' + esc(r.remarks) + '</td>' +
-      '<td><span class="badge ' + STATUS_BADGE[r.vstatus] + ' px-3 py-2 rounded-pill">' + r.vstatus + '</span></td>' +
+      '<td><span class="badge status-badge ' + STATUS_BADGE[r.vstatus] + ' px-3 py-2 rounded-pill">' + statusLabel(r.vstatus) + '</span></td>' +
       '<td class="text-end"><div class="d-inline-flex gap-2 justify-content-end">' +
       '<button class="btn btn-sm btn-light border" title="Edit Log" data-bs-toggle="modal" data-bs-target="#editRepairModal"><i class="bi bi-pencil"></i></button>' +
       '<button class="btn btn-sm btn-light border" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>' +
@@ -679,6 +717,8 @@
       setVal("#erCost", d.cost === "—" ? "" : d.cost);
       setVal("#erRemarks", d.remarks);
       selectByText("#erSource", d.source);
+      setVal("#erShop", d.shop || "");
+      toggleSpecify("#erSource", "#erShopWrap", "External Repair Shop");
     });
     const us = document.getElementById("updateStatusModal");
     if (us) us.addEventListener("show.bs.modal", ev => {
@@ -686,7 +726,7 @@
       setText("#usVehicle", d.plate + " (" + d.type + ")");
       setText("#usMeta", d.driver + " · Last repair: " + d.date);
       const b = document.getElementById("usBadge");
-      if (b && d.badge) { b.className = "badge " + d.badge + " px-3 py-2 rounded-pill"; b.textContent = d.vstatus; }
+      if (b && d.badge) { b.className = "badge status-badge " + d.badge + " px-3 py-2 rounded-pill"; b.textContent = statusLabel(d.vstatus); }
     });
   }
 
@@ -700,6 +740,8 @@
       const b = document.getElementById("edStatusBadge");
       if (b) { const active = d.status === "Active"; b.className = "badge " + (active ? "bg-primary" : "bg-secondary") + " px-3 py-2 rounded-pill"; b.textContent = d.status; }
       selectByText("#edMission", d.mission);
+      setVal("#edMissionOther", d.missionOther || "");
+      toggleSpecify("#edMission", "#edMissionOtherWrap", "Others");
       setVal("#edLocation", d.location);
       setVal("#edTimeOut", d.out);
       setVal("#edTimeIn", d.in || "");
@@ -707,9 +749,172 @@
       if (wrap) wrap.style.display = d.in ? "" : "none";
     });
   }
+  // Matches an option by exact text, or by prefix so "Others" selects the
+  // "Others (Specify)" option used in the dispatch mission dropdowns.
   function selectByText(sel, text) {
     const el = document.querySelector(sel);
-    if (el) Array.prototype.forEach.call(el.options, o => { if (o.text === text) o.selected = true; });
+    if (el) Array.prototype.forEach.call(el.options, o => {
+      if (o.text === text || o.text.indexOf(text + " (") === 0) o.selected = true;
+    });
+  }
+
+  /* -------------------- frequently reported issues --------------------- */
+  // Aggregated recurring BLOWBAGETS / damage findings for the agency
+  // (Inspection Monitoring — plan §6.4). Ranked by occurrence count.
+  function renderFrequentIssues() {
+    const el = document.getElementById("freq-issues");
+    if (!el) return;
+    const items = (A.frequentIssues || []).slice().sort((a, b) => b.count - a.count);
+    if (!items.length) { el.innerHTML = '<div class="text-secondary small">No recurring issues recorded.</div>'; return; }
+    const max = items[0].count;
+    el.innerHTML = items.map((it, idx) => {
+      const pct = Math.round((it.count / max) * 100);
+      return '<div class="d-flex align-items-center gap-3 py-2' + (idx ? ' border-top' : '') + '">' +
+        '<span class="text-secondary fw-bold" style="min-width:1.5rem;">#' + (idx + 1) + '</span>' +
+        '<div class="flex-grow-1">' +
+        '<div class="d-flex justify-content-between align-items-center">' +
+        '<span class="fw-semibold text-dark">' + esc(it.issue) + '</span>' +
+        '<span class="small text-secondary ms-2">Last: ' + esc(it.last) + '</span></div>' +
+        '<div class="progress mt-1" style="height:6px;"><div class="progress-bar bg-warning" role="progressbar" style="width:' + pct + '%"></div></div>' +
+        '</div>' +
+        '<span class="badge bg-warning text-dark rounded-pill">' + it.count + '×</span>' +
+        '</div>';
+    }).join("");
+  }
+
+  /* --------------- conditional "specify" inputs (modals) --------------- */
+  // Reveals a free-text field when a select reaches a trigger value, e.g.
+  // dispatch Mission = "Others" or repair Source = "External Repair Shop".
+  function toggleSpecify(selectSel, wrapSel, triggerValue) {
+    const sel = document.querySelector(selectSel);
+    const wrap = document.querySelector(wrapSel);
+    if (!sel || !wrap) return;
+    const opt = sel.options[sel.selectedIndex];
+    const val = (sel.value || (opt && opt.text) || "");
+    wrap.style.display = val.indexOf(triggerValue) === 0 ? "" : "none";
+  }
+  function wireConditionalSpecifiers() {
+    const pairs = [
+      ["#ndMission", "#ndMissionOtherWrap", "Others"],
+      ["#edMission", "#edMissionOtherWrap", "Others"],
+      ["#lrSource", "#lrShopWrap", "External Repair Shop"],
+      ["#erSource", "#erShopWrap", "External Repair Shop"]
+    ];
+    pairs.forEach(([s, w, t]) => {
+      const sel = document.querySelector(s);
+      if (!sel) return;
+      const apply = () => toggleSpecify(s, w, t);
+      sel.addEventListener("change", apply);
+      apply();
+    });
+  }
+
+  /* ----------------------- report generation --------------------------- */
+  const plateOf = opt => (opt || "").split(" ")[0];
+  function reportSpec(type, f) {
+    const vehOK = r => !f.plate || r.plate === f.plate;
+    const drvOK = r => !f.driver || r.driver === f.driver;
+    switch (type) {
+      case "Inspection Records":
+        return { cols: ["Date / Time", "Vehicle", "Driver", "Result", "Remarks", "Review"],
+          rows: A.inspections.filter(i => vehOK(i) && drvOK(i)).map(i =>
+            [i.date + " " + i.time, i.plate + " (" + vtypeOf(i.plate) + ")", i.driver, i.result, i.remarks, i.review]) };
+      case "Damage & Defects":
+        return { cols: ["Date / Time", "Vehicle", "Driver", "Nature of Damage", "Suspected Parts", "Photo", "Review"],
+          rows: A.damage.filter(d => vehOK(d) && drvOK(d)).map(d =>
+            [d.date + " " + d.time, d.plate + " (" + vtypeOf(d.plate) + ")", d.driver, d.nature, d.parts, d.attachment ? "Yes" : "None", d.review]) };
+      case "Repair & Maintenance History":
+        return { cols: ["Date", "Vehicle", "Driver", "Scope of Work", "Parts Replaced", "Cost", "Repair Source", "Vehicle Status"],
+          rows: A.repairs.filter(r => vehOK(r) && drvOK(r)).map(r =>
+            [r.date, r.plate + " (" + vtypeOf(r.plate) + ")", r.driver, r.scope, r.parts, r.cost, repairSourceLabel(r), statusLabel(r.vstatus)]) };
+      case "Preventive Maintenance Records": {
+        const active = A.pmActive.filter(vehOK).map(p => [p.plate + " (" + p.vtype + ")", p.target, p.schedType, p.dueMain, p.status]);
+        const done = A.pmCompleted.filter(vehOK).map(p => [p.plate + " (" + p.vtype + ")", p.performed, "Completed Service", p.date + " · " + p.source, "Completed"]);
+        return { cols: ["Vehicle", "Maintenance", "Type", "Due / Serviced", "Status"], rows: active.concat(done) };
+      }
+      case "Dispatch Logs":
+        return { cols: ["Mission", "Vehicle", "Driver", "Location", "Time Out", "Time In", "Status"],
+          rows: A.dispatch.filter(d => vehOK(d) && drvOK(d)).map(d =>
+            [missionLabel(d), d.plate + " (" + vtypeOf(d.plate) + ")", d.driver, d.location,
+             d.out.join(" "), d.in ? d.in.join(" ") : "—", d.status]) };
+      case "Vehicle Status Summary":
+        return { cols: ["Plate", "Type", "Make / Model", "Assigned Driver", "Mileage", "Status"],
+          rows: A.vehicles.map(v => [v.plate, v.type, v.mm, v.driver, v.km, statusLabel(v.status)]) };
+      default:
+        return { cols: [], rows: [] };
+    }
+  }
+  function renderReport(type, f) {
+    const out = document.getElementById("reportOutput");
+    if (!out) return;
+    const spec = reportSpec(type, f);
+    const noFilter = type === "Vehicle Status Summary";
+    const filterBits = [];
+    if (!noFilter) {
+      filterBits.push("Date range: " + f.range);
+      filterBits.push("Vehicle: " + (f.plate || "All"));
+      filterBits.push("Driver: " + (f.driver || "All"));
+    } else {
+      filterBits.push("Current snapshot of all vehicles");
+    }
+    const head = spec.cols.map(c => '<th>' + esc(c) + '</th>').join("");
+    const body = spec.rows.length
+      ? spec.rows.map(r => '<tr>' + r.map(c => '<td>' + esc(c) + '</td>').join("") + '</tr>').join("")
+      : '<tr><td colspan="' + spec.cols.length + '" class="text-center text-secondary py-4">No records match the selected filters.</td></tr>';
+    out.innerHTML =
+      '<div id="reportPrintArea" class="card border-0 shadow-sm rounded-3 mb-4">' +
+        '<div class="card-body p-4">' +
+          '<div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">' +
+            '<div class="d-flex align-items-center gap-3">' +
+              '<img src="' + A.logo + '" alt="" class="agency-logo-img">' +
+              '<div><div class="fw-bold fs-5" style="color:var(--primary);">' + esc(A.name) + '</div>' +
+              '<div class="small text-secondary">Rescue Vehicle Management System · ' + esc(A.location) + '</div></div>' +
+            '</div>' +
+            '<div class="text-end"><div class="fw-bold">' + esc(type) + '</div>' +
+            '<div class="small text-secondary">Generated: June 13, 2026</div></div>' +
+          '</div>' +
+          '<div class="small text-secondary mb-3">' + filterBits.map(esc).join(" &nbsp;·&nbsp; ") + '</div>' +
+          '<div class="table-responsive"><table class="table table-sm table-bordered align-middle mb-0">' +
+            '<thead class="table-light"><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>' +
+          '<div class="small text-secondary mt-3">' + spec.rows.length + ' record' + (spec.rows.length === 1 ? "" : "s") +
+            ' · Report based solely on data encoded in the system.</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="d-flex gap-2 mb-4 no-print">' +
+        '<button class="btn bg-navy text-white" id="reportPrintBtn"><i class="bi bi-printer me-2"></i>Print / Save as PDF</button>' +
+        '<button class="btn btn-light border" id="reportClearBtn">Clear</button>' +
+      '</div>';
+    out.scrollIntoView({ behavior: "smooth", block: "start" });
+    const pb = document.getElementById("reportPrintBtn");
+    if (pb) pb.addEventListener("click", () => window.print());
+    const cb = document.getElementById("reportClearBtn");
+    if (cb) cb.addEventListener("click", () => { out.innerHTML = ""; });
+  }
+  function wireReports() {
+    const modal = document.getElementById("configureReportModal");
+    if (!modal) return;
+    let currentType = "Inspection Records";
+    modal.addEventListener("show.bs.modal", ev => {
+      const btn = ev.relatedTarget;
+      if (btn && btn.dataset.reportType) currentType = btn.dataset.reportType;
+      setText("#rpTitle", currentType);
+      const noFilter = currentType === "Vehicle Status Summary";
+      const fw = document.getElementById("rpFilters");
+      if (fw) fw.style.display = noFilter ? "none" : "";
+    });
+    const gen = document.getElementById("rpGenerate");
+    if (gen) gen.addEventListener("click", () => {
+      const f = {
+        range: (document.getElementById("rpRange") || {}).value || "All dates",
+        plate: plateOf((document.getElementById("rpVehicle") || {}).value),
+        driver: (document.getElementById("rpDriver") || {}).value || ""
+      };
+      if (f.plate.indexOf("All") === 0) f.plate = "";
+      if (f.driver.indexOf("All") === 0) f.driver = "";
+      renderReport(currentType, f);
+      const inst = bootstrap.Modal.getInstance(modal);
+      if (inst) inst.hide();
+    });
   }
 
   /* ------------------------------ utils -------------------------------- */
@@ -730,11 +935,14 @@
     renderRepairs();
     renderDashboard();
     renderNotificationsPage();
+    renderFrequentIssues();
     renderOptionLists();
     wireDriverModals();
     wireReviewModals();
     wireRepairModals();
     wireDispatchModals();
+    wireConditionalSpecifiers();
+    wireReports();
     decorateLinks();
   });
 
