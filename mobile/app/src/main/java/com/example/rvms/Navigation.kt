@@ -50,10 +50,6 @@ fun MainNavigation() {
 
                 entry<SignUp> {
                     SignUpScreen(
-                        onNavigateToHome = {
-                            backStack.clear()
-                            backStack.add(Home)
-                        },
                         onNavigateToSignIn = {
                             backStack.removeLastOrNull()
                         },
