@@ -1,12 +1,16 @@
 name: Build Driver App APK
 
-# Builds the RVMS driver mobile app into a shareable debug APK.
-# Download it from the run's "Artifacts" section (rvms-driver-debug-apk)
-# and share/install it directly on Android 8.0+ devices for team testing.
+# Builds the RVMS driver mobile app into a shareable debug APK and publishes it
+# two ways:
+#   1. As a run "Artifact" (rvms-driver-debug-apk) — a .zip you must extract.
+#   2. As a rolling GitHub Release "apk-latest" — a direct, raw app-debug.apk
+#      download (no zip, no login) for easy team testing on Android 7.0+:
+#      https://github.com/tormis-neil/rvms-capstone/releases/tag/apk-latest
 
 on:
   push:
     branches:
+      - main
       - claude/dreamy-albattani-u8g12m
     paths:
       - "mobile/**"
@@ -16,6 +20,8 @@ on:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: mobile
@@ -44,3 +50,25 @@ jobs:
           name: rvms-driver-debug-apk
           path: mobile/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Publish APK to rolling GitHub Release
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          printf '%s\n' \
+            "Latest debug build of the RVMS driver mobile app for team testing." \
+            "" \
+            "Download **app-debug.apk** below and install it directly on an Android 7.0+ device" \
+            "(enable \"install unknown apps\" for your browser or file manager). No zip, no login needed." \
+            "" \
+            "Build: run #${{ github.run_number }} · commit ${GITHUB_SHA} · branch ${{ github.ref_name }}" > notes.md
+          gh release create apk-latest \
+            --title "RVMS Driver App — latest debug APK" \
+            --notes-file notes.md \
+            --prerelease \
+            --target "$GITHUB_SHA" || true
+          gh release edit apk-latest --notes-file notes.md || true
+          gh release upload apk-latest \
+            mobile/app/build/outputs/apk/debug/app-debug.apk --clobber
