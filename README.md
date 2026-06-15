@@ -8,9 +8,10 @@ for agency administrators**.
 > University, Calbayog City. In partial fulfillment of the BS in Information Technology and
 > BS in Information Systems.
 
-📄 **New here? Read the [Product Walkthrough & Testing Guide](RVMS-Walkthrough-Guide.pdf)** — a
-plain-language tour of every screen, button, the design, and the colours, written for the team
-and the client users who will test the prototype.
+📄 **New here?** Read the per-platform user guides — **[Driver Mobile App Guide](RVMS-Mobile-App-User-Guide.pdf)**
+and **[Admin Website Guide](RVMS-Admin-Website-User-Guide.pdf)** — plain-language tours of every
+screen, button, colour and label, with objective mapping, written for the team and the client
+users who will test the prototype.
 
 ---
 
@@ -89,7 +90,8 @@ rvms-capstone/
 │   ├── pages/                  Authenticated admin pages
 │   └── assets/                 css / js / img
 ├── skills/                     Capstone manuscript, interview results, prototype plan
-├── RVMS-Walkthrough-Guide.pdf  Client/team walkthrough & testing guide
+├── RVMS-Mobile-App-User-Guide.pdf   Driver app user guide (per-screen walkthrough)
+├── RVMS-Admin-Website-User-Guide.pdf Admin website user guide (per-page walkthrough)
 └── README.md
 ```
 
