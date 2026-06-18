@@ -1,0 +1,47 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="Figure 3 - Context Diagram" id="rvms-context">
+    <mxGraphModel dx="900" dy="650" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Process 0 : the whole system -->
+        <mxCell id="proc0" value="RESCUE VEHICLE&#10;MANAGEMENT SYSTEM" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1B2F72;strokeWidth=2;fontSize=15;fontStyle=1;fontColor=#0F172A;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="430" y="360" width="260" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="proc0num" value="0" style="text;html=1;align=left;verticalAlign=top;fontSize=16;fontStyle=1;fontColor=#1B2F72;" vertex="1" parent="1">
+          <mxGeometry x="440" y="368" width="30" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- External entities -->
+        <mxCell id="entDriver" value="AUTHORIZED DRIVER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8ECF6;strokeColor=#1B2F72;strokeWidth=2;shadow=1;fontSize=13;fontStyle=1;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="70" y="120" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="entAdmin" value="AGENCY ADMINISTRATOR" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8ECF6;strokeColor=#1B2F72;strokeWidth=2;shadow=1;fontSize=13;fontStyle=1;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="840" y="120" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="entFcm" value="FIREBASE CLOUD&#10;MESSAGING (FCM)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8ECF6;strokeColor=#1B2F72;strokeWidth=2;shadow=1;fontSize=12;fontStyle=1;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="450" y="660" width="220" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Data flows -->
+        <mxCell id="e1" value="Login Credentials, Registration Request,&#10;Inspection Submission, Damage Report,&#10;Profile Update" style="endArrow=block;html=1;rounded=0;strokeColor=#222222;strokeWidth=1.2;fontSize=11;fontColor=#0F172A;labelBackgroundColor=#FFFFFF;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.15;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="entDriver" target="proc0">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="Assigned Vehicle Information,&#10;Driver Notification" style="endArrow=block;html=1;rounded=0;strokeColor=#222222;strokeWidth=1.2;fontSize=11;fontColor=#0F172A;labelBackgroundColor=#FFFFFF;exitX=0.05;exitY=0.5;exitDx=0;exitDy=0;entryX=0.55;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="proc0" target="entDriver">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="Login Credentials, Vehicle and Driver Record,&#10;Maintenance and Dispatch Record,&#10;Driver Access Approval, Report Request" style="endArrow=block;html=1;rounded=0;strokeColor=#222222;strokeWidth=1.2;fontSize=11;fontColor=#0F172A;labelBackgroundColor=#FFFFFF;exitX=0.3;exitY=1;exitDx=0;exitDy=0;entryX=0.85;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="entAdmin" target="proc0">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="Monitoring Information, Generated Report,&#10;Administrator Notification" style="endArrow=block;html=1;rounded=0;strokeColor=#222222;strokeWidth=1.2;fontSize=11;fontColor=#0F172A;labelBackgroundColor=#FFFFFF;exitX=0.95;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="proc0" target="entAdmin">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="Notification Request" style="endArrow=block;html=1;rounded=0;strokeColor=#222222;strokeWidth=1.2;fontSize=11;fontColor=#0F172A;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="proc0" target="entFcm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
