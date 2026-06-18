@@ -77,6 +77,11 @@ A few deliberate modeling decisions:
    hardcoded constant).
 5. **Vehicle status is one ENUM of exactly four values** on `vehicles`, written from every
    module (FR-16).
+6. **Driver accounts have two creation paths** (FR-04, FR-20): admins add drivers (created
+   `active` immediately), or drivers self-register and start `pending` until their agency
+   admin approves/rejects them. `users.status` tracks `pending`/`active`/`rejected`. Drivers
+   and admins can self-edit their own name/email/password with no approval or notification
+   (FR-21).
 
 ## ERD PLAN
 
@@ -141,15 +146,16 @@ standard and not detailed below.
 | license_expiry_warning_days | SMALLINT UNSIGNED | No | 30 | **Configurable threshold** (FR-06): days before expiry a license is flagged "Expiring Soon". Stored as a column, not a constant. |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
 
-### `users` — FR-01, FR-02, FR-04, FR-06, FR-19
+### `users` — FR-01, FR-02, FR-04, FR-06, FR-19, FR-20, FR-21
 | Column | Type | Null | Default | Description |
 |---|---|---|---|---|
 | id | BIGINT UNSIGNED | No | auto | PK. |
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies. Scopes the user to one agency (FR-02). |
 | role | ENUM('admin','driver') | No | — | Authorization role; routes admin→web, driver→mobile (FR-01). |
-| name | VARCHAR(255) | No | — | Full name of admin or driver (FR-04). |
-| email | VARCHAR(255) | No | — | Login identifier; unique (FR-01). |
-| password | VARCHAR(255) | No | — | Bcrypt/Argon hash (NFR-02). |
+| name | VARCHAR(255) | No | — | Full name of admin or driver (FR-04, self-editable FR-21). |
+| email | VARCHAR(255) | No | — | Login identifier; unique (FR-01, self-editable FR-21). |
+| password | VARCHAR(255) | No | — | Bcrypt/Argon hash (NFR-02, self-editable FR-21). |
+| status | ENUM('pending','active','rejected') | No | 'active' | Account state (FR-20). Admin-added drivers and admins are 'active'; self-registered drivers start 'pending' until an admin approves. Only 'active' users can log in. |
 | license_number | VARCHAR(50) | Yes | NULL | Driver license no. (FR-04). Null for admins. |
 | license_expiry_date | DATE | Yes | NULL | Driver license expiry; drives FR-06 monitoring. Null for admins. |
 | fcm_token | VARCHAR(255) | Yes | NULL | Firebase device token for push delivery (FR-19). |
@@ -280,7 +286,7 @@ standard and not detailed below.
 | id | BIGINT UNSIGNED | No | auto | PK. |
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies (scoping). |
 | user_id | BIGINT UNSIGNED | No | — | FK → users (recipient). |
-| type | ENUM('PM_Reminder','Vehicle_Status_Update','New_Damage_Report','License_Expiring','License_Expired','PM_Due_Soon','PM_Due') | No | — | Notification category (FR-19). |
+| type | ENUM('PM_Reminder','Vehicle_Status_Update','New_Damage_Report','License_Expiring','License_Expired','PM_Due_Soon','PM_Due','New_Access_Request') | No | — | Notification category (FR-19; `New_Access_Request` → admins on driver self-registration, FR-20). |
 | title | VARCHAR(255) | No | — | Short headline. |
 | message | TEXT | No | — | Body text. |
 | data | JSON | Yes | NULL | Reference payload (e.g., vehicle plate, link target). |
@@ -315,10 +321,13 @@ Tasks:
       What gets built: `EnsureRole` middleware; `BelongsToAgency` trait + global Eloquent scope auto-filtering by `agency_id`; base `Policy` scaffolding; auto-stamp `agency_id` on create.
   5. Admin web login + dashboard shell — FR-01, FR-02, NFR-03
       What gets built: session-guard web login Blade, `layouts/app.blade.php` (Bootstrap 5.3 sidebar/topbar), agency context strip; redirect by role.
+  6. Driver self-registration & self-service profile — FR-20, FR-21
+      What gets built: public `POST /api/v1/register` (driver selects agency, account created `status='pending'`, login blocked until approved); `PATCH /api/v1/me/profile` (name/email/password self-edit for both roles, no approval/notification); login rejects non-`active` accounts.
 
 Testing task (end of phase):
   Automated — `php artisan test`:
-    - `AuthLoginTest`: valid credentials return 200 with `{token, user.role, user.agency}`; bad password returns 422; missing email/password returns 422 with descriptive errors.
+    - `AuthLoginTest`: valid credentials return 200 with `{token, user.role, user.agency}`; bad password returns 422; missing email/password returns 422 with descriptive errors; a `pending` driver cannot log in.
+    - `RegisterTest`: self-registration creates a `pending` driver (201); duplicate email 422; `ProfileTest`: a user updates own name/email/password (200) and cannot edit another user.
     - `AuthMeTest`: `GET /api/v1/me` returns 200 + correct user with a valid token; returns 401 without a token.
     - `AuthLogoutTest`: token is revoked (200), and a reused revoked token returns 401.
     - `AgencyScopeUnitTest` (unit): the global scope adds an `agency_id` filter to a model query for an admin; `EnsureRole` rejects a driver token on an admin-only route (403).
@@ -338,8 +347,8 @@ Tasks:
       What gets built: `vehicles` migration (status enum = the four values, `assigned_driver_id`, mileage, engine/chassis); `Vehicle` model with `agency()`, `assignedDriver()` relations + `BelongsToAgency`.
   2. Vehicle CRUD + status API — FR-03, FR-16
       What gets built: `VehicleController` → `GET/POST/PUT /api/v1/vehicles`, `GET /api/v1/vehicles/{id}`, `PATCH /api/v1/vehicles/{id}/status`; `VehicleRequest` validation; `VehicleResource`.
-  3. Driver records API — FR-04
-      What gets built: `DriverController` (users where role=driver) → `GET/POST/PUT /api/v1/drivers`, `GET /api/v1/drivers/{id}`; `DriverRequest` (license number/expiry).
+  3. Driver records API + access-request approval — FR-04, FR-20
+      What gets built: `DriverController` (users where role=driver) → `GET/POST/PUT /api/v1/drivers` (admin-added drivers created `active`), `GET /api/v1/drivers/{id}`, `GET /api/v1/drivers?status=pending` (access requests), `PATCH /api/v1/drivers/{id}/approve` and `/reject`; `DriverRequest` (license number/expiry).
   4. Assigned-vehicle viewing for drivers — FR-05
       What gets built: `GET /api/v1/my-vehicle` returning the driver's assigned vehicle details + current status (driver token only).
   5. License expiry monitoring — FR-06
@@ -350,7 +359,7 @@ Tasks:
 Testing task (end of phase):
   Automated — `php artisan test`:
     - `VehicleApiTest`: list/create/update/show return correct codes + shapes; `PATCH status` only accepts the four enum values (422 otherwise); unauthenticated 401; driver token 403; **admin from Agency A cannot GET/PUT/DELETE a vehicle owned by Agency B (404/403)**; invalid payload 422.
-    - `DriverApiTest`: same five-assertion matrix (success shape, 401, 403, cross-agency isolation, 422 on bad license/expiry).
+    - `DriverApiTest`: same five-assertion matrix (success shape, 401, 403, cross-agency isolation, 422 on bad license/expiry); admin-added driver is `active`; approve/reject flips a `pending` driver's status; admin cannot approve another agency's pending driver (404/403).
     - `MyVehicleApiTest`: driver gets their own vehicle (200); an admin token is rejected (403); a driver cannot see another agency's vehicle.
     - `LicenseMonitoringUnitTest` (unit): `expiringSoon()`/`expired()` scopes classify dates correctly around the threshold boundary; monitoring endpoint returns only the caller's agency.
   Manual:
@@ -487,8 +496,8 @@ Tasks:
       What gets built: `notifications` migration/model; `GET /api/v1/notifications`, `PATCH /api/v1/notifications/{id}/read`, `PATCH /api/v1/notifications/read-all`.
   2. FCM HTTP v1 client (server-side PHP) — FR-19, NFR-04
       What gets built: `FcmService` using Google service-account/HTTP v1; `POST /api/v1/fcm-token` for driver device registration; queued sends.
-  3. Event-driven triggers — FR-19
-      What gets built: observers/events — damage submitted → agency admins; vehicle status changed → assigned driver (Vehicle Status Update).
+  3. Event-driven triggers — FR-19, FR-20
+      What gets built: observers/events — damage submitted → agency admins; vehicle status changed → assigned driver (Vehicle Status Update); driver self-registration → agency admins (`New_Access_Request`).
   4. Scheduled alert jobs — FR-06, FR-12, FR-19
       What gets built: `rvms:license-alerts` (Expiring Soon/Expired → admins) and PM Due Soon/Due → admins + PM Reminder → drivers, hooked into the scheduler.
   5. Admin Blade page + bell — FR-19, NFR-03
@@ -518,7 +527,7 @@ Tasks:
   2. Report query endpoints — FR-18
       What gets built: `ReportController` → `GET /api/v1/reports/{type}` for inspections, damage, repairs-maintenance, pm, dispatch, vehicle-status with the documented filters (date range, vehicle, driver, source, status, mission type).
   3. Printable report views — FR-18, NFR-03
-      What gets built: print-friendly Blade templates (light-surface, no extra print CSS hacks) for each report type.
+      What gets built: print-friendly Blade templates (light-surface, no extra print CSS hacks) for each report type, each stamped with the generating admin's name + generation date; keep the current report layout. (Parked pending client validation: mimic the paper checklist form + show the assigned driver's name — not built yet.)
   4. Admin Blade pages: Dashboard & Reports — FR-17, FR-18
       What gets built: `dashboard.blade.php` (summary cards + action-required lists) and `reports.blade.php` (type selector + filters).
 
@@ -565,7 +574,8 @@ Testing task (end of phase):
 
 Coverage: FR-01/FR-02 (Phase 1), FR-03–FR-06 (Phase 2), FR-07/FR-08 (Phase 3), FR-09–FR-11
 (Phase 4), FR-12 (Phase 5), FR-13–FR-15 (Phase 6), FR-16 (built into every status-changing
-module across Phases 2–6), FR-17/FR-18 (Phase 8), FR-19 (Phase 7), NFR-01–NFR-05 (woven
+module across Phases 2–6), FR-17/FR-18 (Phase 8), FR-19 (Phase 7), FR-20 (driver registration
+Phase 1 + admin approval Phase 2), FR-21 (self-service profile Phase 1), NFR-01–NFR-05 (woven
 throughout, finalized in Phase 9).
 
 ---
