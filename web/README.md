@@ -10,7 +10,6 @@ Rescue Vehicle Management System. All data is sample/static data defined in
 web/
 ├── index.html            Splash → redirects to login
 ├── login.html            Sign in (+ prototype agency switcher)
-├── signup.html           "Request an Account" (does not grant access)
 ├── pages/                Authenticated admin pages
 │   ├── dashboard.html
 │   ├── vehicles.html

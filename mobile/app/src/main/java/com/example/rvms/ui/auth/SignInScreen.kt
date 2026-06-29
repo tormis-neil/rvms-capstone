@@ -196,7 +196,7 @@ fun SignInScreen(
                 style = MaterialTheme.typography.bodyMedium,
             )
             Text(
-                text = "Request one",
+                text = "Register",
                 color = NavyBlue,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
