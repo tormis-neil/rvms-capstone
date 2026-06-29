@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,9 +49,10 @@ import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
 
 /**
- * Account request screen. The system has no driver self-registration: submitting
- * here only sends a request to the agency administrator, who creates the account.
- * It never signs the user in or grants access to the driver app.
+ * Driver self-registration screen (FR-03). A driver registers by entering their
+ * credentials and selecting their agency; the account is created with a pending
+ * status and cannot sign in until an agency administrator approves it. Submitting
+ * here never signs the user in or grants access to the driver app.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,6 +62,8 @@ fun SignUpScreen(
 ) {
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var submitted by remember { mutableStateOf(false) }
 
@@ -78,11 +82,11 @@ fun SignUpScreen(
                     Text("Back to Sign In", color = NavyBlue, fontWeight = FontWeight.Bold)
                 }
             },
-            title = { Text("Request Submitted", color = NavyBlue, fontWeight = FontWeight.Bold) },
+            title = { Text("Registration Submitted", color = NavyBlue, fontWeight = FontWeight.Bold) },
             text = {
                 Text(
-                    "Your account request has been sent to your agency administrator for review. " +
-                        "You will be able to sign in once your account is approved and created.",
+                    "Your account has been created and is pending approval. " +
+                        "You will be able to sign in once your agency administrator approves it.",
                     color = TextSecondary,
                 )
             },
@@ -111,7 +115,7 @@ fun SignUpScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Request an Account",
+            text = "Create Account",
             style = MaterialTheme.typography.headlineMedium,
             color = NavyBlue,
         )
@@ -119,8 +123,8 @@ fun SignUpScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Submit your details to your agency administrator. " +
-                "Accounts are created by the administrator — this form only sends a request.",
+            text = "Register by selecting your agency and setting a password. " +
+                "Your account will remain pending until your agency administrator approves it.",
             style = MaterialTheme.typography.bodySmall,
             color = TextSecondary,
             textAlign = TextAlign.Center,
@@ -151,6 +155,38 @@ fun SignUpScreen(
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = NavyBlue,
+                focusedLabelColor = NavyBlue
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Password Field
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Password") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = NavyBlue,
+                focusedLabelColor = NavyBlue
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Confirm Password Field
+        OutlinedTextField(
+            value = confirmPassword,
+            onValueChange = { confirmPassword = it },
+            label = { Text("Confirm Password") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = NavyBlue,
                 focusedLabelColor = NavyBlue
@@ -207,14 +243,19 @@ fun SignUpScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Submit Request Button
+        // Register Button
         Button(
             onClick = {
                 when {
-                    fullName.isBlank() || email.isBlank() ->
+                    fullName.isBlank() || email.isBlank() ||
+                        password.isBlank() || confirmPassword.isBlank() ->
                         error = "Please complete all fields."
                     !email.contains("@") ->
                         error = "Please enter a valid email address."
+                    password.length < 8 ->
+                        error = "Password must be at least 8 characters."
+                    password != confirmPassword ->
+                        error = "Passwords do not match."
                     selectedAgency.isBlank() ->
                         error = "Please select your agency."
                     else -> {
@@ -231,7 +272,7 @@ fun SignUpScreen(
             colors = ButtonDefaults.buttonColors(containerColor = NavyBlue),
         ) {
             Text(
-                text = "Submit Request",
+                text = "Register",
                 color = White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
