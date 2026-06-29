@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 > ⚠️ **ALWAYS READ `skills/rvms-source-of-truth.md` IN FULL BEFORE STARTING ANY TASK.**
-> It is the single source of truth for scope, requirements (FR-01–FR-19, NFR-01–NFR-05),
+> It is the single source of truth for scope, requirements (FR-01–FR-21, NFR-01–NFR-05),
 > workflows, and enumerations. Never invent features, tables, columns, or statuses that
 > it does not justify. The prototype lives in `web/` (static Bootstrap dashboard) and
 > `mobile/` (Jetpack Compose driver app); `skills/rvms-prototype-plan.md` details workflows.
@@ -63,7 +63,7 @@ php artisan queue:work               # process queued FCM sends
 A few deliberate modeling decisions:
 
 1. **Drivers are modeled as `users` with `role = 'driver'`** (carrying license fields),
-   not a separate table. Drivers must authenticate on the mobile app (FR-01/FR-05), so a
+   not a separate table. Drivers must authenticate on the mobile app (FR-01/FR-07), so a
    driver record and a login account are 1:1. Admins are `users` with `role = 'admin'` and
    null license fields. This avoids duplicating name/email/agency across two tables.
 2. **`agencies` is a real table**, not an enum column — the profile page edits agency
@@ -76,12 +76,12 @@ A few deliberate modeling decisions:
    schedule; the license "approaching expiry" window lives on `agencies` (so it is not a
    hardcoded constant).
 5. **Vehicle status is one ENUM of exactly four values** on `vehicles`, written from every
-   module (FR-16).
-6. **Driver accounts have two creation paths** (FR-04, FR-20): admins add drivers (created
+   module (FR-18).
+6. **Driver accounts have two creation paths** (FR-03, FR-06): admins add drivers (created
    `active` immediately), or drivers self-register and start `pending` until their agency
    admin approves/rejects them. `users.status` tracks `pending`/`active`/`rejected`. Drivers
    and admins can self-edit their own name/email/password with no approval or notification
-   (FR-21).
+   (FR-04). Agency administrator accounts are provisioned (seeded) only; there is no admin self-registration, and the public registration endpoint is driver-only.
 
 ## ERD PLAN
 
@@ -124,7 +124,7 @@ users          ──< notifications  (recipient)
 | user → notifications | one-to-many | `notifications.user_id` |
 
 **Framework tables (Laravel/Sanctum):** `personal_access_tokens` (NFR-02 token auth),
-`password_reset_tokens`, `jobs`/`failed_jobs` (queued FCM sends, FR-19), `cache`. These are
+`password_reset_tokens`, `jobs`/`failed_jobs` (queued FCM sends, FR-21), `cache`. These are
 standard and not detailed below.
 
 ## DATA DICTIONARY
@@ -143,43 +143,43 @@ standard and not detailed below.
 | contact_number | VARCHAR(50) | Yes | NULL | Agency contact number (profile page). |
 | email | VARCHAR(255) | Yes | NULL | Agency contact email / domain basis (profile page). |
 | logo_path | VARCHAR(255) | Yes | NULL | Path to agency logo asset used in dashboard chrome. |
-| license_expiry_warning_days | SMALLINT UNSIGNED | No | 30 | **Configurable threshold** (FR-06): days before expiry a license is flagged "Expiring Soon". Stored as a column, not a constant. |
+| license_expiry_warning_days | SMALLINT UNSIGNED | No | 30 | **Configurable threshold** (FR-08): days before expiry a license is flagged "Expiring Soon". Stored as a column, not a constant. |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
 
-### `users` — FR-01, FR-02, FR-04, FR-06, FR-19, FR-20, FR-21
+### `users` — FR-01, FR-02, FR-03, FR-04, FR-06, FR-08, FR-21
 | Column | Type | Null | Default | Description |
 |---|---|---|---|---|
 | id | BIGINT UNSIGNED | No | auto | PK. |
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies. Scopes the user to one agency (FR-02). |
 | role | ENUM('admin','driver') | No | — | Authorization role; routes admin→web, driver→mobile (FR-01). |
-| name | VARCHAR(255) | No | — | Full name of admin or driver (FR-04, self-editable FR-21). |
-| email | VARCHAR(255) | No | — | Login identifier; unique (FR-01, self-editable FR-21). |
-| password | VARCHAR(255) | No | — | Bcrypt/Argon hash (NFR-02, self-editable FR-21). |
-| status | ENUM('pending','active','rejected') | No | 'active' | Account state (FR-20). Admin-added drivers and admins are 'active'; self-registered drivers start 'pending' until an admin approves. Only 'active' users can log in. |
-| license_number | VARCHAR(50) | Yes | NULL | Driver license no. (FR-04). Null for admins. |
-| license_expiry_date | DATE | Yes | NULL | Driver license expiry; drives FR-06 monitoring. Null for admins. |
-| fcm_token | VARCHAR(255) | Yes | NULL | Firebase device token for push delivery (FR-19). |
+| name | VARCHAR(255) | No | — | Full name of admin or driver (FR-06, self-editable FR-04). |
+| email | VARCHAR(255) | No | — | Login identifier; unique (FR-01, self-editable FR-04). |
+| password | VARCHAR(255) | No | — | Bcrypt/Argon hash (NFR-02, self-editable FR-04). |
+| status | ENUM('pending','active','rejected') | No | 'active' | Account state (FR-03). Admin-added drivers and admins are 'active'; self-registered drivers start 'pending' until an admin approves. Only 'active' users can log in. |
+| license_number | VARCHAR(50) | Yes | NULL | Driver license no. (FR-06). Null for admins. |
+| license_expiry_date | DATE | Yes | NULL | Driver license expiry; drives FR-08 monitoring. Null for admins. |
+| fcm_token | VARCHAR(255) | Yes | NULL | Firebase device token for push delivery (FR-21). |
 | email_verified_at | TIMESTAMP | Yes | NULL | Framework field. |
 | remember_token | VARCHAR(100) | Yes | NULL | Framework field. |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
 
-### `vehicles` — FR-03, FR-05, FR-15, FR-16
+### `vehicles` — FR-05, FR-07, FR-17, FR-18
 | Column | Type | Null | Default | Description |
 |---|---|---|---|---|
 | id | BIGINT UNSIGNED | No | auto | PK. |
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies (FR-02 scoping). |
-| assigned_driver_id | BIGINT UNSIGNED | Yes | NULL | FK → users (role=driver). Primary assigned driver (FR-03). |
+| assigned_driver_id | BIGINT UNSIGNED | Yes | NULL | FK → users (role=driver). Primary assigned driver (FR-05). |
 | type | VARCHAR(100) | No | — | Vehicle type (Fire Truck, Ambulance, Patrol Car…). |
 | plate_number | VARCHAR(20) | No | — | Plate number; unique per agency. |
 | make | VARCHAR(100) | No | — | Manufacturer (Isuzu, Toyota…). |
 | model | VARCHAR(100) | No | — | Model (FTR 850, Hiace…). |
-| engine_number | VARCHAR(50) | Yes | NULL | Engine number (FR-03). |
-| chassis_number | VARCHAR(50) | Yes | NULL | Chassis number (FR-03). |
-| current_mileage | INT UNSIGNED | No | 0 | Current odometer (km); manually updated, drives mileage-based PM (FR-12). |
-| status | ENUM('Operational','Dispatched','Not Operational','Under Preventive Maintenance') | No | 'Operational' | **Single shared operational status** (FR-16), written from every module. |
+| engine_number | VARCHAR(50) | Yes | NULL | Engine number (FR-05). |
+| chassis_number | VARCHAR(50) | Yes | NULL | Chassis number (FR-05). |
+| current_mileage | INT UNSIGNED | No | 0 | Current odometer (km); manually updated, drives mileage-based PM (FR-14). |
+| status | ENUM('Operational','Dispatched','Not Operational','Under Preventive Maintenance') | No | 'Operational' | **Single shared operational status** (FR-18), written from every module. |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
 
-### `inspection_checklist_items` — FR-07 (reference/seed catalog)
+### `inspection_checklist_items` — FR-09 (reference/seed catalog)
 | Column | Type | Null | Default | Description |
 |---|---|---|---|---|
 | id | BIGINT UNSIGNED | No | auto | PK. |
@@ -187,7 +187,7 @@ standard and not detailed below.
 | is_bfp_only | TINYINT(1) | No | 0 | 1 for the two BFP-only items (Hydraulic System, Fire Pump). |
 | sort_order | SMALLINT UNSIGNED | No | 0 | Display order on the checklist. |
 
-### `inspections` — FR-07, FR-08
+### `inspections` — FR-09, FR-10
 | Column | Type | Null | Default | Description |
 |---|---|---|---|---|
 | id | BIGINT UNSIGNED | No | auto | PK. |
@@ -195,98 +195,98 @@ standard and not detailed below.
 | vehicle_id | BIGINT UNSIGNED | No | — | FK → vehicles (history per vehicle). |
 | driver_id | BIGINT UNSIGNED | No | — | FK → users (history per driver). |
 | inspection_date | DATE | No | — | Date of the daily inspection. |
-| review_status | ENUM('Pending','Reviewed') | No | 'Pending' | Admin review state (prototype `review`; FR-08). |
+| review_status | ENUM('Pending','Reviewed') | No | 'Pending' | Admin review state (prototype `review`; FR-10). |
 | reviewed_by | BIGINT UNSIGNED | Yes | NULL | FK → users (admin who assessed it). |
 | reviewed_at | DATETIME | Yes | NULL | When reviewed. |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | `created_at` = submission time. |
 
-### `inspection_items` — FR-07
+### `inspection_items` — FR-09
 | Column | Type | Null | Default | Description |
 |---|---|---|---|---|
 | id | BIGINT UNSIGNED | No | auto | PK. |
 | inspection_id | BIGINT UNSIGNED | No | — | FK → inspections. |
 | checklist_item_id | BIGINT UNSIGNED | No | — | FK → inspection_checklist_items. |
-| status | ENUM('OK','Has Issue') | No | — | Per-item result (FR-07). |
+| status | ENUM('OK','Has Issue') | No | — | Per-item result (FR-09). |
 | remarks | TEXT | Yes | NULL | Required when status = 'Has Issue' (enforced at validation). |
 
-### `damage_reports` — FR-09, FR-10, FR-17
+### `damage_reports` — FR-11, FR-12, FR-19
 | Column | Type | Null | Default | Description |
 |---|---|---|---|---|
 | id | BIGINT UNSIGNED | No | auto | PK. |
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies (scoping). |
 | vehicle_id | BIGINT UNSIGNED | No | — | FK → vehicles. |
 | driver_id | BIGINT UNSIGNED | No | — | FK → users (submitting driver). |
-| nature_of_damage | TEXT | No | — | Description of damage (FR-09). |
-| suspected_parts | VARCHAR(255) | Yes | NULL | Suspected defective parts (FR-09). |
-| photo_path | VARCHAR(255) | Yes | NULL | Optional photo attachment (FR-09). |
-| date_reported | DATE | No | — | Auto-set on submission (FR-09). |
-| status | ENUM('Pending','Reviewed') | No | 'Pending' | Default Pending → Reviewed by admin (FR-10). |
+| nature_of_damage | TEXT | No | — | Description of damage (FR-11). |
+| suspected_parts | VARCHAR(255) | Yes | NULL | Suspected defective parts (FR-11). |
+| photo_path | VARCHAR(255) | Yes | NULL | Optional photo attachment (FR-11). |
+| date_reported | DATE | No | — | Auto-set on submission (FR-11). |
+| status | ENUM('Pending','Reviewed') | No | 'Pending' | Default Pending → Reviewed by admin (FR-12). |
 | reviewed_by | BIGINT UNSIGNED | Yes | NULL | FK → users (admin reviewer). |
 | reviewed_at | DATETIME | Yes | NULL | When reviewed. |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
 
-### `repair_logs` — FR-11
+### `repair_logs` — FR-13
 | Column | Type | Null | Default | Description |
 |---|---|---|---|---|
 | id | BIGINT UNSIGNED | No | auto | PK. |
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies (scoping). |
 | vehicle_id | BIGINT UNSIGNED | No | — | FK → vehicles. |
-| driver_id | BIGINT UNSIGNED | Yes | NULL | FK → users (assigned driver) (FR-11). |
+| driver_id | BIGINT UNSIGNED | Yes | NULL | FK → users (assigned driver) (FR-13). |
 | repair_date | DATE | No | — | Date repair was logged/performed. |
-| scope_of_work | TEXT | No | — | Work performed (FR-11). |
-| parts_replaced | TEXT | Yes | NULL | Parts replaced (FR-11). |
-| cost | DECIMAL(10,2) | Yes | NULL | Optional cost (FR-11). |
-| repair_source | ENUM('Internal Office','GSO Motorpool','External Repair Shop') | No | — | Source of repair (FR-11). |
+| scope_of_work | TEXT | No | — | Work performed (FR-13). |
+| parts_replaced | TEXT | Yes | NULL | Parts replaced (FR-13). |
+| cost | DECIMAL(10,2) | Yes | NULL | Optional cost (FR-13). |
+| repair_source | ENUM('Internal Office','GSO Motorpool','External Repair Shop') | No | — | Source of repair (FR-13). |
 | external_shop_name | VARCHAR(255) | Yes | NULL | Shop name when source = External Repair Shop (prototype `shop`). |
-| remarks | TEXT | Yes | NULL | Notes (FR-11). |
+| remarks | TEXT | Yes | NULL | Notes (FR-13). |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
 
-### `pm_schedules` — FR-12, FR-19
+### `pm_schedules` — FR-14, FR-21
 | Column | Type | Null | Default | Description |
 |---|---|---|---|---|
 | id | BIGINT UNSIGNED | No | auto | PK. |
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies (scoping). |
 | vehicle_id | BIGINT UNSIGNED | No | — | FK → vehicles. |
-| service_target | VARCHAR(255) | No | — | Specific part(s)/service (e.g., "Oil Change & Filter") (FR-12). |
-| pm_type | ENUM('Mileage-Based','Time-Based') | No | — | Scheduling basis (FR-12). |
+| service_target | VARCHAR(255) | No | — | Specific part(s)/service (e.g., "Oil Change & Filter") (FR-14). |
+| pm_type | ENUM('Mileage-Based','Time-Based') | No | — | Scheduling basis (FR-14). |
 | interval_km | INT UNSIGNED | Yes | NULL | Mileage interval (mileage-based only). |
 | last_pm_mileage | INT UNSIGNED | Yes | NULL | Odometer at last service (mileage-based). |
 | due_mileage | INT UNSIGNED | Yes | NULL | Target mileage = last_pm_mileage + interval_km. |
 | due_date | DATE | Yes | NULL | Target date (time-based only). |
-| due_soon_threshold_km | INT UNSIGNED | Yes | NULL | **Configurable** Due-Soon window in km (mileage-based) (FR-12). |
-| due_soon_threshold_days | SMALLINT UNSIGNED | Yes | NULL | **Configurable** Due-Soon window in days (time-based) (FR-12). |
+| due_soon_threshold_km | INT UNSIGNED | Yes | NULL | **Configurable** Due-Soon window in km (mileage-based) (FR-14). |
+| due_soon_threshold_days | SMALLINT UNSIGNED | Yes | NULL | **Configurable** Due-Soon window in days (time-based) (FR-14). |
 | status | ENUM('Upcoming','Due Soon','Due','Completed') | No | 'Upcoming' | Recalculated by scheduled job; SoT values Due Soon/Due/Completed + prototype 'Upcoming'. |
-| date_serviced | DATE | Yes | NULL | Completion: date serviced (FR-12). |
-| completion_repair_source | ENUM('Internal Office','GSO Motorpool','External Repair Shop') | Yes | NULL | Completion: repair source (FR-12). |
-| completion_parts_replaced | TEXT | Yes | NULL | Completion: parts replaced (FR-12). |
-| completion_remarks | TEXT | Yes | NULL | Completion: remarks (FR-12). |
+| date_serviced | DATE | Yes | NULL | Completion: date serviced (FR-14). |
+| completion_repair_source | ENUM('Internal Office','GSO Motorpool','External Repair Shop') | Yes | NULL | Completion: repair source (FR-14). |
+| completion_parts_replaced | TEXT | Yes | NULL | Completion: parts replaced (FR-14). |
+| completion_remarks | TEXT | Yes | NULL | Completion: remarks (FR-14). |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
 
-### `dispatches` — FR-13, FR-14, FR-15
+### `dispatches` — FR-15, FR-16, FR-17
 | Column | Type | Null | Default | Description |
 |---|---|---|---|---|
 | id | BIGINT UNSIGNED | No | auto | PK. |
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies (scoping). |
 | vehicle_id | BIGINT UNSIGNED | No | — | FK → vehicles. |
 | driver_id | BIGINT UNSIGNED | No | — | FK → users (dispatched driver). |
-| mission_type | ENUM('Fire Response','Medical Response','Rescue Operation','Patrol','Administrative Travel','Others') | No | — | Mission type (FR-13). |
+| mission_type | ENUM('Fire Response','Medical Response','Rescue Operation','Patrol','Administrative Travel','Others') | No | — | Mission type (FR-15). |
 | mission_other | VARCHAR(255) | Yes | NULL | Free text when mission_type = Others (prototype `missionOther`). |
-| location | VARCHAR(255) | No | — | Dispatch location (FR-13). |
-| time_out | DATETIME | No | — | Date/time out; opening sets vehicle → Dispatched (FR-13). |
-| time_in | DATETIME | Yes | NULL | Date/time in on close; NULL = active (FR-14). |
-| return_status | ENUM('Operational','Not Operational','Under Preventive Maintenance') | Yes | NULL | Return status chosen on close (FR-14). |
+| location | VARCHAR(255) | No | — | Dispatch location (FR-15). |
+| time_out | DATETIME | No | — | Date/time out; opening sets vehicle → Dispatched (FR-15). |
+| time_in | DATETIME | Yes | NULL | Date/time in on close; NULL = active (FR-16). |
+| return_status | ENUM('Operational','Not Operational','Under Preventive Maintenance') | Yes | NULL | Return status chosen on close (FR-16). |
 | remarks | TEXT | Yes | NULL | Optional close remarks (plan §6.8). |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
 
 *(Active vs. Completed is derived from `time_in IS NULL`.)*
 
-### `notifications` — FR-19
+### `notifications` — FR-21
 | Column | Type | Null | Default | Description |
 |---|---|---|---|---|
 | id | BIGINT UNSIGNED | No | auto | PK. |
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies (scoping). |
 | user_id | BIGINT UNSIGNED | No | — | FK → users (recipient). |
-| type | ENUM('PM_Reminder','Vehicle_Status_Update','New_Damage_Report','License_Expiring','License_Expired','PM_Due_Soon','PM_Due','New_Access_Request') | No | — | Notification category (FR-19; `New_Access_Request` → admins on driver self-registration, FR-20). |
+| type | ENUM('PM_Reminder','Vehicle_Status_Update','New_Damage_Report','License_Expiring','License_Expired','PM_Due_Soon','PM_Due','New_Access_Request') | No | — | Notification category (FR-21; `New_Access_Request` → admins on driver self-registration, FR-03). |
 | title | VARCHAR(255) | No | — | Short headline. |
 | message | TEXT | No | — | Body text. |
 | data | JSON | Yes | NULL | Reference payload (e.g., vehicle plate, link target). |
@@ -294,7 +294,7 @@ standard and not detailed below.
 | read_at | DATETIME | Yes | NULL | When read. |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
 
-The dashboard summary (FR-17) and all reports (FR-18) are computed from these tables — no
+The dashboard summary (FR-19) and all reports (FR-20) are computed from these tables — no
 separate tables needed.
 
 ---
@@ -321,7 +321,7 @@ Tasks:
       What gets built: `EnsureRole` middleware; `BelongsToAgency` trait + global Eloquent scope auto-filtering by `agency_id`; base `Policy` scaffolding; auto-stamp `agency_id` on create.
   5. Admin web login + dashboard shell — FR-01, FR-02, NFR-03
       What gets built: session-guard web login Blade, `layouts/app.blade.php` (Bootstrap 5.3 sidebar/topbar), agency context strip; redirect by role.
-  6. Driver self-registration & self-service profile — FR-20, FR-21
+  6. Driver self-registration & self-service profile — FR-03, FR-04
       What gets built: public `POST /api/v1/register` (driver selects agency, account created `status='pending'`, login blocked until approved); `PATCH /api/v1/me/profile` (name/email/password self-edit for both roles, no approval/notification); login rejects non-`active` accounts.
 
 Testing task (end of phase):
@@ -343,17 +343,17 @@ PHASE 2: Vehicle & Driver Records + License Monitoring
 Goal: Admins can fully manage their agency's vehicles and drivers, a driver can view their assigned vehicle, and expiring/expired licenses are detected against the configurable threshold.
 
 Tasks:
-  1. Vehicles schema + model — FR-03, FR-16
+  1. Vehicles schema + model — FR-05, FR-18
       What gets built: `vehicles` migration (status enum = the four values, `assigned_driver_id`, mileage, engine/chassis); `Vehicle` model with `agency()`, `assignedDriver()` relations + `BelongsToAgency`.
-  2. Vehicle CRUD + status API — FR-03, FR-16
+  2. Vehicle CRUD + status API — FR-05, FR-18
       What gets built: `VehicleController` → `GET/POST/PUT /api/v1/vehicles`, `GET /api/v1/vehicles/{id}`, `PATCH /api/v1/vehicles/{id}/status`; `VehicleRequest` validation; `VehicleResource`.
-  3. Driver records API + access-request approval — FR-04, FR-20
+  3. Driver records API + access-request approval — FR-03, FR-06
       What gets built: `DriverController` (users where role=driver) → `GET/POST/PUT /api/v1/drivers` (admin-added drivers created `active`), `GET /api/v1/drivers/{id}`, `GET /api/v1/drivers?status=pending` (access requests), `PATCH /api/v1/drivers/{id}/approve` and `/reject`; `DriverRequest` (license number/expiry).
-  4. Assigned-vehicle viewing for drivers — FR-05
+  4. Assigned-vehicle viewing for drivers — FR-07
       What gets built: `GET /api/v1/my-vehicle` returning the driver's assigned vehicle details + current status (driver token only).
-  5. License expiry monitoring — FR-06
+  5. License expiry monitoring — FR-08
       What gets built: `User` query scopes `expiringSoon()`/`expired()` using `agencies.license_expiry_warning_days`; `GET /api/v1/licenses/monitoring` consolidated view.
-  6. Admin Blade pages: Vehicles & Drivers — FR-03, FR-04, NFR-03
+  6. Admin Blade pages: Vehicles & Drivers — FR-05, FR-06, NFR-03
       What gets built: `vehicles.blade.php`, `drivers.blade.php` (tables, add/edit/update-status modals).
 
 Testing task (end of phase):
@@ -375,15 +375,15 @@ PHASE 3: Digital BLOWBAGETS Inspection
 Goal: Drivers submit daily inspections (12 standard items, +2 for BFP) with remarks required on flagged items, and admins review submissions, browse per-vehicle/per-driver history, and see frequently reported issues.
 
 Tasks:
-  1. Checklist catalog + seeder — FR-07
+  1. Checklist catalog + seeder — FR-09
       What gets built: `inspection_checklist_items` migration/model + seeder (12 standard + Hydraulic System/Fire Pump as `is_bfp_only`); `GET /api/v1/inspections/checklist` returning the correct list for the driver's agency.
-  2. Inspection submission API (driver) — FR-07
+  2. Inspection submission API (driver) — FR-09
       What gets built: `inspections` + `inspection_items` migrations/models; `POST /api/v1/inspections` (`InspectionRequest` enforces OK/Has Issue per item and required remarks when Has Issue).
-  3. Inspection monitoring API (admin) — FR-08
+  3. Inspection monitoring API (admin) — FR-10
       What gets built: `GET /api/v1/inspections` (filters: vehicle, driver, date), `GET /api/v1/inspections/{id}`, `GET /api/v1/inspections/frequent-issues` (grouped issue counts).
-  4. Inspection review + status update — FR-08, FR-16
+  4. Inspection review + status update — FR-10, FR-18
       What gets built: `PATCH /api/v1/inspections/{id}/review` (set Reviewed, optional vehicle status change).
-  5. Admin Blade page: Inspections — FR-08, NFR-03
+  5. Admin Blade page: Inspections — FR-10, NFR-03
       What gets built: `inspections.blade.php` (results table, view-checklist + review-&-assess modals, BFP extra-items section).
 
 Testing task (end of phase):
@@ -404,15 +404,15 @@ PHASE 4: Damage Reporting & Repair Logging
 Goal: Drivers file damage reports with optional photos, admins review them and update vehicle status, and admins log repair activities with source/parts/cost and update status afterward.
 
 Tasks:
-  1. Damage reports schema + photo storage — FR-09
+  1. Damage reports schema + photo storage — FR-11
       What gets built: `damage_reports` migration/model; `storage` photo handling (`php artisan storage:link`); `DamageReport` relations + scope.
-  2. Damage submission & listing API — FR-09
+  2. Damage submission & listing API — FR-11
       What gets built: `POST /api/v1/damage-reports` (multipart photo, date auto-set, status Pending), `GET /api/v1/damage-reports`, `GET /api/v1/damage-reports/{id}` (driver sees own; admin sees agency).
-  3. Damage review API (admin) — FR-10, FR-16
+  3. Damage review API (admin) — FR-12, FR-18
       What gets built: `PATCH /api/v1/damage-reports/{id}/review` (mark Reviewed + set vehicle status).
-  4. Repair logging API — FR-11, FR-16
+  4. Repair logging API — FR-13, FR-18
       What gets built: `repair_logs` migration/model; `RepairController` → `GET/POST/PUT /api/v1/repairs` (`repair_source` enum + `external_shop_name`), plus vehicle `PATCH status`.
-  5. Admin Blade pages: Damage & Repairs — FR-10, FR-11, NFR-03
+  5. Admin Blade pages: Damage & Repairs — FR-12, FR-13, NFR-03
       What gets built: `inspections-damage.blade.php` damage section + `repairs.blade.php` (review/edit modals).
 
 Testing task (end of phase):
@@ -434,15 +434,15 @@ PHASE 5: Preventive Maintenance Scheduling
 Goal: Admins create mileage- or time-based PM schedules with a configurable Due-Soon threshold, the system recalculates Due Soon/Due automatically, and admins record completion details.
 
 Tasks:
-  1. PM schedule schema + model — FR-12
+  1. PM schedule schema + model — FR-14
       What gets built: `pm_schedules` migration (pm_type, interval/last/due mileage, due_date, `due_soon_threshold_km/_days`, status enum, completion fields); `PmSchedule` model + scope.
-  2. PM CRUD API — FR-12
+  2. PM CRUD API — FR-14
       What gets built: `PmController` → `GET/POST/PUT /api/v1/pm-schedules`, `GET /api/v1/pm-schedules/{id}`; `PmRequest` (require km fields for Mileage-Based, date for Time-Based).
-  3. PM completion API — FR-12
+  3. PM completion API — FR-14
       What gets built: `PATCH /api/v1/pm-schedules/{id}/complete` (date serviced, repair source, parts, remarks → status Completed); no auto-renewal.
-  4. PM status computation command — FR-12, NFR-04
+  4. PM status computation command — FR-14, NFR-04
       What gets built: `php artisan rvms:recalculate-pm` scheduled command computing Upcoming/Due Soon/Due from `vehicles.current_mileage`/date vs thresholds; registered in the scheduler.
-  5. Admin Blade page: Preventive Maintenance — FR-12, NFR-03
+  5. Admin Blade page: Preventive Maintenance — FR-14, NFR-03
       What gets built: `pm.blade.php` (active + completed tables, create/edit/mark-completed modals).
 
 Testing task (end of phase):
@@ -463,15 +463,15 @@ PHASE 6: Dispatch Logging & Vehicle Availability
 Goal: Admins open dispatches (auto-setting the vehicle to Dispatched), close them with a return status, and view current availability of all agency vehicles.
 
 Tasks:
-  1. Dispatch schema + model — FR-13
+  1. Dispatch schema + model — FR-15
       What gets built: `dispatches` migration (mission_type enum + mission_other, location, time_out/in, return_status); `Dispatch` model + scope; active = `time_in IS NULL`.
-  2. Open-dispatch API — FR-13, FR-16
+  2. Open-dispatch API — FR-15, FR-18
       What gets built: `POST /api/v1/dispatches` (`DispatchRequest`, require mission_other when Others) → sets `vehicles.status = Dispatched`.
-  3. Close-dispatch API — FR-14, FR-16
+  3. Close-dispatch API — FR-16, FR-18
       What gets built: `PATCH /api/v1/dispatches/{id}/close` (time_in + return_status enum) → updates vehicle status.
-  4. Dispatch listing, edit & availability — FR-13, FR-15
+  4. Dispatch listing, edit & availability — FR-15, FR-17
       What gets built: `GET /api/v1/dispatches`, `PUT /api/v1/dispatches/{id}`, `GET /api/v1/vehicles/availability` (status of all agency vehicles).
-  5. Admin Blade page: Dispatch — FR-13, FR-15, NFR-03
+  5. Admin Blade page: Dispatch — FR-15, FR-17, NFR-03
       What gets built: `dispatch.blade.php` (active-monitoring banner, close-dispatch modal).
 
 Testing task (end of phase):
@@ -489,18 +489,18 @@ Testing task (end of phase):
 
 ---
 PHASE 7: Notification Services & FCM
-Goal: All FR-19 in-app notifications are persisted and delivered, license/PM alerts fire on schedule, status/damage events notify the right role, and drivers receive FCM pushes.
+Goal: All FR-21 in-app notifications are persisted and delivered, license/PM alerts fire on schedule, status/damage events notify the right role, and drivers receive FCM pushes.
 
 Tasks:
-  1. Notifications schema + in-app API — FR-19
+  1. Notifications schema + in-app API — FR-21
       What gets built: `notifications` migration/model; `GET /api/v1/notifications`, `PATCH /api/v1/notifications/{id}/read`, `PATCH /api/v1/notifications/read-all`.
-  2. FCM HTTP v1 client (server-side PHP) — FR-19, NFR-04
+  2. FCM HTTP v1 client (server-side PHP) — FR-21, NFR-04
       What gets built: `FcmService` using Google service-account/HTTP v1; `POST /api/v1/fcm-token` for driver device registration; queued sends.
-  3. Event-driven triggers — FR-19, FR-20
+  3. Event-driven triggers — FR-21, FR-03
       What gets built: observers/events — damage submitted → agency admins; vehicle status changed → assigned driver (Vehicle Status Update); driver self-registration → agency admins (`New_Access_Request`).
-  4. Scheduled alert jobs — FR-06, FR-12, FR-19
+  4. Scheduled alert jobs — FR-08, FR-14, FR-21
       What gets built: `rvms:license-alerts` (Expiring Soon/Expired → admins) and PM Due Soon/Due → admins + PM Reminder → drivers, hooked into the scheduler.
-  5. Admin Blade page + bell — FR-19, NFR-03
+  5. Admin Blade page + bell — FR-21, NFR-03
       What gets built: `notifications.blade.php` + topbar bell dropdown with unread count.
 
 Testing task (end of phase):
@@ -522,13 +522,13 @@ PHASE 8: Dashboard Summary & Report Generation
 Goal: Admins see live agency fleet counts and can generate filtered, printable reports for all six report types.
 
 Tasks:
-  1. Dashboard summary API — FR-17
+  1. Dashboard summary API — FR-19
       What gets built: `GET /api/v1/dashboard/summary` (counts: 4 statuses, total vehicles, total drivers, expiring licenses, pending damage) — agency-scoped.
-  2. Report query endpoints — FR-18
+  2. Report query endpoints — FR-20
       What gets built: `ReportController` → `GET /api/v1/reports/{type}` for inspections, damage, repairs-maintenance, pm, dispatch, vehicle-status with the documented filters (date range, vehicle, driver, source, status, mission type).
-  3. Printable report views — FR-18, NFR-03
+  3. Printable report views — FR-20, NFR-03
       What gets built: print-friendly Blade templates (light-surface, no extra print CSS hacks) for each report type, each stamped with the generating admin's name + generation date; keep the current report layout. (Parked pending client validation: mimic the paper checklist form + show the assigned driver's name — not built yet.)
-  4. Admin Blade pages: Dashboard & Reports — FR-17, FR-18
+  4. Admin Blade pages: Dashboard & Reports — FR-19, FR-20
       What gets built: `dashboard.blade.php` (summary cards + action-required lists) and `reports.blade.php` (type selector + filters).
 
 Testing task (end of phase):
@@ -572,11 +572,7 @@ Testing task (end of phase):
 
 ---
 
-Coverage: FR-01/FR-02 (Phase 1), FR-03–FR-06 (Phase 2), FR-07/FR-08 (Phase 3), FR-09–FR-11
-(Phase 4), FR-12 (Phase 5), FR-13–FR-15 (Phase 6), FR-16 (built into every status-changing
-module across Phases 2–6), FR-17/FR-18 (Phase 8), FR-19 (Phase 7), FR-20 (driver registration
-Phase 1 + admin approval Phase 2), FR-21 (self-service profile Phase 1), NFR-01–NFR-05 (woven
-throughout, finalized in Phase 9).
+Coverage: FR-01–FR-04 (Phase 1; FR-03 driver-approval handled in Phase 2), FR-05–FR-08 (Phase 2), FR-09/FR-10 (Phase 3), FR-11–FR-13 (Phase 4), FR-14 (Phase 5), FR-15–FR-17 (Phase 6), FR-18 (built into every status-changing module across Phases 2–6), FR-19/FR-20 (Phase 8), FR-21 (Phase 7), NFR-01–NFR-05 (woven throughout, finalized in Phase 9).
 
 ---
 
