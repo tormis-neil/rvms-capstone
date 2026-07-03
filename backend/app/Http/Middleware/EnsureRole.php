@@ -16,11 +16,17 @@ class EnsureRole
         $user = $request->user();
 
         if ($user === null) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            return $request->expectsJson()
+                ? response()->json(['message' => 'Unauthenticated.'], 401)
+                : redirect()->guest(route('login'));
         }
 
         if (! in_array($user->role, $roles, true)) {
-            return response()->json(['message' => 'You do not have permission to access this resource.'], 403);
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'You do not have permission to access this resource.'], 403);
+            }
+
+            abort(403, 'You do not have permission to access this page.');
         }
 
         return $next($request);
