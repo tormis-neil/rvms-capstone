@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -40,6 +41,30 @@ class AuthController extends Controller
             'token' => $token,
             'user' => new UserResource($user->load('agency')),
         ]);
+    }
+
+    /**
+     * POST /api/v1/register — driver self-registration (FR-03).
+     * The account starts 'pending' and cannot log in until the
+     * agency administrator approves it.
+     */
+    public function register(RegisterRequest $request): JsonResponse
+    {
+        $driver = User::create([
+            'agency_id' => $request->input('agency_id'),
+            'role' => User::ROLE_DRIVER,
+            'name' => $request->input('name'),
+            'email' => $request->input('email'),
+            'password' => $request->input('password'),
+            'status' => User::STATUS_PENDING,
+            'license_number' => $request->input('license_number'),
+            'license_expiry_date' => $request->input('license_expiry_date'),
+        ]);
+
+        return response()->json([
+            'message' => 'Registration submitted. Your account is pending approval by your agency administrator.',
+            'user' => new UserResource($driver->load('agency')),
+        ], 201);
     }
 
     /**
