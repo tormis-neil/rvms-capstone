@@ -13,10 +13,16 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('agency_id')->constrained('agencies');
+            $table->enum('role', ['admin', 'driver']);
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->enum('status', ['pending', 'active', 'rejected'])->default('active');
+            $table->string('license_number', 50)->nullable();
+            $table->date('license_expiry_date')->nullable();
+            $table->string('fcm_token')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
