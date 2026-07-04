@@ -28,7 +28,7 @@ Calbayog City agencies. Capstone, Northwest Samar State University.
 ## Key Development Commands
 
 ```bash
-php artisan migrate:fresh --seed     # rebuild schema + seed agencies/admins/drivers/checklist
+php artisan migrate:fresh --seed     # rebuild schema + seed agencies/admins/drivers/checklist + sample vehicles/inspections
 php artisan test                     # run PHPUnit feature + unit tests
 php artisan route:list --path=api/v1 # verify registered API routes/middleware
 php artisan tinker                   # inspect Eloquent records/scopes
