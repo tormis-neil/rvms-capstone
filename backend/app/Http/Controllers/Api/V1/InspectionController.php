@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\InspectionRequest;
 use App\Http\Resources\InspectionResource;
 use App\Models\Inspection;
+use App\Models\Vehicle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -77,6 +78,31 @@ class InspectionController extends Controller
      */
     public function show(Inspection $inspection): InspectionResource
     {
+        return new InspectionResource(
+            $inspection->load(['vehicle', 'driver', 'reviewer', 'items.checklistItem']),
+        );
+    }
+
+    /**
+     * PATCH /api/v1/inspections/{id}/review — mark Reviewed, optionally
+     * updating the vehicle's single shared status (FR-10, FR-18).
+     */
+    public function review(Request $request, Inspection $inspection): InspectionResource
+    {
+        $request->validate([
+            'vehicle_status' => ['sometimes', 'required', Rule::in(Vehicle::STATUSES)],
+        ]);
+
+        $inspection->update([
+            'review_status' => Inspection::REVIEW_REVIEWED,
+            'reviewed_by' => $request->user()->id,
+            'reviewed_at' => now(),
+        ]);
+
+        if ($request->filled('vehicle_status')) {
+            $inspection->vehicle->update(['status' => $request->input('vehicle_status')]);
+        }
+
         return new InspectionResource(
             $inspection->load(['vehicle', 'driver', 'reviewer', 'items.checklistItem']),
         );

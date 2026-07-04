@@ -49,5 +49,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/inspections', [InspectionController::class, 'index']);
         Route::get('/inspections/frequent-issues', [InspectionController::class, 'frequentIssues']);
         Route::get('/inspections/{inspection}', [InspectionController::class, 'show']);
+        Route::patch('/inspections/{inspection}/review', [InspectionController::class, 'review']);
     });
 });
