@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DriverController;
+use App\Http\Controllers\Api\V1\LicenseController;
 use App\Http\Controllers\Api\V1\MyVehicleController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\VehicleController;
@@ -36,5 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/drivers/{driver}', [DriverController::class, 'update']);
         Route::patch('/drivers/{driver}/approve', [DriverController::class, 'approve']);
         Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject']);
+
+        Route::get('/licenses/monitoring', [LicenseController::class, 'monitoring']);
     });
 });

@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -65,6 +67,38 @@ class User extends Authenticatable
     public function agency(): BelongsTo
     {
         return $this->belongsTo(Agency::class);
+    }
+
+    /** Only driver accounts. */
+    public function scopeDrivers(Builder $query): Builder
+    {
+        return $query->where('role', self::ROLE_DRIVER);
+    }
+
+    /**
+     * Licenses already past their expiry date (FR-08).
+     */
+    public function scopeExpired(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('license_expiry_date')
+            ->whereDate('license_expiry_date', '<', Carbon::today()->toDateString());
+    }
+
+    /**
+     * Licenses expiring within `$withinDays` days from today, not yet expired
+     * (FR-08). The window comes from the agency's configurable
+     * `license_expiry_warning_days` column, passed in by the caller — kept in
+     * PHP so it works identically on MySQL and the SQLite test database.
+     */
+    public function scopeExpiringSoon(Builder $query, int $withinDays): Builder
+    {
+        $today = Carbon::today();
+
+        return $query
+            ->whereNotNull('license_expiry_date')
+            ->whereDate('license_expiry_date', '>=', $today->toDateString())
+            ->whereDate('license_expiry_date', '<=', $today->copy()->addDays($withinDays)->toDateString());
     }
 
     public function isAdmin(): bool
