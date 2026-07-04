@@ -15,6 +15,8 @@ class DatabaseSeeder extends Seeder
             AgencySeeder::class,
             UserSeeder::class,
             InspectionChecklistItemSeeder::class,
+            VehicleSeeder::class,
+            InspectionSeeder::class,
         ]);
     }
 }
