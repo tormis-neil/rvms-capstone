@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DriverController;
+use App\Http\Controllers\Api\V1\InspectionChecklistController;
 use App\Http\Controllers\Api\V1\LicenseController;
 use App\Http\Controllers\Api\V1\MyVehicleController;
 use App\Http\Controllers\Api\V1\ProfileController;
@@ -21,6 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Driver-only endpoints
     Route::middleware('role:driver')->group(function () {
         Route::get('/my-vehicle', [MyVehicleController::class, 'show']);
+        Route::get('/inspections/checklist', [InspectionChecklistController::class, 'index']);
     });
 
     // Admin-only endpoints
