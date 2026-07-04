@@ -54,10 +54,10 @@
                 </a>
 
                 <div class="px-4 pt-3 pb-2 small text-white-50 text-uppercase fw-semibold">Fleets</div>
-                <a href="#" class="nav-item disabled opacity-50" title="Available in a later phase">
+                <a href="{{ route('vehicles.index') }}" class="nav-item {{ request()->routeIs('vehicles.*') ? 'active' : '' }}">
                     <i class="bi bi-truck"></i> Vehicles
                 </a>
-                <a href="#" class="nav-item disabled opacity-50" title="Available in a later phase">
+                <a href="{{ route('drivers.index') }}" class="nav-item {{ request()->routeIs('drivers.*') ? 'active' : '' }}">
                     <i class="bi bi-person-badge"></i> Drivers
                 </a>
 
@@ -105,6 +105,22 @@
 
             <!-- Content Body -->
             <div class="content-body">
+                @if (session('status'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ session('status') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+                @if ($errors->any())
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <ul class="mb-0 ps-3">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
                 @yield('content')
             </div>
         </main>
