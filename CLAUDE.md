@@ -307,6 +307,50 @@ cross-cutting notifications → reporting → hardening). Every functional modul
 closes with a testing task before the next begins.
 
 ---
+
+## Manual Testing Guide — READ THIS ONCE (applies to every phase)
+
+Every phase below has a **"Manual testing (plain language)"** checklist. They all assume the
+setup here, so you only have to learn it once. All commands run inside the `backend` folder
+in PowerShell (or your terminal).
+
+**A. First-time setup (only once, ever):**
+1. `Copy-Item .env.example .env` — makes the app's config file.
+2. In MySQL, run `CREATE DATABASE rvms;` (leave it empty).
+3. Open `backend\.env` and set `DB_USERNAME` and `DB_PASSWORD` to your MySQL login (for XAMPP
+   this is usually username `root` with a blank password). Save.
+4. `php artisan key:generate` — sets the app's security key.
+
+**B. Start-of-testing setup (every time you sit down to test a phase):**
+1. Make sure MySQL is running.
+2. `php artisan migrate:fresh --seed` — wipes and rebuilds all tables with fresh sample data.
+   *This is itself a test:* it must finish with green `DONE` lines and no red errors. If it
+   errors, stop and report it — nothing else will work until the tables build.
+3. `php artisan serve` — starts the app at **http://127.0.0.1:8000**. Leave this window open.
+4. Open a **second** terminal (also in `backend`) for the `tinker` / `route:list` commands,
+   because the first window is busy running the app.
+
+**C. Postman basics (for the API tests):**
+- On **every** request, open the **Headers** tab and add: `Accept` = `application/json`.
+- To send a JSON body: **Body** tab → **raw** → pick **JSON** from the dropdown → type the JSON.
+- "With an admin/driver token" means: first do a `POST /api/v1/login` for that account, copy the
+  `token` from the response, then on your next request open the **Authorization** tab →
+  Type = **Bearer Token** → paste it.
+- Status codes you'll see: **200/201** = success · **401** = not logged in / bad token ·
+  **403** = logged in but not allowed (wrong role, or another agency) · **422** = your input
+  was invalid (the message says what).
+
+**D. Common commands used below:**
+- `php artisan route:list --path=api/v1` — lists the API endpoints so you can confirm they exist.
+- `php artisan tinker` — an interactive console to peek at the database. Type one line, press
+  Enter, read the result; type `exit` to leave.
+- "Check in MySQL" means use phpMyAdmin, MySQL Workbench, or the `mysql` command line to look at
+  a table (e.g. `DESCRIBE vehicles;` shows its columns).
+
+**Golden rule:** if any step's real result does not match its **Expected** result, stop and
+report it with the exact message — don't push past a failing check.
+
+---
 PHASE 1: Foundation, Authentication & Agency Scoping
 Goal: A running Laravel 11 + MySQL app where any user can log in, receive a Sanctum token carrying their role and agency, and where every query is automatically restricted to the caller's own agency.
 
@@ -331,12 +375,34 @@ Testing task (end of phase):
     - `AuthMeTest`: `GET /api/v1/me` returns 200 + correct user with a valid token; returns 401 without a token.
     - `AuthLogoutTest`: token is revoked (200), and a reused revoked token returns 401.
     - `AgencyScopeUnitTest` (unit): the global scope adds an `agency_id` filter to a model query for an admin; `EnsureRole` rejects a driver token on an admin-only route (403).
-  Manual:
-    - Run `php artisan route:list --path=api/v1` and confirm login/logout/me are registered with method, URI, `auth:sanctum`/role middleware, and `AuthController`.
-    - Postman: call `/api/v1/login` with valid creds (expect token), missing fields (422), then `/api/v1/me` with no token (401) and with an expired/revoked token (401).
-    - `php artisan tinker`: `User::count()` and `Agency::all()` confirm seeded admins/drivers map to the four agencies; `User::first()->password` is a hash, not plaintext.
-    - Browser: log in as a BFP admin, confirm the dashboard shell loads and shows the BFP agency context.
-    - MySQL CLI: `DESCRIBE agencies; DESCRIBE users;` confirm columns/enums match the approved ERD and seed rows are correct.
+  Manual testing (plain language):
+    (Do the one-time + start-of-testing setup from the Manual Testing Guide first.)
+    Seeded logins: admins are `bfp.admin@rvms.local`, `pnp.admin@rvms.local`,
+    `cdrrmo.admin@rvms.local`, `cho.admin@rvms.local`; sample drivers like
+    `ramon.villanueva@rvms.local`. Every password is `password`.
+    1. Confirm the endpoints exist: run `php artisan route:list --path=api/v1`.
+       Expected: 5 routes — login, register, logout, me, me/profile.
+    2. Browser — admin dashboard: open http://127.0.0.1:8000 → it should redirect to a login
+       page. Log in as the BFP admin. Expected: dashboard loads showing "Bureau of Fire
+       Protection" at the top.
+    3. Browser — agency separation: sign out, log in as the CHO admin. Expected: the top now
+       shows "City Health Office" instead. (Proves each admin sees only their own agency.)
+    4. Browser — driver blocked: sign out, try to log in with a driver account. Expected:
+       rejected with a "use the mobile app" message. Then type /dashboard in the address bar
+       while logged out. Expected: bounced back to the login page.
+    5. Postman — login: POST /api/v1/login with the BFP admin. Expected: 200 with a `token`
+       and a `user` showing role "admin" + the BFP agency. Copy the token.
+    6. Postman — bad input: same login with a wrong password → 422; with an empty body → 422
+       naming the missing email and password.
+    7. Postman — token lifecycle: GET /api/v1/me with no token → 401; with the token → 200.
+       Then POST /api/v1/logout with the token → 200; re-send GET /api/v1/me with the same
+       token → 401 (logout killed it).
+    8. Postman — driver sign-up: POST /api/v1/register (agency_id, name, email, password,
+       password_confirmation) → 201 with status "pending". Try to log in as that new driver
+       → 403 "pending approval". Register the same email again → 422 duplicate.
+    9. Peek at the data: `php artisan tinker`, then `App\Models\Agency::pluck('code')` → the 4
+       codes; `App\Models\User::count()` → 12; `App\Models\User::first()->password` → a
+       scrambled `$2y$...` hash, never plain text.
 
 ---
 PHASE 2: Vehicle & Driver Records + License Monitoring
@@ -362,13 +428,32 @@ Testing task (end of phase):
     - `DriverApiTest`: same five-assertion matrix (success shape, 401, 403, cross-agency isolation, 422 on bad license/expiry); admin-added driver is `active`; approve/reject flips a `pending` driver's status; admin cannot approve another agency's pending driver (404/403).
     - `MyVehicleApiTest`: driver gets their own vehicle (200); an admin token is rejected (403); a driver cannot see another agency's vehicle.
     - `LicenseMonitoringUnitTest` (unit): `expiringSoon()`/`expired()` scopes classify dates correctly around the threshold boundary; monitoring endpoint returns only the caller's agency.
-  Manual:
-    - `php artisan route:list --path=api/v1` → confirm all vehicle/driver/my-vehicle/licenses routes, methods, middleware, controllers.
-    - Postman: create/update a vehicle with valid token; submit bad mileage/empty plate (422); call with a wrong-role and a missing token; attempt to fetch another agency's vehicle id (expect blocked).
-    - Postman (driver bearer token): call `/api/v1/my-vehicle` and confirm only the assigned vehicle returns.
-    - `php artisan tinker`: `Vehicle::with('assignedDriver')->get()` confirms relations + agency scoping; manually set a driver `license_expiry_date` near today and confirm it appears in `expiringSoon()`.
-    - Browser: as a BFP admin, open Vehicles and Drivers pages and confirm only BFP records appear.
-    - MySQL CLI: `DESCRIBE vehicles;` confirm status enum + FKs match the ERD.
+  Manual testing (plain language):
+    (Do the start-of-testing setup first. Get an admin token and a driver token via login.)
+    1. Confirm the endpoints exist: `php artisan route:list --path=api/v1`. Expected: the new
+       vehicles, drivers, my-vehicle, and licenses/monitoring routes are listed.
+    2. Postman (admin token) — add a vehicle: POST /api/v1/vehicles with a plate, type, make,
+       model, mileage. Expected: 201 and the vehicle comes back. List them with GET
+       /api/v1/vehicles → only your agency's vehicles.
+    3. Postman (admin token) — bad input: POST a vehicle with an empty plate or a negative
+       mileage → 422. PATCH /api/v1/vehicles/{id}/status to a made-up status like "Broken" →
+       422 (only the four real statuses are allowed).
+    4. Postman — the agency wall: while logged in as the BFP admin, try to GET another
+       agency's vehicle by its id → blocked (404/403). This is the most important security
+       check — one agency must never see another's records.
+    5. Postman — wrong role / no token: call GET /api/v1/vehicles with a driver token → 403;
+       with no token → 401.
+    6. Postman (driver token) — my vehicle: GET /api/v1/my-vehicle. Expected: 200 with only
+       that driver's assigned vehicle. An admin token on the same route → 403.
+    7. Postman (admin token) — driver approval: GET /api/v1/drivers?status=pending shows the
+       pending sign-ups. PATCH /api/v1/drivers/{id}/approve → that driver's status flips to
+       active (and they can now log in). Try /reject on another and confirm it flips to
+       rejected.
+    8. Browser: as the BFP admin, open the Vehicles and Drivers pages. Expected: only BFP
+       records; add/edit/update-status buttons work.
+    9. License check: `php artisan tinker`, set a driver's `license_expiry_date` to a few days
+       from now, then call GET /api/v1/licenses/monitoring in Postman → that driver appears as
+       expiring soon.
 
 ---
 PHASE 3: Digital BLOWBAGETS Inspection
@@ -391,13 +476,27 @@ Testing task (end of phase):
     - `InspectionSubmitTest`: valid submission returns 201 + stored items; **Has Issue without remarks returns 422**; unauthenticated 401; admin token submitting returns 403; a BFP driver's checklist includes 14 items while others get 12.
     - `InspectionMonitoringTest`: admin lists/filters and reviews (200); driver token 403; **Agency A admin cannot read/review Agency B inspections (404/403)**; bad filter input 422.
     - `InspectionUnitTest` (unit): `resultLabel`/`issueCount` helper and `frequentIssues` aggregation compute correctly; `inspectionItemsFor(agency)` returns the BFP-extended list only for BFP.
-  Manual:
-    - `php artisan route:list --path=api/v1/inspections` → verify routes, methods, middleware.
-    - Postman (driver token): submit an all-OK and a flagged inspection; omit remarks on a flagged item (422); submit with missing/expired token (401).
-    - Postman (admin token): list with `?vehicle=&driver=&date=`, open one, review it; try a wrong-role driver token (403).
-    - `php artisan tinker`: `Inspection::with('items.checklistItem')->latest()->first()` confirms item rows + statuses; confirm a BFP inspection has 14 item rows.
-    - Browser: as an admin, open Inspections; confirm only the agency's submissions and that BFP shows the two extra items.
-    - MySQL CLI: confirm `inspection_checklist_items` seeded (14 rows, two `is_bfp_only=1`) and `inspection_items` FK integrity.
+  Manual testing (plain language):
+    (Do the start-of-testing setup first. Get an admin token and a driver token via login.)
+    1. Confirm the endpoints exist: `php artisan route:list --path=api/v1/inspections`.
+    2. Postman (driver token) — see the checklist: GET /api/v1/inspections/checklist. Expected:
+       a BFP driver gets 14 items (the 12 standard + Hydraulic System + Fire Pump); a driver
+       from any other agency gets 12.
+    3. Postman (driver token) — submit an all-OK inspection: POST /api/v1/inspections with every
+       item marked "OK". Expected: 201.
+    4. Postman (driver token) — flagged item needs a reason: POST an inspection with one item
+       marked "Has Issue" but no remarks → 422. Add remarks to that item and resend → 201.
+       (Proves a flagged item always needs an explanation.)
+    5. Postman — wrong role / no token: an admin token submitting an inspection → 403; no token
+       → 401.
+    6. Postman (admin token) — review: GET /api/v1/inspections (try the ?vehicle=, ?driver=,
+       ?date= filters), open one with GET /api/v1/inspections/{id}, then PATCH
+       /api/v1/inspections/{id}/review to mark it Reviewed. Expected: 200s.
+    7. Postman — the agency wall: as the BFP admin, try to open an inspection from another
+       agency → blocked (404/403).
+    8. Browser: as an admin, open the Inspections page. Expected: only your agency's
+       submissions; for BFP the two extra items show; the "frequently reported issues" area
+       reflects the flagged items.
 
 ---
 PHASE 4: Damage Reporting & Repair Logging
@@ -421,13 +520,27 @@ Testing task (end of phase):
     - `DamageReviewTest`: admin marks Reviewed and updates vehicle status (200); driver token 403; **Agency A admin cannot review Agency B report (404/403)**.
     - `RepairApiTest`: create/list/update (200/201); invalid `repair_source` 422; External Repair Shop requires shop name (422 if missing); 401/403/cross-agency isolation asserted.
     - `RepairUnitTest` (unit): repair-source label helper resolves External Repair Shop + shop name; status-update writes the single `vehicles.status` field.
-  Manual:
-    - `php artisan route:list` → verify damage + repair routes/middleware.
-    - Postman (driver token): submit a damage report with and without a photo; submit empty nature (422); wrong-role/missing token checks.
-    - Postman (admin token): review a report and confirm the vehicle status changes; log a repair with each repair source.
-    - `php artisan tinker`: `DamageReport::where('status','Pending')->get()`; after review confirm `Vehicle::find(id)->status` updated; `RepairLog::latest()->first()`.
-    - Browser: as an admin, open Damage and Repairs pages; confirm only agency records; open an uploaded photo.
-    - MySQL CLI: `DESCRIBE damage_reports; DESCRIBE repair_logs;` confirm enums/FKs; confirm a stored `photo_path`.
+  Manual testing (plain language):
+    (Do the start-of-testing setup first. Get an admin token and a driver token via login.
+    Photo uploads use Body → form-data in Postman, not raw JSON.)
+    1. Confirm the endpoints exist: `php artisan route:list` and look for damage-reports and
+       repairs routes.
+    2. Postman (driver token) — file a damage report: POST /api/v1/damage-reports with a
+       nature-of-damage description (try once with a photo, once without — the photo is
+       optional). Expected: 201, status "Pending", date filled in automatically.
+    3. Postman (driver token) — bad input: POST with an empty nature-of-damage → 422. An admin
+       token submitting → 403; no token → 401.
+    4. Postman (admin token) — review + set status: PATCH /api/v1/damage-reports/{id}/review to
+       mark it Reviewed and choose a new vehicle status. Expected: 200. Then GET the vehicle
+       and confirm its status actually changed.
+    5. Postman — the agency wall: as the BFP admin, try to review another agency's damage
+       report → blocked (404/403).
+    6. Postman (admin token) — log a repair: POST /api/v1/repairs with scope of work and a
+       repair source. Try each source (Internal Office, GSO Motorpool, External Repair Shop).
+       Expected: choosing "External Repair Shop" without a shop name → 422; with a shop name →
+       201.
+    7. Browser: as an admin, open the Damage and Repairs pages. Expected: only your agency's
+       records; you can open an uploaded photo; reviewing/editing works.
 
 ---
 PHASE 5: Preventive Maintenance Scheduling
@@ -450,13 +563,26 @@ Testing task (end of phase):
     - `PmScheduleApiTest`: create mileage-based and time-based (201); missing interval on mileage-based 422; missing date on time-based 422; 401; driver token 403; **cross-agency isolation** on read/update.
     - `PmCompletionTest`: completing sets status Completed + stores completion fields (200); driver 403.
     - `PmStatusUnitTest` (unit): the recompute logic returns Due/Due Soon/Upcoming correctly at threshold boundaries for both PM types, and never auto-creates a next cycle.
-  Manual:
-    - `php artisan route:list --path=api/v1/pm-schedules` → verify routes/middleware.
-    - `php artisan schedule:list` and `php artisan rvms:recalculate-pm` → confirm the command runs and updates statuses.
-    - Postman (admin token): create both PM types; submit a bad threshold (422); complete one; wrong-role/missing-token checks.
-    - `php artisan tinker`: set a vehicle's `current_mileage` near `due_mileage`, run the command, confirm `status` flips to Due Soon/Due.
-    - Browser: as an admin, open the PM page; confirm only agency schedules and correct status badges.
-    - MySQL CLI: `DESCRIBE pm_schedules;` confirm enums/threshold columns; verify a completed row retains completion fields.
+  Manual testing (plain language):
+    (Do the start-of-testing setup first. Get an admin token via login.)
+    1. Confirm the endpoints exist: `php artisan route:list --path=api/v1/pm-schedules`.
+    2. Postman (admin token) — create both kinds: POST /api/v1/pm-schedules once as
+       "Mileage-Based" (needs an interval in km) and once as "Time-Based" (needs a due date).
+       Expected: 201 each.
+    3. Postman (admin token) — bad input: a Mileage-Based schedule with no km interval → 422;
+       a Time-Based one with no date → 422. Driver token → 403; no token → 401.
+    4. The auto due-status check (the important one): in `php artisan tinker`, set a vehicle's
+       `current_mileage` close to its schedule's due mileage. Then run
+       `php artisan rvms:recalculate-pm`. Expected: that schedule's status flips to "Due Soon"
+       or "Due" on its own. Run `php artisan schedule:list` to confirm this job is scheduled to
+       run automatically.
+    5. Postman (admin token) — complete a service: PATCH /api/v1/pm-schedules/{id}/complete with
+       date serviced, repair source, parts, remarks. Expected: 200, status becomes "Completed",
+       and it does NOT create a new cycle automatically (each cycle is added by hand).
+    6. Postman — the agency wall: as the BFP admin, try to open/edit another agency's schedule →
+       blocked (404/403).
+    7. Browser: as an admin, open the PM page. Expected: only your agency's schedules, correct
+       colored status badges, and active vs. completed shown separately.
 
 ---
 PHASE 6: Dispatch Logging & Vehicle Availability
@@ -480,12 +606,24 @@ Testing task (end of phase):
     - `DispatchCloseTest`: close with each return status updates the vehicle's single status field (200); invalid return_status 422.
     - `AvailabilityTest`: returns only the caller's agency vehicles with current status; 403 for driver.
     - `DispatchUnitTest` (unit): active/completed derivation from `time_in`; mission label resolves Others + free text.
-  Manual:
-    - `php artisan route:list` → verify dispatch + availability routes/middleware.
-    - Postman (admin token): open a dispatch, confirm vehicle status flips to Dispatched; close it choosing each return status; submit Others with no detail (422); wrong-role/missing-token checks.
-    - `php artisan tinker`: `Dispatch::whereNull('time_in')->get()` lists active dispatches; confirm `Vehicle` status transitions on open/close.
-    - Browser: as an admin, open the Dispatch page; confirm the active count banner and that only agency dispatches show.
-    - MySQL CLI: `DESCRIBE dispatches;` confirm enums/FKs.
+  Manual testing (plain language):
+    (Do the start-of-testing setup first. Get an admin token via login.)
+    1. Confirm the endpoints exist: `php artisan route:list` and look for dispatches and
+       vehicles/availability routes.
+    2. Postman (admin token) — open a dispatch: POST /api/v1/dispatches with a vehicle, driver,
+       mission type, location, and time out. Expected: 201. Then GET that vehicle and confirm
+       its status automatically became "Dispatched".
+    3. Postman (admin token) — the "Others" rule: open a dispatch with mission type "Others" but
+       no detail text → 422; add the detail and resend → 201.
+    4. Postman (admin token) — close a dispatch: PATCH /api/v1/dispatches/{id}/close with a time
+       in and a return status (try each of Operational / Not Operational / Under Preventive
+       Maintenance). Expected: 200, and the vehicle's status becomes whatever you chose.
+    5. Postman — wrong role / no token / agency wall: driver token → 403; no token → 401; as the
+       BFP admin, try to dispatch or read another agency's vehicle → blocked.
+    6. Postman (admin token) — availability: GET /api/v1/vehicles/availability. Expected: a list
+       of only your agency's vehicles with each one's current status.
+    7. Browser: as an admin, open the Dispatch page. Expected: a banner counting active
+       dispatches, only your agency's records, and a working close-dispatch button.
 
 ---
 PHASE 7: Notification Services & FCM
@@ -509,13 +647,30 @@ Testing task (end of phase):
     - `FcmTokenTest`: driver registers a token (200); admin/driver role rules enforced; invalid token 422.
     - `NotificationTriggerTest`: submitting a damage report creates an admin notification; a vehicle status change creates a driver notification; the scheduled commands create license/PM notifications (FCM transport faked/mocked).
     - `NotificationUnitTest` (unit): notification-type → title/recipient mapping; license/PM threshold selection logic.
-  Manual:
-    - `php artisan route:list` + `php artisan schedule:list` → verify notification routes and that `rvms:license-alerts`/PM jobs are scheduled.
-    - Run `php artisan rvms:license-alerts` and the PM recompute → confirm rows appear in `notifications`.
-    - Postman (driver token): register an FCM token, list notifications, mark one read; (admin token) confirm a new damage report produced an admin notification.
-    - `php artisan tinker`: trigger a vehicle status change and confirm a `Notification` row for the assigned driver; inspect `data` payload.
-    - Browser: as an admin, confirm the bell shows unread agency notifications and the notifications page groups Today/Yesterday/Earlier.
-    - MySQL CLI: `DESCRIBE notifications;` confirm type enum + `is_read`/`read_at`.
+  Manual testing (plain language):
+    (Do the start-of-testing setup first. Get an admin token and a driver token via login.)
+    1. Confirm the endpoints + jobs exist: `php artisan route:list` (look for notifications and
+       fcm-token routes) and `php artisan schedule:list` (look for the license-alerts and PM
+       jobs).
+    2. Scheduled alerts create notifications: run `php artisan rvms:license-alerts` and
+       `php artisan rvms:recalculate-pm`. Then GET /api/v1/notifications as an admin → new rows
+       appear (expiring licenses, PM due). (You may need a driver with a near-expiry license and
+       a vehicle near its PM due point first — set those in tinker.)
+    3. Event alerts (damage): as a driver, submit a damage report (Phase 4). Then as that
+       agency's admin, GET /api/v1/notifications → a "new damage report" notification is there.
+    4. Event alerts (status): as an admin, change a vehicle's status. Then as that vehicle's
+       assigned driver, GET /api/v1/notifications → a "vehicle status update" notification is
+       there.
+    5. Postman — read state: PATCH /api/v1/notifications/{id}/read marks one read; PATCH
+       /api/v1/notifications/read-all clears the rest. The unread count drops.
+    6. Postman (driver token) — device token: POST /api/v1/fcm-token with a device token → 200
+       (this is how a phone registers for push). A bad/empty token → 422.
+    7. Postman — the agency wall: you only ever see your own notifications; trying to mark
+       someone else's as read → blocked (403/404).
+    8. Browser: as an admin, check the bell icon shows an unread count and the notifications page
+       groups them Today / Yesterday / Earlier.
+    Note: real phone push (FCM) needs Firebase credentials; in local testing the push send is
+    faked/mocked, but the notification ROWS in the database are real and are what you verify.
 
 ---
 PHASE 8: Dashboard Summary & Report Generation
@@ -536,12 +691,26 @@ Testing task (end of phase):
     - `DashboardSummaryTest`: returns correct counts for the caller's agency only (200); 401; driver token 403; **counts never include another agency's records**.
     - `ReportApiTest`: each of the six report types returns 200 with the expected shape and honors filters; invalid date range/filter 422; 401; driver 403; **cross-agency isolation** on every report.
     - `ReportUnitTest` (unit): filter-builder applies date/vehicle/driver/source/status/mission constraints correctly; vehicle-status summary reflects live statuses.
-  Manual:
-    - `php artisan route:list --path=api/v1/reports` and `--path=api/v1/dashboard` → verify routes/middleware.
-    - Postman (admin token): call summary and each report with valid filters; pass a malformed date range (422); wrong-role/missing-token checks.
-    - `php artisan tinker`: cross-check `Vehicle::where('status',...)->count()` against the summary endpoint numbers.
-    - Browser: as an admin, open the Dashboard (verify card counts match data) and Reports (generate each type, use the browser print preview to confirm clean output).
-    - MySQL CLI: spot-check that report rows correspond to actual table records for the agency.
+  Manual testing (plain language):
+    (Do the start-of-testing setup first. Get an admin token via login.)
+    1. Confirm the endpoints exist: `php artisan route:list --path=api/v1/reports` and
+       `--path=api/v1/dashboard`.
+    2. Postman (admin token) — dashboard counts: GET /api/v1/dashboard/summary. Expected: counts
+       for the four vehicle statuses, total vehicles, total drivers, expiring licenses, and
+       pending damage reports — for YOUR agency only.
+    3. Cross-check the numbers: in `php artisan tinker`, count vehicles by status by hand (e.g.
+       `App\Models\Vehicle::where('status','Operational')->count()`) and confirm it matches the
+       summary's number.
+    4. Postman (admin token) — the six reports: GET /api/v1/reports/{type} for each type
+       (inspections, damage, repairs-maintenance, pm, dispatch, vehicle-status). Try the date
+       range and other filters. Expected: 200 with rows that respect the filters.
+    5. Postman — bad input / wrong role: a backwards or malformed date range → 422; a driver
+       token → 403; no token → 401.
+    6. Postman — the agency wall: every report and the summary must contain only your agency's
+       data, never another agency's.
+    7. Browser: as an admin, open the Dashboard (card counts match the data) and Reports (pick
+       each type, apply filters, then use the browser's Print Preview → the printout is clean and
+       stamped with your name and the date).
 
 ---
 PHASE 9: NFR Hardening & Final Verification
@@ -563,12 +732,23 @@ Testing task (end of phase):
     - `AgencyIsolationSweepTest`: parameterized test asserting every list/show/update/delete endpoint blocks cross-agency access (NFR-02).
     - `RateLimitTest`: repeated failed logins are throttled (NFR-02).
     - `PerformanceUnitTest`: list endpoints are paginated and key queries issue no N+1 (assert query count) (NFR-01).
-  Manual:
-    - `php artisan route:list` → final review of the complete route table (method, URI, middleware, controller) for the `/api/v1` surface.
-    - Postman: re-run the wrong-role / expired-token / cross-agency / bad-input matrix against a sample endpoint from each module.
-    - `php artisan tinker`: confirm a single status change is reflected identically via vehicle, dispatch, and report queries (NFR-04).
-    - Browser: open the dashboard in Chrome, Firefox, and Edge and confirm parity (NFR-05).
-    - MySQL CLI: final schema review against the approved ERD; `EXPLAIN` a couple of scoped list queries to confirm `agency_id` indexes are used (NFR-01).
+  Manual testing (plain language):
+    (Do the start-of-testing setup first. This phase re-checks the whole system, not one module.)
+    1. Full route review: `php artisan route:list` and skim the whole `/api/v1` table — every
+       endpoint should have the right method, path, and middleware.
+    2. Security spot-check: pick one endpoint from each module and re-run the four "should be
+       blocked" cases in Postman — wrong role (403), no/expired token (401), another agency's
+       record (403/404), bad input (422). None should slip through.
+    3. Rate limiting: in Postman, hit /api/v1/login with a wrong password many times fast.
+       Expected: after several tries it starts refusing with 429 (Too Many Requests).
+    4. One-status consistency: change a vehicle's status once, then confirm the SAME status shows
+       everywhere — the vehicle record, the availability list, the dashboard summary, and the
+       vehicle-status report all agree.
+    5. Big lists are paginated: on a list endpoint with many rows, confirm the response comes back
+       in pages (not thousands of rows at once) and stays fast.
+    6. Browser compatibility: open the dashboard in Chrome, Firefox, and Edge — it should look and
+       work the same in all three.
+    7. Full automated suite: run `php artisan test` one last time. Expected: everything green.
 
 ---
 
