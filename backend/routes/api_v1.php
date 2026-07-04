@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\DriverController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\VehicleController;
 use Illuminate\Support\Facades\Route;
@@ -22,5 +23,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/vehicles/{vehicle}', [VehicleController::class, 'show']);
         Route::put('/vehicles/{vehicle}', [VehicleController::class, 'update']);
         Route::patch('/vehicles/{vehicle}/status', [VehicleController::class, 'updateStatus']);
+
+        Route::get('/drivers', [DriverController::class, 'index']);
+        Route::post('/drivers', [DriverController::class, 'store']);
+        Route::get('/drivers/{driver}', [DriverController::class, 'show']);
+        Route::put('/drivers/{driver}', [DriverController::class, 'update']);
+        Route::patch('/drivers/{driver}/approve', [DriverController::class, 'approve']);
+        Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject']);
     });
 });
