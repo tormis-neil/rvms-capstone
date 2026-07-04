@@ -30,6 +30,7 @@ class VehicleController extends Controller
     public function store(VehicleRequest $request): JsonResponse
     {
         $vehicle = Vehicle::create($request->validated());
+        $vehicle->refresh(); // pick up the DB default status when none was supplied
 
         return (new VehicleResource($vehicle->load('assignedDriver')))
             ->response()
