@@ -33,7 +33,7 @@ class InspectionController extends Controller
 
             $inspection->items()->createMany($request->input('items'));
 
-            return $inspection;
+            return $inspection->refresh(); // pick up DB-default review_status
         });
 
         return (new InspectionResource($inspection->load('items.checklistItem', 'vehicle')))
