@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\DriverController;
+use App\Http\Controllers\Web\InspectionController;
 use App\Http\Controllers\Web\VehicleController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +21,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/vehicles', [VehicleController::class, 'store'])->name('vehicles.store');
     Route::put('/vehicles/{vehicle}', [VehicleController::class, 'update'])->name('vehicles.update');
     Route::patch('/vehicles/{vehicle}/status', [VehicleController::class, 'updateStatus'])->name('vehicles.status');
+
+    Route::get('/inspections', [InspectionController::class, 'index'])->name('inspections.index');
+    Route::patch('/inspections/{inspection}/review', [InspectionController::class, 'review'])->name('inspections.review');
 
     Route::get('/drivers', [DriverController::class, 'index'])->name('drivers.index');
     Route::post('/drivers', [DriverController::class, 'store'])->name('drivers.store');
