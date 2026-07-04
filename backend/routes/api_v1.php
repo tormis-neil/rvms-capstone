@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DriverController;
+use App\Http\Controllers\Api\V1\MyVehicleController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\VehicleController;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::patch('/me/profile', [ProfileController::class, 'update']);
+
+    // Driver-only endpoints
+    Route::middleware('role:driver')->group(function () {
+        Route::get('/my-vehicle', [MyVehicleController::class, 'show']);
+    });
 
     // Admin-only endpoints
     Route::middleware('role:admin')->group(function () {
