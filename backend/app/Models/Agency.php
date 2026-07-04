@@ -33,6 +33,11 @@ class Agency extends Model
         return $this->hasMany(User::class);
     }
 
+    public function vehicles(): HasMany
+    {
+        return $this->hasMany(Vehicle::class);
+    }
+
     public function drivers(): HasMany
     {
         return $this->users()->where('role', User::ROLE_DRIVER);
