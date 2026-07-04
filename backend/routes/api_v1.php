@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DriverController;
+use App\Http\Controllers\Api\V1\InspectionChecklistController;
+use App\Http\Controllers\Api\V1\InspectionController;
 use App\Http\Controllers\Api\V1\LicenseController;
 use App\Http\Controllers\Api\V1\MyVehicleController;
 use App\Http\Controllers\Api\V1\ProfileController;
@@ -21,6 +23,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Driver-only endpoints
     Route::middleware('role:driver')->group(function () {
         Route::get('/my-vehicle', [MyVehicleController::class, 'show']);
+        Route::get('/inspections/checklist', [InspectionChecklistController::class, 'index']);
+        Route::post('/inspections', [InspectionController::class, 'store']);
     });
 
     // Admin-only endpoints
@@ -39,5 +43,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject']);
 
         Route::get('/licenses/monitoring', [LicenseController::class, 'monitoring']);
+
+        // frequent-issues must be registered before {inspection} so it is not
+        // captured by the route-model-binding wildcard.
+        Route::get('/inspections', [InspectionController::class, 'index']);
+        Route::get('/inspections/frequent-issues', [InspectionController::class, 'frequentIssues']);
+        Route::get('/inspections/{inspection}', [InspectionController::class, 'show']);
+        Route::patch('/inspections/{inspection}/review', [InspectionController::class, 'review']);
     });
 });

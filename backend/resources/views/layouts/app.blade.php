@@ -34,8 +34,8 @@
                 </a>
 
                 <div class="px-4 pt-3 pb-2 small text-white-50 text-uppercase fw-semibold">Maintenance</div>
-                {{-- Module pages ship with their phases (3–5). --}}
-                <a href="#" class="nav-item disabled opacity-50" title="Available in a later phase">
+                {{-- Remaining module pages ship with their phases (4–5). --}}
+                <a href="{{ route('inspections.index') }}" class="nav-item {{ request()->routeIs('inspections.*') ? 'active' : '' }}">
                     <i class="bi bi-exclamation-triangle"></i> Inspections &amp; Damage
                 </a>
                 <a href="#" class="nav-item disabled opacity-50" title="Available in a later phase">
