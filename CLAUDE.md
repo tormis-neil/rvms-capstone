@@ -389,29 +389,40 @@ Testing task (end of phase):
     - `AuthMeTest`: `GET /api/v1/me` returns 200 + correct user with a valid token; returns 401 without a token.
     - `AuthLogoutTest`: token is revoked (200), and a reused revoked token returns 401.
     - `AgencyScopeUnitTest` (unit): the global scope adds an `agency_id` filter to a model query for an admin; `EnsureRole` rejects a driver token on an admin-only route (403).
-  Manual testing (plain language):
-    (Do the one-time + start-of-testing setup from the Manual Testing Guide first.)
-    Seeded logins: admins are `bfp.admin@rvms.local`, `pnp.admin@rvms.local`,
-    `cdrrmo.admin@rvms.local`, `cho.admin@rvms.local`; sample drivers like
-    `ramon.villanueva@rvms.local`. Every password is `password`.
-    1. Confirm the endpoints exist: run `php artisan route:list --path=api/v1`.
-       Expected: 5 routes — login, register, logout, me, me/profile.
-    2. Browser — admin dashboard: open http://127.0.0.1:8000 → it should redirect to a login
-       page. Log in as the BFP admin. Expected: dashboard loads showing "Bureau of Fire
-       Protection" at the top.
-    3. Browser — agency separation: sign out, log in as the CHO admin. Expected: the top now
-       shows "City Health Office" instead. (Proves each admin sees only their own agency.)
-    4. Browser — driver blocked: sign out, try to log in with a driver account. Expected:
-       rejected with a "use the mobile app" message. Then type /dashboard in the address bar
-       while logged out. Expected: bounced back to the login page.
-    5. API — the endpoints work: run `php artisan test`. Expected: all green. This proves login
-       returns a token for good credentials and rejects a wrong password (422) and missing fields
-       (422); that /me needs a valid token (401 without, 200 with); that logout kills the token (a
-       reused token → 401); and that a pending driver can't log in (403). (Want to watch login
-       succeed by hand? Use the curl login command in guide section C.)
-    6. Peek at the data: `php artisan tinker`, then `App\Models\Agency::pluck('code')` → the 4
-       codes; `App\Models\User::count()` → 12; `App\Models\User::first()->password` → a scrambled
-       `$2y$...` hash, never plain text.
+  Manual testing checklist (plain language):
+    Seeded logins (password is `password` for everyone): admins bfp.admin@rvms.local,
+    pnp.admin@rvms.local, cdrrmo.admin@rvms.local, cho.admin@rvms.local; sample drivers
+    like ramon.villanueva@rvms.local.
+
+    Setup (every time):
+      [ ] `php artisan migrate:fresh --seed`  → fresh sample data (clean, known starting point).
+      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave this window open).
+
+    Commands to run — and why they matter:
+      [ ] `php artisan route:list --path=api/v1`  → lists 5 routes (login, register, logout,
+          me, me/profile).  Why: confirms the login/account endpoints exist.
+      [ ] `php artisan test`  → all green.  Why: one command proves the login rules — a correct
+          password returns a token; a wrong password or empty fields are rejected (422); /me
+          needs a valid token (401 without it); logout kills the token; a pending driver can't
+          log in (403).
+
+    What must work (browser, as the BFP admin):
+      [ ] Open http://127.0.0.1:8000  → it redirects to a login page.
+          Why: pages are protected — you can't reach them while logged out.
+      [ ] Log in as the BFP admin  → dashboard shows "Bureau of Fire Protection".
+          Why: login works and the account carries its agency.
+      [ ] Sign out, log in as the CHO admin  → the top now shows "City Health Office".
+          Why: each admin sees only their OWN agency — the core privacy rule (FR-02).
+      [ ] Sign out, try to log in with a driver account  → refused ("use the mobile app").
+          Why: the web dashboard is admin-only; drivers use the phone app.
+      [ ] Signed out, type /dashboard in the address bar  → bounced back to login.
+          Why: nobody reaches the dashboard without logging in.
+
+    Look at the saved data (optional — `php artisan tinker`, then `exit`):
+      [ ] `App\Models\Agency::pluck('code')`  → the 4 codes (BFP, PNP, CDRRMO, CHO).
+      [ ] `App\Models\User::count()`  → 12.
+      [ ] `App\Models\User::first()->password`  → a scrambled `$2y$...` hash (never plain text).
+          Why: passwords are stored safely, not readable.
 
 ---
 PHASE 2: Vehicle & Driver Records + License Monitoring
@@ -437,27 +448,39 @@ Testing task (end of phase):
     - `DriverApiTest`: same five-assertion matrix (success shape, 401, 403, cross-agency isolation, 422 on bad license/expiry); admin-added driver is `active`; approve/reject flips a `pending` driver's status; admin cannot approve another agency's pending driver (404/403).
     - `MyVehicleApiTest`: driver gets their own vehicle (200); an admin token is rejected (403); a driver cannot see another agency's vehicle.
     - `LicenseMonitoringUnitTest` (unit): `expiringSoon()`/`expired()` scopes classify dates correctly around the threshold boundary; monitoring endpoint returns only the caller's agency.
-  Manual testing (plain language):
-    (Do the start-of-testing setup first.)
-    1. Confirm the endpoints exist: `php artisan route:list --path=api/v1`. Expected: the new
-       vehicles, drivers, my-vehicle, and licenses/monitoring routes are listed.
-    2. Browser (main hands-on test) — as the BFP admin, open the Vehicles page. Add a vehicle
-       (plate, type, make, model, mileage), edit it, and change its status. Expected: it saves and
-       appears in the list. Open the Drivers page: you see the pending sign-up from Phase 1;
-       approve it (its status flips to active) and confirm you can add a driver directly.
-    3. Browser — agency separation: everything on those pages shows ONLY your agency's vehicles and
-       drivers, never another agency's.
-    4. API rules — run `php artisan test`. Expected: all green. This proves the important security
-       and validation rules without you hand-testing each one: a made-up vehicle status is rejected
-       (422); an empty plate / negative mileage is rejected (422); a driver token or no token is
-       refused on admin routes (403/401); the driver-only GET /api/v1/my-vehicle returns just that
-       driver's vehicle and refuses an admin (403); and — most important — an admin from one agency
-       cannot read or edit another agency's vehicle or driver (blocked, 403/404).
-    5. License monitoring: `php artisan tinker`, set a driver's `license_expiry_date` to a few days
-       from now (`$u = App\Models\User::find(ID); $u->license_expiry_date = now()->addDays(5); $u->save();`).
-       Then log in as that agency's admin and open the license monitoring view (or use the curl GET
-       on /api/v1/licenses/monitoring from guide section C) → that driver shows as expiring soon.
-    (Optional: to watch any single endpoint by hand, use the curl token pattern in guide section C.)
+  Manual testing checklist (plain language):
+    Setup (every time):
+      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
+      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
+
+    Commands to run — and why they matter:
+      [ ] `php artisan route:list --path=api/v1`  → shows the vehicles, drivers, my-vehicle, and
+          licenses/monitoring routes.  Why: confirms the new endpoints are wired up.
+      [ ] `php artisan test`  → all green.  Why: proves the security + validation rules you can't
+          easily see by clicking — a made-up vehicle status is rejected (422); an empty plate or
+          negative mileage is rejected (422); a driver or no token is refused on admin routes
+          (403/401); the driver-only my-vehicle returns just that driver's vehicle and refuses an
+          admin (403); and — most important — one agency cannot read or edit another agency's
+          vehicle or driver (blocked, 404/403).
+
+    What must work (browser, as the BFP admin):
+      [ ] Open Vehicles, click Add Vehicle (plate, type, make, model, mileage)  → it saves and
+          appears in the table.  Why: admins can build their fleet record (FR-05).
+      [ ] Edit that vehicle, then use Status to change it (e.g. Dispatched)  → the colored badge
+          changes.  Why: the single shared vehicle status can be updated (FR-18).
+      [ ] Open Drivers  → the pending sign-up shows under "Access Requests"; click Approve  →
+          it becomes Active.  Why: admins approve driver self-registrations (FR-03).
+      [ ] Click Add Driver (name, email, password, license)  → saves as Active immediately.
+          Why: admin-added drivers don't need approval (FR-06).
+      [ ] Sign out, log in as the CHO admin, open Vehicles/Drivers  → you do NOT see the BFP
+          records.  Why: agencies can't see each other's data (FR-02) — the key security check.
+
+    License monitoring (no screen yet — check by data):
+      [ ] `php artisan tinker` → `$u = App\Models\User::where('role','driver')->first();`
+          `$u->license_expiry_date = now()->addDays(5); $u->save(); exit`
+      [ ] Then GET /api/v1/licenses/monitoring (curl pattern, guide section C, as that agency's
+          admin)  → that driver appears under "expiring_soon".
+          Why: expiring licenses are detected against each agency's configurable warning window (FR-08).
 
 ---
 PHASE 3: Digital BLOWBAGETS Inspection
@@ -480,23 +503,34 @@ Testing task (end of phase):
     - `InspectionSubmitTest`: valid submission returns 201 + stored items; **Has Issue without remarks returns 422**; unauthenticated 401; admin token submitting returns 403; a BFP driver's checklist includes 14 items while others get 12.
     - `InspectionMonitoringTest`: admin lists/filters and reviews (200); driver token 403; **Agency A admin cannot read/review Agency B inspections (404/403)**; bad filter input 422.
     - `InspectionUnitTest` (unit): `resultLabel`/`issueCount` helper and `frequentIssues` aggregation compute correctly; `inspectionItemsFor(agency)` returns the BFP-extended list only for BFP.
-  Manual testing (plain language):
-    (Do the start-of-testing setup first.)
-    1. Confirm the endpoints exist: `php artisan route:list --path=api/v1/inspections`.
-    2. Browser (admin side) — open the Inspections page. Expected: only your agency's submitted
-       inspections; you can open one to see its checklist and mark it Reviewed; for BFP the two
-       extra items (Hydraulic System, Fire Pump) show; the "frequently reported issues" area
-       reflects the flagged items.
-    3. API rules — run `php artisan test`. Expected: all green. This proves the driver-side rules
-       (which have no screen until the mobile app is built): a BFP driver's checklist has 14 items
-       while other agencies get 12; a valid inspection saves (201); a "Has Issue" item with no
-       remarks is rejected (422); an admin submitting is refused (403) and no token is 401; and an
-       admin from one agency cannot read or review another agency's inspection (blocked).
-    4. See a real submission's data: `php artisan tinker`, then
-       `App\Models\Inspection::with('items.checklistItem')->latest()->first()` → confirms the item
-       rows and OK / Has Issue statuses were stored (a BFP inspection has 14 item rows).
-    (Optional: submit an inspection by hand with the curl token pattern in guide section C, using a
-    driver login.)
+  Manual testing checklist (plain language):
+    Note: submitting an inspection is a DRIVER action, so it has no dashboard screen until the
+    mobile app is built — those rules are checked by `php artisan test` (and optionally curl).
+    The admin review side IS a screen you can click.
+
+    Setup (every time):
+      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
+      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
+
+    Commands to run — and why they matter:
+      [ ] `php artisan route:list --path=api/v1/inspections`  → shows the inspection routes.
+      [ ] `php artisan test`  → all green.  Why: proves the driver-side rules with no screen yet —
+          a BFP driver's checklist has 14 items while other agencies get 12; a valid inspection
+          saves (201); a "Has Issue" item with no remarks is rejected (422); an admin submitting is
+          refused (403) and no token is 401; and one agency can't read/review another's inspection.
+
+    What must work (browser, as the BFP admin — Inspections page):
+      [ ] The list shows only your agency's submitted inspections.
+          Why: agency isolation (FR-02).
+      [ ] Open one  → you see its checklist; for BFP the two extra items (Hydraulic System,
+          Fire Pump) appear.  Why: BFP trucks have 14 items, others 12 (FR-09).
+      [ ] Mark it Reviewed  → its status changes.  Why: admins assess submissions (FR-10).
+      [ ] The "frequently reported issues" area reflects the flagged items.
+          Why: admins can spot recurring problems (FR-10).
+
+    Look at the saved data (optional — `php artisan tinker`):
+      [ ] `App\Models\Inspection::with('items.checklistItem')->latest()->first()`  → shows the
+          item rows with OK / Has Issue (a BFP inspection has 14 item rows).
 
 ---
 PHASE 4: Damage Reporting & Repair Logging
@@ -520,25 +554,33 @@ Testing task (end of phase):
     - `DamageReviewTest`: admin marks Reviewed and updates vehicle status (200); driver token 403; **Agency A admin cannot review Agency B report (404/403)**.
     - `RepairApiTest`: create/list/update (200/201); invalid `repair_source` 422; External Repair Shop requires shop name (422 if missing); 401/403/cross-agency isolation asserted.
     - `RepairUnitTest` (unit): repair-source label helper resolves External Repair Shop + shop name; status-update writes the single `vehicles.status` field.
-  Manual testing (plain language):
-    (Do the start-of-testing setup first.)
-    1. Confirm the endpoints exist: `php artisan route:list` and look for damage-reports and
-       repairs routes.
-    2. Browser (admin side) — open the Damage page. Expected: only your agency's damage reports;
-       open one, mark it Reviewed and set a new vehicle status; then open that vehicle and confirm
-       its status actually changed. Open an uploaded photo. On the Repairs page, log a repair and
-       try each repair source — "External Repair Shop" should require a shop name.
-    3. API rules — run `php artisan test`. Expected: all green. This proves the driver-side and
-       validation rules (no driver screen until the mobile app): a valid damage report saves as
-       "Pending" with the date auto-filled (201); the photo is optional; an empty nature-of-damage
-       is rejected (422); an admin submitting is refused (403) and no token is 401; a repair with an
-       invalid source or a missing shop name is rejected (422); and an admin from one agency cannot
-       review another agency's report (blocked).
-    4. See the effect on data: `php artisan tinker`, then
-       `App\Models\DamageReport::latest()->first()` and, after a review, `App\Models\Vehicle::find(ID)->status`
-       → confirms the single vehicle status was updated.
-    (Optional: file a damage report by hand with curl — for a photo, add `-F` fields instead of
-    `-d`; see guide section C for the token pattern.)
+  Manual testing checklist (plain language):
+    Note: filing a damage report is a DRIVER action (no screen until the mobile app) — checked by
+    `php artisan test`. Reviewing damage and logging repairs ARE admin screens you can click.
+
+    Setup (every time):
+      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
+      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
+
+    Commands to run — and why they matter:
+      [ ] `php artisan route:list`  → look for the damage-reports and repairs routes.
+      [ ] `php artisan test`  → all green.  Why: proves the driver-side + validation rules — a
+          damage report saves as "Pending" with the date auto-filled (201); the photo is optional;
+          an empty nature-of-damage is rejected (422); an admin submitting is refused (403), no
+          token is 401; a repair with a bad source or missing shop name is rejected (422); and one
+          agency can't review another's report.
+
+    What must work (browser, as the BFP admin):
+      [ ] Damage page shows only your agency's reports.  Why: agency isolation (FR-02).
+      [ ] Open a report, mark it Reviewed and set a new vehicle status  → then open that vehicle
+          and confirm its status changed.  Why: reviewing damage updates the one shared status (FR-12/FR-18).
+      [ ] Open an uploaded photo  → it displays.  Why: photo attachments are stored (FR-11).
+      [ ] Repairs page: log a repair, try each source; "External Repair Shop" requires a shop name.
+          Why: repairs are recorded with their source (FR-13).
+
+    Look at the saved data (optional — `php artisan tinker`):
+      [ ] `App\Models\DamageReport::latest()->first()`  → the report; after a review,
+          `App\Models\Vehicle::find(ID)->status` shows the updated status.
 
 ---
 PHASE 5: Preventive Maintenance Scheduling
@@ -561,23 +603,32 @@ Testing task (end of phase):
     - `PmScheduleApiTest`: create mileage-based and time-based (201); missing interval on mileage-based 422; missing date on time-based 422; 401; driver token 403; **cross-agency isolation** on read/update.
     - `PmCompletionTest`: completing sets status Completed + stores completion fields (200); driver 403.
     - `PmStatusUnitTest` (unit): the recompute logic returns Due/Due Soon/Upcoming correctly at threshold boundaries for both PM types, and never auto-creates a next cycle.
-  Manual testing (plain language):
-    (Do the start-of-testing setup first.)
-    1. Confirm the endpoints exist: `php artisan route:list --path=api/v1/pm-schedules`.
-    2. Browser (main hands-on test) — as an admin, open the PM page. Create a Mileage-Based
-       schedule (needs a km interval) and a Time-Based one (needs a due date). Mark one Completed
-       with date serviced / repair source / parts / remarks. Expected: it saves; completed shows
-       separately from active; completing does NOT auto-create a new cycle. Only your agency's
-       schedules show, with the right colored status badges.
-    3. The auto due-status check (the important one): in `php artisan tinker`, set a vehicle's
-       `current_mileage` close to its schedule's due mileage. Then run
-       `php artisan rvms:recalculate-pm`. Expected: that schedule's status flips to "Due Soon" or
-       "Due" on its own. Run `php artisan schedule:list` to confirm this job runs automatically.
-    4. API rules — run `php artisan test`. Expected: all green. This proves a Mileage-Based
-       schedule with no km interval is rejected (422) and a Time-Based one with no date is rejected
-       (422); a driver token is refused (403) and no token is 401; and an admin from one agency
-       cannot open or edit another agency's schedule (blocked).
-    (Optional: create a schedule by hand with the curl token pattern in guide section C.)
+  Manual testing checklist (plain language):
+    Setup (every time):
+      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
+      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
+
+    Commands to run — and why they matter:
+      [ ] `php artisan route:list --path=api/v1/pm-schedules`  → shows the PM routes.
+      [ ] `php artisan schedule:list`  → shows `rvms:recalculate-pm` is scheduled.
+          Why: confirms the due-status job runs automatically on its own.
+      [ ] `php artisan test`  → all green.  Why: proves a Mileage-Based schedule with no km
+          interval is rejected (422), a Time-Based one with no date is rejected (422), a driver
+          token is refused (403), no token is 401, and one agency can't open/edit another's schedule.
+
+    What must work (browser, as the BFP admin — PM page):
+      [ ] Create a Mileage-Based schedule (needs a km interval) and a Time-Based one (needs a due
+          date)  → both save.  Why: both scheduling styles are supported (FR-14).
+      [ ] Mark one Completed with date serviced / repair source / parts / remarks  → it moves to a
+          separate "completed" list and does NOT auto-create a new cycle.
+          Why: each maintenance cycle is entered by hand, no auto-renewal (FR-14).
+      [ ] Only your agency's schedules show, with the right colored status badges.
+          Why: agency isolation (FR-02) + clear status at a glance.
+
+    The auto due-status check (the important one — `php artisan tinker`):
+      [ ] Set a vehicle's `current_mileage` close to its schedule's due mileage, then run
+          `php artisan rvms:recalculate-pm`  → that schedule's status flips to "Due Soon" or "Due"
+          on its own.  Why: the system tracks maintenance timing automatically (FR-14).
 
 ---
 PHASE 6: Dispatch Logging & Vehicle Availability
@@ -601,25 +652,32 @@ Testing task (end of phase):
     - `DispatchCloseTest`: close with each return status updates the vehicle's single status field (200); invalid return_status 422.
     - `AvailabilityTest`: returns only the caller's agency vehicles with current status; 403 for driver.
     - `DispatchUnitTest` (unit): active/completed derivation from `time_in`; mission label resolves Others + free text.
-  Manual testing (plain language):
-    (Do the start-of-testing setup first.)
-    1. Confirm the endpoints exist: `php artisan route:list` and look for dispatches and
-       vehicles/availability routes.
-    2. Browser (main hands-on test) — as an admin, open the Dispatch page. Open a dispatch
-       (vehicle, driver, mission type, location, time out). Expected: it saves and that vehicle's
-       status automatically becomes "Dispatched". Close the dispatch with a time in and a return
-       status (try Operational / Not Operational / Under Preventive Maintenance) → the vehicle's
-       status becomes whatever you chose. A banner counts the active dispatches; only your agency's
-       records show.
-    3. API rules — run `php artisan test`. Expected: all green. This proves opening sets the
-       vehicle to Dispatched (201); mission type "Others" with no detail text is rejected (422);
-       closing with each return status updates the single vehicle status (200) and an invalid
-       return status is rejected (422); a driver token is refused (403) and no token is 401;
-       vehicles/availability returns only the caller's agency; and one agency cannot dispatch or
-       read another agency's vehicle (blocked).
-    4. Confirm the status carried over: `php artisan tinker`, `App\Models\Dispatch::whereNull('time_in')->get()`
-       lists the still-active dispatches; check a vehicle's `status` before/after open and close.
-    (Optional: open/close a dispatch by hand with the curl token pattern in guide section C.)
+  Manual testing checklist (plain language):
+    Setup (every time):
+      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
+      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
+
+    Commands to run — and why they matter:
+      [ ] `php artisan route:list`  → look for the dispatches and vehicles/availability routes.
+      [ ] `php artisan test`  → all green.  Why: proves opening a dispatch sets the vehicle to
+          Dispatched (201); mission type "Others" with no detail text is rejected (422); closing
+          with each return status updates the single vehicle status (200) and a bad status is
+          rejected (422); a driver token is 403, no token 401; availability returns only your
+          agency; and one agency can't dispatch/read another's vehicle.
+
+    What must work (browser, as the BFP admin — Dispatch page):
+      [ ] Open a dispatch (vehicle, driver, mission type, location, time out)  → it saves and that
+          vehicle's status automatically becomes "Dispatched".
+          Why: dispatching a vehicle marks it unavailable everywhere at once (FR-15/FR-18).
+      [ ] Close the dispatch with a time in and a return status (try Operational / Not Operational /
+          Under Preventive Maintenance)  → the vehicle's status becomes what you chose.
+          Why: closing records the return state on the one shared status (FR-16/FR-18).
+      [ ] A banner counts the active dispatches; only your agency's records show.
+          Why: admins see current fleet activity for their agency only (FR-17/FR-02).
+
+    Look at the saved data (optional — `php artisan tinker`):
+      [ ] `App\Models\Dispatch::whereNull('time_in')->get()`  → lists still-active dispatches;
+          check a vehicle's `status` before/after open and close.
 
 ---
 PHASE 7: Notification Services & FCM
@@ -643,26 +701,36 @@ Testing task (end of phase):
     - `FcmTokenTest`: driver registers a token (200); admin/driver role rules enforced; invalid token 422.
     - `NotificationTriggerTest`: submitting a damage report creates an admin notification; a vehicle status change creates a driver notification; the scheduled commands create license/PM notifications (FCM transport faked/mocked).
     - `NotificationUnitTest` (unit): notification-type → title/recipient mapping; license/PM threshold selection logic.
-  Manual testing (plain language):
-    (Do the start-of-testing setup first.)
-    1. Confirm the endpoints + jobs exist: `php artisan route:list` (look for notifications and
-       fcm-token routes) and `php artisan schedule:list` (look for the license-alerts and PM jobs).
-    2. Make the scheduled alerts fire: in `php artisan tinker`, give a driver a near-expiry license
-       and a vehicle a mileage near its PM due point. Then run `php artisan rvms:license-alerts` and
-       `php artisan rvms:recalculate-pm`. In tinker, `App\Models\Notification::latest()->take(5)->get()`
-       → new rows appear for the expiring license and the due PM.
-    3. Event alerts land in the database: as an admin, change a vehicle's status (Phase 2 page),
-       then in tinker confirm a "vehicle status update" notification row exists for that vehicle's
-       assigned driver; a new damage report (Phase 4) creates a "new damage report" row for the
-       agency's admins.
-    4. Browser (admin side) — check the bell icon shows an unread count and the notifications page
-       groups them Today / Yesterday / Earlier. Marking one read (and "mark all read") drops the
-       count.
-    5. API rules — run `php artisan test`. Expected: all green. This proves you only ever see your
-       own notifications; no token is 401; marking someone else's notification read is blocked
-       (403/404); a driver can register a device (FCM) token (200) and a bad token is rejected (422).
+  Manual testing checklist (plain language):
     Note: real phone push (FCM) needs Firebase credentials; in local testing the push send is
-    faked/mocked, but the notification ROWS in the database are real and are what you verify.
+    faked/mocked, but the notification ROWS saved in the database are real — those are what you check.
+
+    Setup (every time):
+      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
+      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
+
+    Commands to run — and why they matter:
+      [ ] `php artisan route:list`  → look for the notifications and fcm-token routes.
+      [ ] `php artisan schedule:list`  → shows the license-alerts and PM jobs are scheduled.
+          Why: confirms the alerts fire automatically on a timer.
+      [ ] `php artisan test`  → all green.  Why: proves you only ever see your own notifications;
+          no token is 401; marking someone else's notification read is blocked (403/404); a driver
+          can register a device token (200) and a bad token is rejected (422).
+
+    Make the alerts happen, then confirm the rows (`php artisan tinker`):
+      [ ] Give a driver a near-expiry license and a vehicle a mileage near its PM due point, then run
+          `php artisan rvms:license-alerts` and `php artisan rvms:recalculate-pm`. Now
+          `App\Models\Notification::latest()->take(5)->get()`  → new rows for the expiring license
+          and the due PM.  Why: time-sensitive alerts are generated (FR-08/FR-14/FR-21).
+      [ ] Change a vehicle's status (Phase 2 page)  → a "vehicle status update" row exists for that
+          vehicle's assigned driver.  Why: drivers are told when their vehicle changes (FR-21).
+      [ ] A new damage report (Phase 4)  → a "new damage report" row exists for the agency's admins.
+          Why: admins are alerted to new reports (FR-21).
+
+    What must work (browser, as the BFP admin):
+      [ ] The bell icon shows an unread count; the notifications page groups them Today / Yesterday /
+          Earlier; marking one read (and "mark all read") drops the count.
+          Why: admins can see and clear their alerts (FR-21).
 
 ---
 PHASE 8: Dashboard Summary & Report Generation
@@ -683,23 +751,30 @@ Testing task (end of phase):
     - `DashboardSummaryTest`: returns correct counts for the caller's agency only (200); 401; driver token 403; **counts never include another agency's records**.
     - `ReportApiTest`: each of the six report types returns 200 with the expected shape and honors filters; invalid date range/filter 422; 401; driver 403; **cross-agency isolation** on every report.
     - `ReportUnitTest` (unit): filter-builder applies date/vehicle/driver/source/status/mission constraints correctly; vehicle-status summary reflects live statuses.
-  Manual testing (plain language):
-    (Do the start-of-testing setup first.)
-    1. Confirm the endpoints exist: `php artisan route:list --path=api/v1/reports` and
-       `--path=api/v1/dashboard`.
-    2. Browser (main hands-on test) — as an admin, open the Dashboard. Expected: cards show counts
-       for the four vehicle statuses, total vehicles, total drivers, expiring licenses, and pending
-       damage reports — for YOUR agency only. Open Reports, pick each of the six types
-       (inspections, damage, repairs-maintenance, pm, dispatch, vehicle-status), apply the date
-       range and other filters, then use the browser's Print Preview → the printout is clean and
-       stamped with your name and the date.
-    3. Cross-check the numbers: in `php artisan tinker`, count by hand (e.g.
-       `App\Models\Vehicle::where('status','Operational')->count()`) and confirm it matches the
-       Dashboard card.
-    4. API rules — run `php artisan test`. Expected: all green. This proves the summary and all six
-       reports return only the caller's agency data (never another agency's); a backwards/malformed
-       date range is rejected (422); a driver token is refused (403) and no token is 401.
-    (Optional: call /api/v1/dashboard/summary by hand with the curl token pattern in guide section C.)
+  Manual testing checklist (plain language):
+    Setup (every time):
+      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
+      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
+
+    Commands to run — and why they matter:
+      [ ] `php artisan route:list --path=api/v1/reports` and `--path=api/v1/dashboard`  → shows
+          the report + dashboard routes.
+      [ ] `php artisan test`  → all green.  Why: proves the summary and all six reports return only
+          your agency's data (never another's); a backwards/malformed date range is rejected (422);
+          a driver token is 403 and no token 401.
+
+    What must work (browser, as the BFP admin):
+      [ ] Open the Dashboard  → cards show counts for the four vehicle statuses, total vehicles,
+          total drivers, expiring licenses, and pending damage reports — for YOUR agency only.
+          Why: admins get an at-a-glance fleet summary, agency-scoped (FR-19/FR-02).
+      [ ] Open Reports, pick each of the six types (inspections, damage, repairs-maintenance, pm,
+          dispatch, vehicle-status), apply the date range + other filters  → the right rows show.
+          Why: admins can pull filtered records for any module (FR-20).
+      [ ] Use the browser's Print Preview  → the printout is clean and stamped with your name and
+          the date.  Why: reports are printable and show who generated them and when (FR-20).
+
+    Cross-check the numbers (optional — `php artisan tinker`):
+      [ ] `App\Models\Vehicle::where('status','Operational')->count()`  → matches the Dashboard card.
 
 ---
 PHASE 9: NFR Hardening & Final Verification
@@ -721,25 +796,31 @@ Testing task (end of phase):
     - `AgencyIsolationSweepTest`: parameterized test asserting every list/show/update/delete endpoint blocks cross-agency access (NFR-02).
     - `RateLimitTest`: repeated failed logins are throttled (NFR-02).
     - `PerformanceUnitTest`: list endpoints are paginated and key queries issue no N+1 (assert query count) (NFR-01).
-  Manual testing (plain language):
-    (Do the start-of-testing setup first. This phase re-checks the whole system, not one module.)
-    1. Full route review: `php artisan route:list` and skim the whole `/api/v1` table — every
-       endpoint should have the right method, path, and middleware.
-    2. Security spot-check: `php artisan test` runs the agency-isolation sweep that re-checks the
-       four "should be blocked" cases on every module — wrong role (403), no/expired token (401),
-       another agency's record (403/404), bad input (422). Expected: all green, nothing slips
-       through.
-    3. Rate limiting: from PowerShell, run the curl login command (guide section C) with a wrong
-       password several times fast. Expected: after a handful of tries it starts refusing with 429
-       (Too Many Requests). (This is also asserted in the automated suite.)
-    4. One-status consistency: change a vehicle's status once, then confirm the SAME status shows
-       everywhere — the vehicle record, the availability list, the dashboard summary, and the
-       vehicle-status report all agree.
-    5. Big lists are paginated: on a list endpoint with many rows, confirm the response comes back
-       in pages (not thousands of rows at once) and stays fast.
-    6. Browser compatibility: open the dashboard in Chrome, Firefox, and Edge — it should look and
-       work the same in all three.
-    7. Full automated suite: run `php artisan test` one last time. Expected: everything green.
+  Manual testing checklist (plain language):
+    This phase re-checks the WHOLE system, not one module. Do the setup, then work down the list.
+
+    Setup (every time):
+      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
+      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
+
+    Commands to run — and why they matter:
+      [ ] `php artisan route:list`  → skim the whole `/api/v1` table; every endpoint has the right
+          method, path, and middleware.  Why: a final check that nothing is mis-wired.
+      [ ] `php artisan test`  → all green.  Why: runs the agency-isolation sweep across EVERY module
+          (wrong role 403, no/expired token 401, another agency's record 403/404, bad input 422),
+          confirms lists are paginated, and confirms repeated bad logins get throttled (429).
+
+    What must work (browser / terminal):
+      [ ] Rate limiting: run the curl login (guide section C) with a WRONG password several times
+          fast  → after a handful of tries it refuses with 429 (Too Many Requests).
+          Why: protects against password-guessing (NFR-02).
+      [ ] One-status consistency: change a vehicle's status once, then confirm the SAME status shows
+          in the vehicle record, the availability list, the dashboard summary, and the vehicle-status
+          report.  Why: there is one shared status, never conflicting copies (FR-18/NFR-04).
+      [ ] Big lists come back in pages, not thousands of rows at once, and stay fast.
+          Why: the system stays responsive under load (NFR-01).
+      [ ] Open the dashboard in Chrome, Firefox, and Edge  → looks and works the same in all three.
+          Why: browser compatibility (NFR-05).
 
 ---
 
