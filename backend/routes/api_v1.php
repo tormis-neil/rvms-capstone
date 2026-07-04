@@ -43,5 +43,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject']);
 
         Route::get('/licenses/monitoring', [LicenseController::class, 'monitoring']);
+
+        // frequent-issues must be registered before {inspection} so it is not
+        // captured by the route-model-binding wildcard.
+        Route::get('/inspections', [InspectionController::class, 'index']);
+        Route::get('/inspections/frequent-issues', [InspectionController::class, 'frequentIssues']);
+        Route::get('/inspections/{inspection}', [InspectionController::class, 'show']);
     });
 });

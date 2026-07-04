@@ -69,4 +69,24 @@ class Inspection extends Model
             ? 'All OK'
             : $issues.' '.($issues === 1 ? 'issue' : 'issues');
     }
+
+    /**
+     * Frequently reported issues (FR-10): "Has Issue" counts grouped by
+     * checklist item, most frequent first. Agency-scoped through the
+     * Inspection global scope on the subquery.
+     *
+     * @return \Illuminate\Support\Collection<int, object{checklist_item_id: int, name: string, count: int}>
+     */
+    public static function frequentIssues(): \Illuminate\Support\Collection
+    {
+        return InspectionItem::query()
+            ->where('inspection_items.status', InspectionItem::STATUS_HAS_ISSUE)
+            ->whereIn('inspection_items.inspection_id', self::query()->select('id'))
+            ->join('inspection_checklist_items', 'inspection_checklist_items.id', '=', 'inspection_items.checklist_item_id')
+            ->groupBy('inspection_items.checklist_item_id', 'inspection_checklist_items.name')
+            ->orderByDesc('count')
+            ->orderBy('inspection_checklist_items.name')
+            ->selectRaw('inspection_items.checklist_item_id, inspection_checklist_items.name, COUNT(*) as count')
+            ->get();
+    }
 }
