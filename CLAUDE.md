@@ -303,8 +303,9 @@ separate tables needed.
 
 Phases are ordered by technical dependency (auth/scoping → records → field modules →
 cross-cutting notifications → reporting → hardening). Every functional module ships its
-`/api/v1/` endpoints (Sanctum bearer) plus its admin Blade dashboard page, and each phase
-closes with a testing task before the next begins.
+`/api/v1/` endpoints (Sanctum bearer) plus its admin Blade dashboard page — **whose UI/UX
+must copy the corresponding prototype page in `web/pages/` (see Non-Negotiable Rule 9)** —
+and each phase closes with a testing task before the next begins.
 
 ---
 
@@ -840,3 +841,15 @@ Coverage: FR-01–FR-04 (Phase 1; FR-03 driver-approval handled in Phase 2), FR-
 7. **Agency-scope every query**; **store thresholds as columns**; **all API routes use
    `/api/v1/`**; **Sanctum bearer auth**; **FCM server-side via HTTP v1**.
 8. **Every phase ends with its testing task** (automated + manual) before the next begins.
+9. **Copy the prototype's UI/UX for every dashboard page.** Each phase's Blade page must
+   mirror the corresponding prototype page in `web/pages/*.html` — same page header +
+   subtitle, card containers (`card border-0 shadow-sm rounded-3`), uppercase gray table
+   headers, pill badges (`px-3 py-2 rounded-pill`), row action buttons (icon buttons
+   `btn-sm btn-light border` for view/edit/status; solid navy `btn-navy text-white
+   fw-medium` for primary row actions), modal conventions (form modals `bg-navy text-white`
+   header + `btn-close-white`; read-only view modals `bg-light` header; danger flows
+   `bg-danger`; footers `border-0` with Cancel `btn-light border` + navy/danger confirm),
+   prototype titles/placeholders, and the card-footer pagination
+   (`partials/table-footer` + the published Bootstrap 5 pager). Before building a page,
+   read the prototype page and reuse its markup patterns. Only omit prototype elements
+   that belong to a later phase or have no schema backing — and say so explicitly.
