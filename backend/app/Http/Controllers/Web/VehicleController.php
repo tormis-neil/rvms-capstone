@@ -16,9 +16,29 @@ use Illuminate\View\View;
  */
 class VehicleController extends Controller
 {
-    public function index(): View
+    public function index(\Illuminate\Http\Request $request): View
     {
-        $vehicles = Vehicle::with('assignedDriver')->latest()->paginate(15);
+        $request->validate([
+            'q' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'type' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'status' => ['sometimes', 'nullable', \Illuminate\Validation\Rule::in(Vehicle::STATUSES)],
+        ]);
+
+        $vehicles = Vehicle::with('assignedDriver')
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $q = $request->input('q');
+                $query->where(fn ($w) => $w
+                    ->where('plate_number', 'like', "%{$q}%")
+                    ->orWhere('make', 'like', "%{$q}%")
+                    ->orWhere('model', 'like', "%{$q}%"));
+            })
+            ->when($request->filled('type'), fn ($q) => $q->where('type', $request->input('type')))
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
+        $types = Vehicle::query()->select('type')->distinct()->orderBy('type')->pluck('type');
 
         $drivers = User::drivers()
             ->where('agency_id', auth()->user()->agency_id)
@@ -26,7 +46,7 @@ class VehicleController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('vehicles', compact('vehicles', 'drivers'));
+        return view('vehicles', compact('vehicles', 'types', 'drivers'));
     }
 
     public function store(VehicleRequest $request): RedirectResponse
