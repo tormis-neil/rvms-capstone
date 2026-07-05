@@ -37,6 +37,7 @@ class DriverApiTest extends TestCase
             'name' => 'New Driver',
             'email' => 'newdriver@example.com',
             'password' => 'secret-password',
+            'password_confirmation' => 'secret-password',
             'license_number' => 'LIC-1',
             'license_expiry_date' => '2027-12-31',
         ])->assertCreated()
