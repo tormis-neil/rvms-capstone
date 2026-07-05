@@ -81,12 +81,13 @@ class Inspection extends Model
     {
         return InspectionItem::query()
             ->where('inspection_items.status', InspectionItem::STATUS_HAS_ISSUE)
-            ->whereIn('inspection_items.inspection_id', self::query()->select('id'))
+            ->join('inspections', 'inspections.id', '=', 'inspection_items.inspection_id')
+            ->whereIn('inspections.id', self::query()->select('id'))
             ->join('inspection_checklist_items', 'inspection_checklist_items.id', '=', 'inspection_items.checklist_item_id')
             ->groupBy('inspection_items.checklist_item_id', 'inspection_checklist_items.name')
             ->orderByDesc('count')
             ->orderBy('inspection_checklist_items.name')
-            ->selectRaw('inspection_items.checklist_item_id, inspection_checklist_items.name, COUNT(*) as count')
+            ->selectRaw('inspection_items.checklist_item_id, inspection_checklist_items.name, COUNT(*) as count, MAX(inspections.inspection_date) as last_reported')
             ->get();
     }
 }
