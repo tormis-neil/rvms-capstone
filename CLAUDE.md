@@ -82,6 +82,11 @@ A few deliberate modeling decisions:
    admin approves/rejects them. `users.status` tracks `pending`/`active`/`rejected`. Drivers
    and admins can self-edit their own name/email/password with no approval or notification
    (FR-04). Agency administrator accounts are provisioned (seeded) only; there is no admin self-registration, and the public registration endpoint is driver-only.
+7. **Deliberately excluded (objectives audit, July 2026 — do not add):** no admin-remarks
+   columns on vehicle status changes or inspection/damage reviews; no passenger/patient
+   fields on dispatches (privacy + outside vehicle-management scope); no agency-info
+   editing feature (no FR backs it). A driver MAY be the primary driver of more than one
+   vehicle (Ch4 ERD); each vehicle still has at most one primary driver.
 
 ## ERD PLAN
 
@@ -115,7 +120,7 @@ users          ──< notifications  (recipient)
 | agency → users | one-to-many | `users.agency_id` |
 | agency → vehicles | one-to-many | `vehicles.agency_id` |
 | agency → inspections / damage_reports / repair_logs / pm_schedules / dispatches / notifications | one-to-many | `agency_id` on each (enforces FR-02 scoping) |
-| driver (user) → vehicle | one-to-one (primary driver) | `vehicles.assigned_driver_id` |
+| driver (user) → vehicle(s) | one-to-many (each vehicle has at most one primary driver; a driver may be the primary driver of more than one vehicle, per Ch4 ERD) | `vehicles.assigned_driver_id` |
 | vehicle → inspections / damage_reports / repair_logs / pm_schedules / dispatches | one-to-many | `vehicle_id` on each |
 | driver (user) → inspections / damage_reports / repair_logs / dispatches | one-to-many | `driver_id` on each |
 | admin (user) → reviewed inspections / damage_reports | one-to-many | `reviewed_by` |
