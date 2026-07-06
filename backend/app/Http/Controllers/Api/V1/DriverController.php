@@ -36,11 +36,11 @@ class DriverController extends Controller
 
     public function store(DriverRequest $request): JsonResponse
     {
-        $driver = User::create($request->safe()->merge([
+        $driver = User::create($request->safe()->except('vehicle_id') + [
             'agency_id' => $request->user()->agency_id,
             'role' => User::ROLE_DRIVER,
             'status' => User::STATUS_ACTIVE, // admin-added drivers are active immediately
-        ])->all());
+        ]);
 
         return (new UserResource($driver))->response()->setStatusCode(201);
     }

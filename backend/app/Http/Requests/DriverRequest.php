@@ -29,9 +29,14 @@ class DriverRequest extends FormRequest
                 'required', 'string', 'email', 'max:255',
                 Rule::unique('users', 'email')->ignore($driverId),
             ],
-            'password' => [$isCreate ? 'required' : 'nullable', 'string', 'min:8'],
+            'password' => [$isCreate ? 'required' : 'nullable', 'string', 'min:8', 'confirmed'],
             'license_number' => ['nullable', 'string', 'max:50'],
             'license_expiry_date' => ['nullable', 'date'],
+            'vehicle_id' => [
+                'nullable',
+                Rule::exists('vehicles', 'id')
+                    ->where(fn ($q) => $q->where('agency_id', $this->user()->agency_id)),
+            ],
         ];
     }
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -67,6 +68,36 @@ class User extends Authenticatable
     public function agency(): BelongsTo
     {
         return $this->belongsTo(Agency::class);
+    }
+
+    /** The vehicle this driver is the primary driver of (FR-05). */
+    public function assignedVehicle(): HasOne
+    {
+        return $this->hasOne(Vehicle::class, 'assigned_driver_id');
+    }
+
+    /**
+     * License state against the agency's configurable warning window
+     * (FR-08): 'Valid' | 'Expiring Soon' | 'Expired', or null when the
+     * account has no license on file.
+     */
+    public function licenseStatus(int $warningDays): ?string
+    {
+        if ($this->license_expiry_date === null) {
+            return null;
+        }
+
+        $today = Carbon::today();
+
+        if ($this->license_expiry_date->lt($today)) {
+            return 'Expired';
+        }
+
+        if ($this->license_expiry_date->lte($today->copy()->addDays($warningDays))) {
+            return 'Expiring Soon';
+        }
+
+        return 'Valid';
     }
 
     /** Only driver accounts. */
