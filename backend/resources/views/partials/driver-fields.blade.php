@@ -28,15 +28,19 @@
 </div>
 <div class="mb-0">
     <label class="form-label fw-semibold">Assign Vehicle (Optional)</label>
+    @if ($driver && $driver->assignedVehicles->isNotEmpty())
+        <div class="small text-secondary mb-1">
+            Currently assigned: {{ $driver->assignedVehicles->map(fn ($v) => $v->plate_number)->join(', ') }}
+        </div>
+    @endif
     <select name="vehicle_id" class="form-select">
-        <option value="">Unassigned</option>
+        <option value="">{{ $driver ? '— No change —' : 'Unassigned' }}</option>
         @foreach ($vehicles as $vehicle)
             <option value="{{ $vehicle->id }}"
-                @selected((int) old('vehicle_id', $driver?->assignedVehicle?->id) === $vehicle->id)
-                @disabled($vehicle->assigned_driver_id !== null && $vehicle->assigned_driver_id !== $driver?->id)>
-                {{ $vehicle->plate_number }} ({{ $vehicle->type }}){{ $vehicle->assigned_driver_id !== null && $vehicle->assigned_driver_id !== $driver?->id ? ' — assigned' : '' }}
+                @disabled($vehicle->assigned_driver_id !== null)>
+                {{ $vehicle->plate_number }} ({{ $vehicle->type }}){{ $vehicle->assigned_driver_id !== null ? ($vehicle->assigned_driver_id === $driver?->id ? ' — already theirs' : ' — assigned') : '' }}
             </option>
         @endforeach
     </select>
-    <div class="form-text">Each vehicle has one primary driver; vehicles already assigned to someone else are disabled.</div>
+    <div class="form-text">A driver may hold more than one vehicle; each vehicle has one primary driver. To unassign or reassign a vehicle, use Edit on the Vehicles page.</div>
 </div>

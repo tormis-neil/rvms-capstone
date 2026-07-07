@@ -169,7 +169,11 @@
                                 @endif
                             </td>
                             <td>
-                                {{ $driver->assignedVehicle ? $driver->assignedVehicle->plate_number.' ('.$driver->assignedVehicle->type.')' : 'Unassigned' }}
+                                @if ($driver->assignedVehicles->isEmpty())
+                                    Unassigned
+                                @else
+                                    {{ $driver->assignedVehicles->map(fn ($v) => $v->plate_number.' ('.$v->type.')')->join(', ') }}
+                                @endif
                             </td>
                             <td class="text-end">
                                 <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriver{{ $driver->id }}"><i class="bi bi-eye"></i></button>
@@ -241,8 +245,8 @@
                                 <span class="fw-medium">{{ $driver->license_expiry_date?->format('M j, Y') ?? '—' }}</span>
                             </li>
                             <li class="list-group-item d-flex justify-content-between align-items-center py-3">
-                                <span class="text-secondary small fw-semibold">Assigned Vehicle</span>
-                                <span class="fw-medium">{{ $driver->assignedVehicle ? $driver->assignedVehicle->plate_number.' ('.$driver->assignedVehicle->type.')' : 'Unassigned' }}</span>
+                                <span class="text-secondary small fw-semibold">Assigned Vehicle{{ $driver->assignedVehicles->count() > 1 ? 's' : '' }}</span>
+                                <span class="fw-medium text-end">{{ $driver->assignedVehicles->isEmpty() ? 'Unassigned' : $driver->assignedVehicles->map(fn ($v) => $v->plate_number.' ('.$v->type.')')->join(', ') }}</span>
                             </li>
                             <li class="list-group-item d-flex justify-content-between align-items-center py-3">
                                 <span class="text-secondary small fw-semibold">Account Status</span>

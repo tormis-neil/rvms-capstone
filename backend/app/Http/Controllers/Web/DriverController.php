@@ -81,7 +81,7 @@ class DriverController extends Controller
             'status' => User::STATUS_ACTIVE,
         ]);
 
-        $this->syncAssignedVehicle($driver, $request->input('vehicle_id'));
+        $this->assignVehicleIfFree($driver, $request->input('vehicle_id'));
 
         return back()->with('status', 'Driver registered successfully.');
     }
@@ -96,7 +96,7 @@ class DriverController extends Controller
         }
         $driver->update($data);
 
-        $this->syncAssignedVehicle($driver, $request->input('vehicle_id'));
+        $this->assignVehicleIfFree($driver, $request->input('vehicle_id'));
 
         return back()->with('status', 'Driver updated successfully.');
     }
@@ -118,21 +118,21 @@ class DriverController extends Controller
     }
 
     /**
-     * Point the chosen vehicle's assigned_driver_id at this driver
-     * (one primary driver per vehicle, FR-05). Vehicle's global scope
-     * keeps this within the admin's own agency.
+     * Assign the chosen vehicle to this driver if it is currently free.
+     * A driver may hold more than one vehicle (Ch4 ERD); each vehicle has
+     * at most one primary driver, so an already-assigned vehicle is never
+     * silently taken over — reassignment/unassignment is managed from the
+     * Vehicles page. Vehicle's global scope keeps this within the agency.
      */
-    private function syncAssignedVehicle(User $driver, mixed $vehicleId): void
+    private function assignVehicleIfFree(User $driver, mixed $vehicleId): void
     {
-        $vehicleId = $vehicleId ? (int) $vehicleId : null;
-
-        Vehicle::where('assigned_driver_id', $driver->id)
-            ->when($vehicleId, fn ($q) => $q->where('id', '!=', $vehicleId))
-            ->update(['assigned_driver_id' => null]);
-
-        if ($vehicleId !== null) {
-            Vehicle::whereKey($vehicleId)->update(['assigned_driver_id' => $driver->id]);
+        if (! $vehicleId) {
+            return; // "No change" — unassignment happens on the Vehicles page
         }
+
+        Vehicle::whereKey((int) $vehicleId)
+            ->whereNull('assigned_driver_id')
+            ->update(['assigned_driver_id' => $driver->id]);
     }
 
     private function authorizeDriver(User $driver): void
