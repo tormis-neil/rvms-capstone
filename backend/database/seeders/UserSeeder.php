@@ -45,6 +45,22 @@ class UserSeeder extends Seeder
                 ],
             );
 
+            // An agency may have more than one administrator account (per the
+            // interviews: e.g., logistics and operations officers). Seed a
+            // second BFP admin as the demonstrable sample.
+            if ($agency->code === 'BFP') {
+                User::updateOrCreate(
+                    ['email' => 'bfp.admin2@rvms.local'],
+                    [
+                        'agency_id' => $agency->id,
+                        'role' => User::ROLE_ADMIN,
+                        'name' => 'BFP Deputy Administrator',
+                        'password' => 'password',
+                        'status' => User::STATUS_ACTIVE,
+                    ],
+                );
+            }
+
             foreach ($drivers[$agency->code] ?? [] as $index => $driver) {
                 User::updateOrCreate(
                     ['email' => $driver['email']],

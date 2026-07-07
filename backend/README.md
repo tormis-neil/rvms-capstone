@@ -26,7 +26,11 @@ php artisan serve
 | PNP admin | `pnp.admin@rvms.local` | `password` |
 | CDRRMO admin | `cdrrmo.admin@rvms.local` | `password` |
 | CHO admin | `cho.admin@rvms.local` | `password` |
+| BFP deputy admin (2nd admin sample) | `bfp.admin2@rvms.local` | `password` |
 | Sample drivers (2/agency) | e.g. `ramon.villanueva@rvms.local` | `password` |
+
+An agency may have more than one administrator account (per the interviews);
+the BFP deputy admin demonstrates this.
 
 Admins sign in at `/login` (web dashboard). Drivers authenticate via
 `POST /api/v1/login` (mobile app).

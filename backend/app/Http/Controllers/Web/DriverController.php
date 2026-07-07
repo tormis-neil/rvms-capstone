@@ -39,7 +39,7 @@ class DriverController extends Controller
             ->count() - $expiringSoonCount - $expiredCount;
 
         $drivers = $base()
-            ->with('assignedVehicle')
+            ->with('assignedVehicles')
             ->where('status', '!=', User::STATUS_PENDING)
             ->when($request->filled('q'), function ($query) use ($request) {
                 $q = $request->input('q');

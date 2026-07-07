@@ -81,7 +81,10 @@ A few deliberate modeling decisions:
    `active` immediately), or drivers self-register and start `pending` until their agency
    admin approves/rejects them. `users.status` tracks `pending`/`active`/`rejected`. Drivers
    and admins can self-edit their own name/email/password with no approval or notification
-   (FR-04). Agency administrator accounts are provisioned (seeded) only; there is no admin self-registration, and the public registration endpoint is driver-only.
+   (FR-04). Agency administrator accounts are provisioned (seeded) only; there is no admin self-registration, and the public registration endpoint is driver-only. An agency may
+   have MORE THAN ONE administrator account (per the interviews — e.g., logistics and
+   operations officers); the seeder includes a second BFP admin as the sample, and no code
+   may assume a single admin per agency (notifications target ALL of an agency's admins).
 7. **Deliberately excluded (objectives audit, July 2026 — do not add):** no admin-remarks
    columns on vehicle status changes or inspection/damage reviews; no passenger/patient
    fields on dispatches (privacy + outside vehicle-management scope); no agency-info
@@ -426,7 +429,7 @@ Testing task (end of phase):
 
     Look at the saved data (optional — `php artisan tinker`, then `exit`):
       [ ] `App\Models\Agency::pluck('code')`  → the 4 codes (BFP, PNP, CDRRMO, CHO).
-      [ ] `App\Models\User::count()`  → 12.
+      [ ] `App\Models\User::count()`  → 13 (5 admins — BFP has two — + 8 drivers).
       [ ] `App\Models\User::first()->password`  → a scrambled `$2y$...` hash (never plain text).
           Why: passwords are stored safely, not readable.
 
