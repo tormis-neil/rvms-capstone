@@ -374,473 +374,496 @@ install, localhost only so no internet needed). Run it in PowerShell:
 report it with the exact message — don't push past a failing check.
 
 ---
-PHASE 1: Foundation, Authentication & Agency Scoping
-Goal: A running Laravel 11 + MySQL app where any user can log in, receive a Sanctum token carrying their role and agency, and where every query is automatically restricted to the caller's own agency.
+PHASE R0 — Day 1: Plumbing Foundation (no screens yet)
+Goal: A running Laravel 11 + MySQL app where logging in returns a Sanctum token carrying the user's role and agency, and every future database query is automatically limited to the caller's own agency.
+Prototype source: none — this is invisible plumbing, so the two-checkpoint screen method (below) does not apply to this phase.
 
-Tasks:
-  1. Project bootstrap & database config — Foundation, NFR-01
-      What gets built: `composer create laravel 11`, install `laravel/sanctum`, configure `.env` MySQL 8 connection, base `config/` + `/api/v1` route group in `routes/api.php`.
-  2. Agencies & users schema + seeders — FR-02, Foundation
-      What gets built: `agencies` and `users` migrations (role enum, agency_id, license fields, fcm_token, `license_expiry_warning_days`); `Agency`/`User` models; `AgencySeeder` (BFP/PNP/CDRRMO/CHO) + `UserSeeder` (one admin + sample drivers per agency).
-  3. Authentication endpoints — FR-01, NFR-02
-      What gets built: `AuthController` with `POST /api/v1/login` (returns token + role + agency), `POST /api/v1/logout`, `GET /api/v1/me`; hashed-password verification; `LoginRequest` validation.
-  4. Role & agency-scope enforcement layer — FR-02, NFR-02
-      What gets built: `EnsureRole` middleware; `BelongsToAgency` trait + global Eloquent scope auto-filtering by `agency_id`; base `Policy` scaffolding; auto-stamp `agency_id` on create.
-  5. Admin web login + dashboard shell — FR-01, FR-02, NFR-03
-      What gets built: session-guard web login Blade, `layouts/app.blade.php` (Bootstrap 5.3 sidebar/topbar), agency context strip; redirect by role.
-  6. Driver self-registration & self-service profile — FR-03, FR-04
-      What gets built: public `POST /api/v1/register` (driver selects agency, account created `status='pending'`, login blocked until approved); `PATCH /api/v1/me/profile` (name/email/password self-edit for both roles, no approval/notification); login rejects non-`active` accounts.
+Sub-tasks (Day 1):
+  1. Create the Laravel 11 project in `backend/`, install Sanctum, configure `.env.example` for MySQL 8 (`rvms` database), register the `/api/v1` route group.
+  2. `agencies` migration + model — columns exactly per the Data Dictionary above.
+  3. `users` migration + model — role/status enums, license fields, `fcm_token`, exactly per the Data Dictionary.
+  4. Seeders: 4 agencies (with logos) · 1 admin each PLUS the second BFP admin (`bfp.admin2@rvms.local`, multi-admin sample) · 2 sample drivers per agency. Password `password` everywhere.
+  5. Auth API: `POST /login` (token + role + agency; non-active accounts get 403 with a reason), `POST /logout`, `GET /me`, public `POST /register` (driver-only, created `pending`), `PATCH /me/profile` (FR-04 self-edit).
+  6. Enforcement layer: `AgencyScope` global scope + `BelongsToAgency` trait (auto-stamps `agency_id` on create) + `role:` middleware alias.
+  7. Automated tests: AuthLogin, Register, Profile, Me, Logout, AgencyScope unit, MultiAdmin (~29 tests).
 
-Testing task (end of phase):
-  Automated — `php artisan test`:
-    - `AuthLoginTest`: valid credentials return 200 with `{token, user.role, user.agency}`; bad password returns 422; missing email/password returns 422 with descriptive errors; a `pending` driver cannot log in.
-    - `RegisterTest`: self-registration creates a `pending` driver (201); duplicate email 422; `ProfileTest`: a user updates own name/email/password (200) and cannot edit another user.
-    - `AuthMeTest`: `GET /api/v1/me` returns 200 + correct user with a valid token; returns 401 without a token.
-    - `AuthLogoutTest`: token is revoked (200), and a reused revoked token returns 401.
-    - `AgencyScopeUnitTest` (unit): the global scope adds an `agency_id` filter to a model query for an admin; `EnsureRole` rejects a driver token on an admin-only route (403).
+Testing task:
+  Automated — `php artisan test`: login/logout/me/register/profile rules; pending driver blocked; revoked token dies; global scope filters and auto-stamps agency_id; two same-agency admins see the same data.
   Manual testing checklist (plain language):
-    Seeded logins (password is `password` for everyone): admins bfp.admin@rvms.local,
-    pnp.admin@rvms.local, cdrrmo.admin@rvms.local, cho.admin@rvms.local; sample drivers
-    like ramon.villanueva@rvms.local.
-
-    Setup (every time):
-      [ ] `php artisan migrate:fresh --seed`  → fresh sample data (clean, known starting point).
-      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave this window open).
-
-    Commands to run — and why they matter:
-      [ ] `php artisan route:list --path=api/v1`  → lists 5 routes (login, register, logout,
-          me, me/profile).  Why: confirms the login/account endpoints exist.
-      [ ] `php artisan test`  → all green.  Why: one command proves the login rules — a correct
-          password returns a token; a wrong password or empty fields are rejected (422); /me
-          needs a valid token (401 without it); logout kills the token; a pending driver can't
-          log in (403).
-
-    What must work (browser, as the BFP admin):
-      [ ] Open http://127.0.0.1:8000  → it redirects to a login page.
-          Why: pages are protected — you can't reach them while logged out.
-      [ ] Log in as the BFP admin  → dashboard shows "Bureau of Fire Protection".
-          Why: login works and the account carries its agency.
-      [ ] Sign out, log in as the CHO admin  → the top now shows "City Health Office".
-          Why: each admin sees only their OWN agency — the core privacy rule (FR-02).
-      [ ] Sign out, log in as the SECOND BFP admin (bfp.admin2@rvms.local)  → same
-          "Bureau of Fire Protection" context as the first BFP admin.
-          Why: an agency may have more than one administrator account (per the interviews),
-          and both must work identically.
-      [ ] Sign out, try to log in with a driver account  → refused ("use the mobile app").
-          Why: the web dashboard is admin-only; drivers use the phone app.
-      [ ] Signed out, type /dashboard in the address bar  → bounced back to login.
-          Why: nobody reaches the dashboard without logging in.
-
-    Look at the saved data (optional — `php artisan tinker`, then `exit`):
-      [ ] `App\Models\Agency::pluck('code')`  → the 4 codes (BFP, PNP, CDRRMO, CHO).
-      [ ] `App\Models\User::count()`  → 13 (5 admins — BFP has two — + 8 drivers).
-      [ ] `App\Models\User::first()->password`  → a scrambled `$2y$...` hash (never plain text).
-          Why: passwords are stored safely, not readable.
-
----
-PHASE 2: Vehicle & Driver Records + License Monitoring
-Goal: Admins can fully manage their agency's vehicles and drivers, a driver can view their assigned vehicle, and expiring/expired licenses are detected against the configurable threshold.
-
-Tasks:
-  1. Vehicles schema + model — FR-05, FR-18
-      What gets built: `vehicles` migration (status enum = the four values, `assigned_driver_id`, mileage, engine/chassis); `Vehicle` model with `agency()`, `assignedDriver()` relations + `BelongsToAgency`.
-  2. Vehicle CRUD + status API — FR-05, FR-18
-      What gets built: `VehicleController` → `GET/POST/PUT /api/v1/vehicles`, `GET /api/v1/vehicles/{id}`, `PATCH /api/v1/vehicles/{id}/status`; `VehicleRequest` validation; `VehicleResource`.
-  3. Driver records API + access-request approval — FR-03, FR-06
-      What gets built: `DriverController` (users where role=driver) → `GET/POST/PUT /api/v1/drivers` (admin-added drivers created `active`), `GET /api/v1/drivers/{id}`, `GET /api/v1/drivers?status=pending` (access requests), `PATCH /api/v1/drivers/{id}/approve` and `/reject`; `DriverRequest` (license number/expiry).
-  4. Assigned-vehicle viewing for drivers — FR-07
-      What gets built: `GET /api/v1/my-vehicle` returning the driver's assigned vehicle details + current status (driver token only).
-  5. License expiry monitoring — FR-08
-      What gets built: `User` query scopes `expiringSoon()`/`expired()` using `agencies.license_expiry_warning_days`; `GET /api/v1/licenses/monitoring` consolidated view.
-  6. Admin Blade pages: Vehicles & Drivers — FR-05, FR-06, NFR-03
-      What gets built: `vehicles.blade.php`, `drivers.blade.php` (tables, add/edit/update-status modals).
-
-Testing task (end of phase):
-  Automated — `php artisan test`:
-    - `VehicleApiTest`: list/create/update/show return correct codes + shapes; `PATCH status` only accepts the four enum values (422 otherwise); unauthenticated 401; driver token 403; **admin from Agency A cannot GET/PUT/DELETE a vehicle owned by Agency B (404/403)**; invalid payload 422.
-    - `DriverApiTest`: same five-assertion matrix (success shape, 401, 403, cross-agency isolation, 422 on bad license/expiry); admin-added driver is `active`; approve/reject flips a `pending` driver's status; admin cannot approve another agency's pending driver (404/403).
-    - `MyVehicleApiTest`: driver gets their own vehicle (200); an admin token is rejected (403); a driver cannot see another agency's vehicle.
-    - `LicenseMonitoringUnitTest` (unit): `expiringSoon()`/`expired()` scopes classify dates correctly around the threshold boundary; monitoring endpoint returns only the caller's agency.
-  Manual testing checklist (plain language):
-    Setup (every time):
-      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
-      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
-
-    Commands to run — and why they matter:
-      [ ] `php artisan route:list --path=api/v1`  → shows the vehicles, drivers, my-vehicle, and
-          licenses/monitoring routes.  Why: confirms the new endpoints are wired up.
-      [ ] `php artisan test`  → all green.  Why: proves the security + validation rules you can't
-          easily see by clicking — a made-up vehicle status is rejected (422); an empty plate or
-          negative mileage is rejected (422); a driver or no token is refused on admin routes
-          (403/401); the driver-only my-vehicle returns just that driver's vehicle and refuses an
-          admin (403); and — most important — one agency cannot read or edit another agency's
-          vehicle or driver (blocked, 404/403).
-
-    What must work (browser, as the BFP admin):
-      [ ] Open Vehicles, click Add Vehicle (plate, type, make, model, mileage)  → it saves and
-          appears in the table.  Why: admins can build their fleet record (FR-05).
-      [ ] Edit that vehicle, then use Status to change it (e.g. Dispatched)  → the colored badge
-          changes.  Why: the single shared vehicle status can be updated (FR-18).
-      [ ] Open Drivers  → the pending sign-up shows under "Access Requests"; click Approve  →
-          it becomes Active.  Why: admins approve driver self-registrations (FR-03).
-      [ ] Click Add Driver (name, email, password, license)  → saves as Active immediately.
-          Why: admin-added drivers don't need approval (FR-06).
-      [ ] Sign out, log in as the CHO admin, open Vehicles/Drivers  → you do NOT see the BFP
-          records.  Why: agencies can't see each other's data (FR-02) — the key security check.
-      [ ] Log in as the second BFP admin (bfp.admin2@rvms.local), open Vehicles/Drivers  →
-          the SAME BFP records the first BFP admin sees, and you can edit/approve too.
-          Why: multiple admins of one agency share the same records and rights.
-
-    License monitoring (no screen yet — check by data):
-      [ ] `php artisan tinker` → `$u = App\Models\User::where('role','driver')->first();`
-          `$u->license_expiry_date = now()->addDays(5); $u->save(); exit`
-      [ ] Then GET /api/v1/licenses/monitoring (curl pattern, guide section C, as that agency's
-          admin)  → that driver appears under "expiring_soon".
-          Why: expiring licenses are detected against each agency's configurable warning window (FR-08).
-
----
-PHASE 3: Digital BLOWBAGETS Inspection
-Goal: Drivers submit daily inspections (12 standard items, +2 for BFP) with remarks required on flagged items, and admins review submissions, browse per-vehicle/per-driver history, and see frequently reported issues.
-
-Tasks:
-  1. Checklist catalog + seeder — FR-09
-      What gets built: `inspection_checklist_items` migration/model + seeder (12 standard + Hydraulic System/Fire Pump as `is_bfp_only`); `GET /api/v1/inspections/checklist` returning the correct list for the driver's agency.
-  2. Inspection submission API (driver) — FR-09
-      What gets built: `inspections` + `inspection_items` migrations/models; `POST /api/v1/inspections` (`InspectionRequest` enforces OK/Has Issue per item and required remarks when Has Issue).
-  3. Inspection monitoring API (admin) — FR-10
-      What gets built: `GET /api/v1/inspections` (filters: vehicle, driver, date), `GET /api/v1/inspections/{id}`, `GET /api/v1/inspections/frequent-issues` (grouped issue counts).
-  4. Inspection review + status update — FR-10, FR-18
-      What gets built: `PATCH /api/v1/inspections/{id}/review` (set Reviewed, optional vehicle status change).
-  5. Admin Blade page: Inspections — FR-10, NFR-03
-      What gets built: `inspections.blade.php` (results table, view-checklist + review-&-assess modals, BFP extra-items section).
-
-Testing task (end of phase):
-  Automated — `php artisan test`:
-    - `InspectionSubmitTest`: valid submission returns 201 + stored items; **Has Issue without remarks returns 422**; unauthenticated 401; admin token submitting returns 403; a BFP driver's checklist includes 14 items while others get 12.
-    - `InspectionMonitoringTest`: admin lists/filters and reviews (200); driver token 403; **Agency A admin cannot read/review Agency B inspections (404/403)**; bad filter input 422.
-    - `InspectionUnitTest` (unit): `resultLabel`/`issueCount` helper and `frequentIssues` aggregation compute correctly; `inspectionItemsFor(agency)` returns the BFP-extended list only for BFP.
-  Manual testing checklist (plain language):
-    Note: submitting an inspection is a DRIVER action, so it has no dashboard screen until the
-    mobile app is built — those rules are checked by `php artisan test` (and optionally curl).
-    The admin review side IS a screen you can click.
-
-    Setup (every time):
-      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
-      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
-
-    Commands to run — and why they matter:
-      [ ] `php artisan route:list --path=api/v1/inspections`  → shows the inspection routes.
-      [ ] `php artisan test`  → all green.  Why: proves the driver-side rules with no screen yet —
-          a BFP driver's checklist has 14 items while other agencies get 12; a valid inspection
-          saves (201); a "Has Issue" item with no remarks is rejected (422); an admin submitting is
-          refused (403) and no token is 401; and one agency can't read/review another's inspection.
-
-    What must work (browser, as the BFP admin — Inspections page):
-      [ ] The list shows only your agency's submitted inspections.
-          Why: agency isolation (FR-02).
-      [ ] Open one  → you see its checklist; for BFP the two extra items (Hydraulic System,
-          Fire Pump) appear.  Why: BFP trucks have 14 items, others 12 (FR-09).
-      [ ] Mark it Reviewed  → its status changes.  Why: admins assess submissions (FR-10).
-      [ ] The "frequently reported issues" area reflects the flagged items.
-          Why: admins can spot recurring problems (FR-10).
-
-    Look at the saved data (optional — `php artisan tinker`):
-      [ ] `App\Models\Inspection::with('items.checklistItem')->latest()->first()`  → shows the
-          item rows with OK / Has Issue (a BFP inspection has 14 item rows).
-
----
-PHASE 4: Damage Reporting & Repair Logging
-Goal: Drivers file damage reports with optional photos, admins review them and update vehicle status, and admins log repair activities with source/parts/cost and update status afterward.
-
-Tasks:
-  1. Damage reports schema + photo storage — FR-11
-      What gets built: `damage_reports` migration/model; `storage` photo handling (`php artisan storage:link`); `DamageReport` relations + scope.
-  2. Damage submission & listing API — FR-11
-      What gets built: `POST /api/v1/damage-reports` (multipart photo, date auto-set, status Pending), `GET /api/v1/damage-reports`, `GET /api/v1/damage-reports/{id}` (driver sees own; admin sees agency).
-  3. Damage review API (admin) — FR-12, FR-18
-      What gets built: `PATCH /api/v1/damage-reports/{id}/review` (mark Reviewed + set vehicle status).
-  4. Repair logging API — FR-13, FR-18
-      What gets built: `repair_logs` migration/model; `RepairController` → `GET/POST/PUT /api/v1/repairs` (`repair_source` enum + `external_shop_name`), plus vehicle `PATCH status`.
-  5. Admin Blade pages: Damage & Repairs — FR-12, FR-13, NFR-03
-      What gets built: `inspections-damage.blade.php` damage section + `repairs.blade.php` (review/edit modals).
-
-Testing task (end of phase):
-  Automated — `php artisan test`:
-    - `DamageReportSubmitTest`: valid submit returns 201 with status Pending + date set; photo optional; unauthenticated 401; admin-submitting 403; missing nature-of-damage 422.
-    - `DamageReviewTest`: admin marks Reviewed and updates vehicle status (200); driver token 403; **Agency A admin cannot review Agency B report (404/403)**.
-    - `RepairApiTest`: create/list/update (200/201); invalid `repair_source` 422; External Repair Shop requires shop name (422 if missing); 401/403/cross-agency isolation asserted.
-    - `RepairUnitTest` (unit): repair-source label helper resolves External Repair Shop + shop name; status-update writes the single `vehicles.status` field.
-  Manual testing checklist (plain language):
-    Note: filing a damage report is a DRIVER action (no screen until the mobile app) — checked by
-    `php artisan test`. Reviewing damage and logging repairs ARE admin screens you can click.
-
-    Setup (every time):
-      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
-      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
-
-    Commands to run — and why they matter:
-      [ ] `php artisan route:list`  → look for the damage-reports and repairs routes.
-      [ ] `php artisan test`  → all green.  Why: proves the driver-side + validation rules — a
-          damage report saves as "Pending" with the date auto-filled (201); the photo is optional;
-          an empty nature-of-damage is rejected (422); an admin submitting is refused (403), no
-          token is 401; a repair with a bad source or missing shop name is rejected (422); and one
-          agency can't review another's report.
-
-    What must work (browser, as the BFP admin):
-      [ ] Damage page shows only your agency's reports.  Why: agency isolation (FR-02).
-      [ ] Open a report, mark it Reviewed and set a new vehicle status  → then open that vehicle
-          and confirm its status changed.  Why: reviewing damage updates the one shared status (FR-12/FR-18).
-      [ ] Open an uploaded photo  → it displays.  Why: photo attachments are stored (FR-11).
-      [ ] Repairs page: log a repair, try each source; "External Repair Shop" requires a shop name.
-          Why: repairs are recorded with their source (FR-13).
-
-    Look at the saved data (optional — `php artisan tinker`):
-      [ ] `App\Models\DamageReport::latest()->first()`  → the report; after a review,
-          `App\Models\Vehicle::find(ID)->status` shows the updated status.
-
----
-PHASE 5: Preventive Maintenance Scheduling
-Goal: Admins create mileage- or time-based PM schedules with a configurable Due-Soon threshold, the system recalculates Due Soon/Due automatically, and admins record completion details.
-
-Tasks:
-  1. PM schedule schema + model — FR-14
-      What gets built: `pm_schedules` migration (pm_type, interval/last/due mileage, due_date, `due_soon_threshold_km/_days`, status enum, completion fields); `PmSchedule` model + scope.
-  2. PM CRUD API — FR-14
-      What gets built: `PmController` → `GET/POST/PUT /api/v1/pm-schedules`, `GET /api/v1/pm-schedules/{id}`; `PmRequest` (require km fields for Mileage-Based, date for Time-Based).
-  3. PM completion API — FR-14
-      What gets built: `PATCH /api/v1/pm-schedules/{id}/complete` (date serviced, repair source, parts, remarks → status Completed); no auto-renewal.
-  4. PM status computation command — FR-14, NFR-04
-      What gets built: `php artisan rvms:recalculate-pm` scheduled command computing Upcoming/Due Soon/Due from `vehicles.current_mileage`/date vs thresholds; registered in the scheduler.
-  5. Admin Blade page: Preventive Maintenance — FR-14, NFR-03
-      What gets built: `pm.blade.php` (active + completed tables, create/edit/mark-completed modals).
-
-Testing task (end of phase):
-  Automated — `php artisan test`:
-    - `PmScheduleApiTest`: create mileage-based and time-based (201); missing interval on mileage-based 422; missing date on time-based 422; 401; driver token 403; **cross-agency isolation** on read/update.
-    - `PmCompletionTest`: completing sets status Completed + stores completion fields (200); driver 403.
-    - `PmStatusUnitTest` (unit): the recompute logic returns Due/Due Soon/Upcoming correctly at threshold boundaries for both PM types, and never auto-creates a next cycle.
-  Manual testing checklist (plain language):
-    Setup (every time):
-      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
-      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
-
-    Commands to run — and why they matter:
-      [ ] `php artisan route:list --path=api/v1/pm-schedules`  → shows the PM routes.
-      [ ] `php artisan schedule:list`  → shows `rvms:recalculate-pm` is scheduled.
-          Why: confirms the due-status job runs automatically on its own.
-      [ ] `php artisan test`  → all green.  Why: proves a Mileage-Based schedule with no km
-          interval is rejected (422), a Time-Based one with no date is rejected (422), a driver
-          token is refused (403), no token is 401, and one agency can't open/edit another's schedule.
-
-    What must work (browser, as the BFP admin — PM page):
-      [ ] Create a Mileage-Based schedule (needs a km interval) and a Time-Based one (needs a due
-          date)  → both save.  Why: both scheduling styles are supported (FR-14).
-      [ ] Mark one Completed with date serviced / repair source / parts / remarks  → it moves to a
-          separate "completed" list and does NOT auto-create a new cycle.
-          Why: each maintenance cycle is entered by hand, no auto-renewal (FR-14).
-      [ ] Only your agency's schedules show, with the right colored status badges.
-          Why: agency isolation (FR-02) + clear status at a glance.
-
-    The auto due-status check (the important one — `php artisan tinker`):
-      [ ] Set a vehicle's `current_mileage` close to its schedule's due mileage, then run
-          `php artisan rvms:recalculate-pm`  → that schedule's status flips to "Due Soon" or "Due"
-          on its own.  Why: the system tracks maintenance timing automatically (FR-14).
-
----
-PHASE 6: Dispatch Logging & Vehicle Availability
-Goal: Admins open dispatches (auto-setting the vehicle to Dispatched), close them with a return status, and view current availability of all agency vehicles.
-
-Tasks:
-  1. Dispatch schema + model — FR-15
-      What gets built: `dispatches` migration (mission_type enum + mission_other, location, time_out/in, return_status); `Dispatch` model + scope; active = `time_in IS NULL`.
-  2. Open-dispatch API — FR-15, FR-18
-      What gets built: `POST /api/v1/dispatches` (`DispatchRequest`, require mission_other when Others) → sets `vehicles.status = Dispatched`.
-  3. Close-dispatch API — FR-16, FR-18
-      What gets built: `PATCH /api/v1/dispatches/{id}/close` (time_in + return_status enum) → updates vehicle status.
-  4. Dispatch listing, edit & availability — FR-15, FR-17
-      What gets built: `GET /api/v1/dispatches`, `PUT /api/v1/dispatches/{id}`, `GET /api/v1/vehicles/availability` (status of all agency vehicles).
-  5. Admin Blade page: Dispatch — FR-15, FR-17, NFR-03
-      What gets built: `dispatch.blade.php` (active-monitoring banner, close-dispatch modal).
-
-Testing task (end of phase):
-  Automated — `php artisan test`:
-    - `DispatchOpenTest`: opening returns 201 and vehicle becomes Dispatched; Others without `mission_other` 422; 401; driver token 403; **Agency A cannot dispatch/read Agency B's vehicle**.
-    - `DispatchCloseTest`: close with each return status updates the vehicle's single status field (200); invalid return_status 422.
-    - `AvailabilityTest`: returns only the caller's agency vehicles with current status; 403 for driver.
-    - `DispatchUnitTest` (unit): active/completed derivation from `time_in`; mission label resolves Others + free text.
-  Manual testing checklist (plain language):
-    Setup (every time):
-      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
-      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
-
-    Commands to run — and why they matter:
-      [ ] `php artisan route:list`  → look for the dispatches and vehicles/availability routes.
-      [ ] `php artisan test`  → all green.  Why: proves opening a dispatch sets the vehicle to
-          Dispatched (201); mission type "Others" with no detail text is rejected (422); closing
-          with each return status updates the single vehicle status (200) and a bad status is
-          rejected (422); a driver token is 403, no token 401; availability returns only your
-          agency; and one agency can't dispatch/read another's vehicle.
-
-    What must work (browser, as the BFP admin — Dispatch page):
-      [ ] Open a dispatch (vehicle, driver, mission type, location, time out)  → it saves and that
-          vehicle's status automatically becomes "Dispatched".
-          Why: dispatching a vehicle marks it unavailable everywhere at once (FR-15/FR-18).
-      [ ] Close the dispatch with a time in and a return status (try Operational / Not Operational /
-          Under Preventive Maintenance)  → the vehicle's status becomes what you chose.
-          Why: closing records the return state on the one shared status (FR-16/FR-18).
-      [ ] A banner counts the active dispatches; only your agency's records show.
-          Why: admins see current fleet activity for their agency only (FR-17/FR-02).
-
-    Look at the saved data (optional — `php artisan tinker`):
-      [ ] `App\Models\Dispatch::whereNull('time_in')->get()`  → lists still-active dispatches;
-          check a vehicle's `status` before/after open and close.
-
----
-PHASE 7: Notification Services & FCM
-Goal: All FR-21 in-app notifications are persisted and delivered, license/PM alerts fire on schedule, status/damage events notify the right role, and drivers receive FCM pushes.
-
-Tasks:
-  1. Notifications schema + in-app API — FR-21
-      What gets built: `notifications` migration/model; `GET /api/v1/notifications`, `PATCH /api/v1/notifications/{id}/read`, `PATCH /api/v1/notifications/read-all`.
-  2. FCM HTTP v1 client (server-side PHP) — FR-21, NFR-04
-      What gets built: `FcmService` using Google service-account/HTTP v1; `POST /api/v1/fcm-token` for driver device registration; queued sends.
-  3. Event-driven triggers — FR-21, FR-03
-      What gets built: observers/events — damage submitted → agency admins; vehicle status changed → assigned driver (Vehicle Status Update); driver self-registration → agency admins (`New_Access_Request`).
-  4. Scheduled alert jobs — FR-08, FR-14, FR-21
-      What gets built: `rvms:license-alerts` (Expiring Soon/Expired → admins) and PM Due Soon/Due → admins + PM Reminder → drivers, hooked into the scheduler.
-  5. Admin Blade page + bell — FR-21, NFR-03
-      What gets built: `notifications.blade.php` + topbar bell dropdown with unread count.
-
-Testing task (end of phase):
-  Automated — `php artisan test`:
-    - `NotificationApiTest`: list returns only the user's notifications (200); mark-read/read-all update state; 401; **cross-agency isolation** (cannot read another agency user's notifications); marking a foreign notification 403/404.
-    - `FcmTokenTest`: driver registers a token (200); admin/driver role rules enforced; invalid token 422.
-    - `NotificationTriggerTest`: submitting a damage report creates an admin notification; a vehicle status change creates a driver notification; the scheduled commands create license/PM notifications (FCM transport faked/mocked).
-    - `NotificationUnitTest` (unit): notification-type → title/recipient mapping; license/PM threshold selection logic.
-  Manual testing checklist (plain language):
-    Note: real phone push (FCM) needs Firebase credentials; in local testing the push send is
-    faked/mocked, but the notification ROWS saved in the database are real — those are what you check.
-
-    Setup (every time):
-      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
-      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
-
-    Commands to run — and why they matter:
-      [ ] `php artisan route:list`  → look for the notifications and fcm-token routes.
-      [ ] `php artisan schedule:list`  → shows the license-alerts and PM jobs are scheduled.
-          Why: confirms the alerts fire automatically on a timer.
-      [ ] `php artisan test`  → all green.  Why: proves you only ever see your own notifications;
-          no token is 401; marking someone else's notification read is blocked (403/404); a driver
-          can register a device token (200) and a bad token is rejected (422).
-
-    Make the alerts happen, then confirm the rows (`php artisan tinker`):
-      [ ] Give a driver a near-expiry license and a vehicle a mileage near its PM due point, then run
-          `php artisan rvms:license-alerts` and `php artisan rvms:recalculate-pm`. Now
-          `App\Models\Notification::latest()->take(5)->get()`  → new rows for the expiring license
-          and the due PM.  Why: time-sensitive alerts are generated (FR-08/FR-14/FR-21).
-      [ ] Change a vehicle's status (Phase 2 page)  → a "vehicle status update" row exists for that
-          vehicle's assigned driver.  Why: drivers are told when their vehicle changes (FR-21).
-      [ ] A new damage report (Phase 4)  → a "new damage report" row exists for the agency's admins.
-          Why: admins are alerted to new reports (FR-21).
-
-    What must work (browser, as the BFP admin):
-      [ ] The bell icon shows an unread count; the notifications page groups them Today / Yesterday /
-          Earlier; marking one read (and "mark all read") drops the count.
-          Why: admins can see and clear their alerts (FR-21).
-
----
-PHASE 8: Dashboard Summary & Report Generation
-Goal: Admins see live agency fleet counts and can generate filtered, printable reports for all six report types.
-
-Tasks:
-  1. Dashboard summary API — FR-19
-      What gets built: `GET /api/v1/dashboard/summary` (counts: 4 statuses, total vehicles, total drivers, expiring licenses, pending damage) — agency-scoped.
-  2. Report query endpoints — FR-20
-      What gets built: `ReportController` → `GET /api/v1/reports/{type}` for inspections, damage, repairs-maintenance, pm, dispatch, vehicle-status with the documented filters (date range, vehicle, driver, source, status, mission type).
-  3. Printable report views — FR-20, NFR-03
-      What gets built: print-friendly Blade templates (light-surface, no extra print CSS hacks) for each report type, each stamped with the generating admin's name + generation date; keep the current report layout. (Parked pending client validation: mimic the paper checklist form + show the assigned driver's name — not built yet.)
-  4. Admin Blade pages: Dashboard & Reports — FR-19, FR-20
-      What gets built: `dashboard.blade.php` (summary cards + action-required lists) and `reports.blade.php` (type selector + filters).
-
-Testing task (end of phase):
-  Automated — `php artisan test`:
-    - `DashboardSummaryTest`: returns correct counts for the caller's agency only (200); 401; driver token 403; **counts never include another agency's records**.
-    - `ReportApiTest`: each of the six report types returns 200 with the expected shape and honors filters; invalid date range/filter 422; 401; driver 403; **cross-agency isolation** on every report.
-    - `ReportUnitTest` (unit): filter-builder applies date/vehicle/driver/source/status/mission constraints correctly; vehicle-status summary reflects live statuses.
-  Manual testing checklist (plain language):
-    Setup (every time):
-      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
-      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
-
-    Commands to run — and why they matter:
-      [ ] `php artisan route:list --path=api/v1/reports` and `--path=api/v1/dashboard`  → shows
-          the report + dashboard routes.
-      [ ] `php artisan test`  → all green.  Why: proves the summary and all six reports return only
-          your agency's data (never another's); a backwards/malformed date range is rejected (422);
-          a driver token is 403 and no token 401.
-
-    What must work (browser, as the BFP admin):
-      [ ] Open the Dashboard  → cards show counts for the four vehicle statuses, total vehicles,
-          total drivers, expiring licenses, and pending damage reports — for YOUR agency only.
-          Why: admins get an at-a-glance fleet summary, agency-scoped (FR-19/FR-02).
-      [ ] Open Reports, pick each of the six types (inspections, damage, repairs-maintenance, pm,
-          dispatch, vehicle-status), apply the date range + other filters  → the right rows show.
-          Why: admins can pull filtered records for any module (FR-20).
-      [ ] Use the browser's Print Preview  → the printout is clean and stamped with your name and
-          the date.  Why: reports are printable and show who generated them and when (FR-20).
-
-    Cross-check the numbers (optional — `php artisan tinker`):
-      [ ] `App\Models\Vehicle::where('status','Operational')->count()`  → matches the Dashboard card.
-
----
-PHASE 9: NFR Hardening & Final Verification
-Goal: The whole API meets the performance, security, reliability, usability, and compatibility standards, with a full green regression suite.
-
-Tasks:
-  1. Performance pass — NFR-01
-      What gets built: pagination on all list endpoints, eager-loading audit (eliminate N+1), DB index review on `agency_id`/FKs/date columns, concurrent-load spot check.
-  2. Security hardening — NFR-02
-      What gets built: enforce HTTPS/encrypted transport config, login rate limiting, full policy/authorization audit, agency-isolation sweep across every endpoint, password strength rules.
-  3. Reliability pass — NFR-04
-      What gets built: queue + retry/backoff for FCM and scheduled jobs, confirm single-status consistency across all modules, idempotent status writes.
-  4. Usability & compatibility verification — NFR-03, NFR-05
-      What gets built: consistent JSON envelope/error format, API contract notes for the Android team, dashboard checks on Chrome/Firefox/Edge.
-
-Testing task (end of phase):
-  Automated — `php artisan test`:
-    - `RegressionSuite`: run the full Phase 1–8 suite green.
-    - `AgencyIsolationSweepTest`: parameterized test asserting every list/show/update/delete endpoint blocks cross-agency access (NFR-02).
-    - `RateLimitTest`: repeated failed logins are throttled (NFR-02).
-    - `PerformanceUnitTest`: list endpoints are paginated and key queries issue no N+1 (assert query count) (NFR-01).
-  Manual testing checklist (plain language):
-    This phase re-checks the WHOLE system, not one module. Do the setup, then work down the list.
-
-    Setup (every time):
-      [ ] `php artisan migrate:fresh --seed`  → fresh sample data.
-      [ ] `php artisan serve`  → app at http://127.0.0.1:8000 (leave it running).
-
-    Commands to run — and why they matter:
-      [ ] `php artisan route:list`  → skim the whole `/api/v1` table; every endpoint has the right
-          method, path, and middleware.  Why: a final check that nothing is mis-wired.
-      [ ] `php artisan test`  → all green.  Why: runs the agency-isolation sweep across EVERY module
-          (wrong role 403, no/expired token 401, another agency's record 403/404, bad input 422),
-          confirms lists are paginated, and confirms repeated bad logins get throttled (429).
-
-    What must work (browser / terminal):
-      [ ] Rate limiting: run the curl login (guide section C) with a WRONG password several times
-          fast  → after a handful of tries it refuses with 429 (Too Many Requests).
-          Why: protects against password-guessing (NFR-02).
-      [ ] One-status consistency: change a vehicle's status once, then confirm the SAME status shows
-          in the vehicle record, the availability list, the dashboard summary, and the vehicle-status
-          report.  Why: there is one shared status, never conflicting copies (FR-18/NFR-04).
-      [ ] Big lists come back in pages, not thousands of rows at once, and stay fast.
-          Why: the system stays responsive under load (NFR-01).
-      [ ] Open the dashboard in Chrome, Firefox, and Edge  → looks and works the same in all three.
-          Why: browser compatibility (NFR-05).
+    In plain words: nothing is visible yet — this day installed the electricity and the locks.
+    You are checking that the wiring is safe: accounts exist, passwords are protected, and the
+    "each agency sees only its own data" rule is active from day one.
+      [ ] `php artisan migrate:fresh --seed`  → ends with green DONE lines, no red.
+          Why: the database tables build correctly on your MySQL.
+      [ ] `php artisan test`  → all green.  Why: one command proves every login rule — right
+          password gets in, wrong password doesn't, a pending driver is politely refused, a
+          logged-out token stops working, and one agency can never query another's records.
+      [ ] `php artisan tinker` → `App\Models\Agency::pluck('code')` shows the 4 agencies;
+          `App\Models\User::count()` shows 13 (5 admins — BFP has two — + 8 drivers);
+          `App\Models\User::first()->password` is scrambled text starting `$2y$`.
+          Why: the sample accounts exist and no password is readable by anyone.
 
 ---
 
-Coverage: FR-01–FR-04 (Phase 1; FR-03 driver-approval handled in Phase 2), FR-05–FR-08 (Phase 2), FR-09/FR-10 (Phase 3), FR-11–FR-13 (Phase 4), FR-14 (Phase 5), FR-15–FR-17 (Phase 6), FR-18 (built into every status-changing module across Phases 2–6), FR-19/FR-20 (Phase 8), FR-21 (Phase 7), NFR-01–NFR-05 (woven throughout, finalized in Phase 9).
+## THE TWO-CHECKPOINT METHOD — applies to every phase below (R1–R9)
+
+Every phase that produces a screen is split into two blocks, in this exact order:
+
+**BLOCK A — static copy (no backend logic at all):**
+  A1. Widget extraction: read the prototype file and list every widget (header, filters, table
+      columns, buttons, modals, footer) as its own checkbox — nothing is built before this list exists.
+  A2. Copy the prototype HTML file into the `.blade.php` file COMPLETELY UNCHANGED — same
+      fake/hardcoded data, same dead links, same demo JavaScript. No logic, no routes, no models yet.
+  A3. CHECKPOINT A (mechanical self-check): open the raw copy in a browser next to the prototype
+      file — they must be PIXEL-IDENTICAL, because at this point the Blade file IS the prototype
+      file. If anything differs, the copy was mistyped — fix it before writing a single line of logic.
+
+**BLOCK B — make it live:**
+  B1. Replace ONLY the hardcoded data with real Blade variables (`ABC-1234` → `{{ $vehicle->plate_number }}`,
+      the static rows → `@foreach`) — build the migration/model/API underneath as needed.
+  B2. Wire forms and buttons to real routes; add ONLY the explicitly-planned deviations from the
+      prototype (e.g., "no Remember-me", "Access Requests section — documented addition"), each
+      one left as a one-line comment so it is traceable later.
+  B3. CHECKPOINT B (the project lead's approval): side-by-side with the prototype again — this
+      proves that wiring in live data did not silently change any markup, button, or wording.
+      A phase does not close until the lead approves Checkpoint B.
+
+---
+PHASE R1 — Day 2: Login Page + Dashboard Shell (verbatim)
+Goal: The login screen and the dashboard frame (sidebar, topbar) look IDENTICAL to the prototype, and only agency administrators can enter.
+Prototype source: `web/login.html` + the sidebar/topbar chrome of `web/pages/dashboard.html`.
+
+Sub-tasks (Day 2):
+  Block A:
+    1. Widget extraction from both prototype files (logo card, inputs, eye-toggle, links, sidebar
+       sections, topbar items).
+    2. Copy `web/assets/css/style.css` + the RVMS/agency logos into `backend/public` unchanged —
+       the stylesheet is never edited (any unavoidable backend-only addition goes in a separate `admin.css`).
+    3. Copy `login.html` → `auth/login.blade.php` and the `dashboard.html` chrome → `layouts/app.blade.php`
+       verbatim — hardcoded data and demo JS left as-is for now.
+    4. CHECKPOINT A: raw copy vs prototype files — pixel-identical.
+  Block B:
+    5. Wire the login form to the real login route; drop "Remember me"; "Forgot password?" opens
+       the contact-your-administrator modal; the demo agency chips are omitted (the prototype itself
+       labels them demo-only — documented omission).
+    6. Wire the sidebar/topbar to the logged-in user's real agency + logo; ALL 9 nav items visible,
+       later-phase pages disabled ("available in a later phase"); bell is a placeholder (goes live R7);
+       user dropdown + real Sign Out.
+    7. Web session auth: admins only (drivers told to use the mobile app), guests bounced to login,
+       role redirect.
+    8. Automated tests: web login/logout/guest-redirect/driver-blocked.
+    9. CHECKPOINT B: side-by-side with `login.html` and `dashboard.html`, now logged in — identical
+       chrome, live agency name/logo — send to the project lead, wait for approval.
+
+Testing task:
+  Automated — `php artisan test`: web guard rules (admin in, driver refused, guest redirected, logout kills session).
+  Manual testing checklist (plain language):
+    In plain words: this is the front door. You are checking that it LOOKS exactly like the
+    prototype's front door and that only the right people get in.
+      [ ] Open http://127.0.0.1:8000 next to the prototype's login page  → they look identical
+          (same card, same icons, same "Forgot password?", NO "Remember me").
+      [ ] Log in as bfp.admin@rvms.local  → the frame around the page (blue sidebar, top bar with
+          "Bureau of Fire Protection" and its logo) matches the prototype's dashboard frame.
+      [ ] Log in as bfp.admin2@rvms.local  → exactly the same BFP view.
+          Why: one agency can have two administrators and both must work.
+      [ ] Try a driver account  → refused with "use the mobile app".
+          Why: the website is for admins; drivers belong on the phone app.
+      [ ] While logged out, type /dashboard in the address bar  → bounced to login.
+          Why: nobody sneaks in without signing in.
+
+---
+PHASE R2 — Days 3–4: Vehicles + Drivers (FR-05, FR-06, FR-07, FR-08, FR-18, FR-03)
+Goal: Admins fully manage their agency's vehicles and drivers with screens identical to the prototype; drivers can fetch their assigned vehicle(s) by API; expiring licenses are detected against each agency's configurable threshold.
+Prototype source: `web/pages/vehicles.html`, `web/pages/drivers.html`.
+
+Sub-tasks — Day 3 (Vehicles):
+  Block A:
+    1. Widget extraction from `vehicles.html` (header+subtitle, Add button, 3-field filter bar,
+       6 table columns, 3 icon row-actions, Add/Edit/View/Status modals, card-footer pagination).
+    2. Copy `vehicles.html` → `vehicles.blade.php` verbatim (hardcoded rows left as-is).
+    3. CHECKPOINT A: raw copy vs prototype — pixel-identical.
+  Block B:
+    4. `vehicles` migration/model/factory per the Data Dictionary; seeder: 2 vehicles per agency,
+       the first assigned to the agency's first driver.
+    5. Vehicle API: `GET/POST/PUT /vehicles`, `GET /vehicles/{id}`, `PATCH /vehicles/{id}/status`
+       (only the 4 enum values); `GET /my-vehicle` (driver token; a driver may hold several
+       vehicles — return them all).
+    6. Replace hardcoded rows with live data: working search/type/status filters, combined VEHICLE
+       DETAILS cell, "45,230 km" mileage format, pill badges, eye/pencil/refresh icon buttons wired
+       to real modals (View/Edit/Status), Status modal limited to 3 choices + the "Dispatched is set
+       automatically by the Dispatch module" note, prototype pagination footer.
+    7. Automated tests: VehicleApi + MyVehicle suites (shapes, 422s, 401/403, cross-agency 404,
+       plate-unique-per-agency, same-agency driver rule).
+    8. CHECKPOINT B: vehicles page vs prototype, with live seeded data → lead approves.
+
+Sub-tasks — Day 4 (Drivers):
+  Block A:
+    9. Widget extraction from `drivers.html` (3 license summary cards, filter bar, 6 columns incl.
+       monospace license + colored expiry, license-status pills, view/edit icon actions, Add/Edit/View
+       modals with "Assign Vehicle (Optional)").
+    10. Copy `drivers.html` → `drivers.blade.php` verbatim.
+    11. CHECKPOINT A: raw copy vs prototype — pixel-identical.
+  Block B:
+    12. Driver API: `GET/POST/PUT /drivers` (admin-added = active), `?status=pending`, `PATCH
+        approve`/`reject`; `GET /licenses/monitoring` using `agencies.license_expiry_warning_days`.
+    13. Replace hardcoded rows with live data: license summary cards computed live, license pills,
+        ASSIGNED VEHICLE column listing ALL of a driver's vehicles, assign-select that never steals
+        an already-assigned vehicle ("No change" default on edit).
+    14. Access Requests section for pending self-registrations — NOT in the prototype (approval was
+        added to scope later); build it using the prototype's own card/table/badge/button
+        conventions and leave a one-line comment noting it as a documented addition (FR-03).
+    15. Automated tests: DriverApi + LicenseMonitoring suites (approve/reject, isolation, threshold
+        boundaries, multi-vehicle listing).
+    16. CHECKPOINT B: drivers page vs prototype, with live seeded data → lead approves.
+
+Testing task:
+  Automated — `php artisan test`: full R0–R2 suite green.
+  Manual testing checklist (plain language):
+    In plain words: these are the two filing cabinets — vehicles and drivers. You are checking
+    that the cabinets look exactly like the prototype's and that BFP's cabinet is invisible to CHO.
+      [ ] Vehicles page vs prototype side-by-side  → identical: same buttons (eye / pencil /
+          circular-arrows icons), same filter bar, same badge pills, same "Showing X to Y" footer.
+      [ ] Click Add Vehicle, fill it like the prototype's example placeholders  → it appears in
+          the table.  Why: the fleet record works (FR-05).
+      [ ] Use the circular-arrows button  → only 3 status choices, with the note that "Dispatched"
+          comes from the Dispatch module.  Why: statuses can't contradict each other (FR-18).
+      [ ] Drivers page  → the three colored license cards (VALID / EXPIRING SOON / EXPIRED) show
+          numbers.  In tinker, set a driver's `license_expiry_date` to next week, refresh  → the
+          EXPIRING SOON card goes up by one and that row's date turns orange.
+          Why: the system watches licenses automatically (FR-08).
+      [ ] Register a driver from the API (guide section C) or use seeded pending data  → an
+          "Access Requests" box appears; Approve turns them Active.  Why: self-registered drivers
+          wait for the admin (FR-03).
+      [ ] Assign a second vehicle to a driver who already has one  → the driver now lists BOTH
+          plates.  Why: a driver may hold several vehicles; each vehicle has one primary driver.
+      [ ] Log in as the CHO admin  → none of BFP's vehicles or drivers exist here.
+          Why: the agency wall — the most important security rule (FR-02).
+
+---
+PHASE R3 — Days 5–6: Digital BLOWBAGETS Inspections (FR-09, FR-10)
+Goal: Drivers submit the daily checklist by API (12 items, +2 for BFP, remarks required on flagged items); admins see and review them on a screen identical to the prototype's inspections section.
+Prototype source: `web/pages/inspections-damage.html` — the "Daily BLOWBAGETS Inspections" table, "Frequently Reported Issues" block, View Checklist modal, Review Inspection modal.
+
+Sub-tasks — Day 5 (data + API — no screen yet, so no checkpoints today):
+  1. Widget extraction from the inspections section of the prototype file (recorded now, used Day 6).
+  2. `inspection_checklist_items` migration/model/seeder — the 12 standard items + Hydraulic System
+     + Fire Pump (`is_bfp_only`); `GET /inspections/checklist` returns 14 for BFP drivers, 12 otherwise.
+  3. `inspections` + `inspection_items` migrations/models per the Data Dictionary.
+  4. Submission API: `POST /inspections` — every checklist item present, OK/Has Issue each, remarks
+     REQUIRED on Has Issue, vehicle must belong to the driver's agency.
+  5. Monitoring API: `GET /inspections` (vehicle/driver/date filters), `GET /inspections/{id}`,
+     `GET /inspections/frequent-issues` (grouped Has-Issue counts + last-reported date).
+  6. Review API: `PATCH /inspections/{id}/review` — marks Reviewed, records who/when, optional
+     vehicle status change (3 choices).
+  7. Automated tests: submit/monitor/review suites.
+
+Sub-tasks — Day 6 (screen):
+  Block A:
+    8. Copy the inspections section of `inspections-damage.html` → the relevant part of
+       `inspections.blade.php` verbatim.
+    9. CHECKPOINT A: raw copy vs prototype section — pixel-identical.
+  Block B:
+    10. Replace hardcoded rows with live data: page header "Inspections & Damage" + subtitle,
+        section header + "N Pending Review" pill, table (DATE SUBMITTED as Today/Yesterday + time,
+        VEHICLE & DRIVER combined, RESULT pill, REMARKS column, REVIEW STATUS pill), "View Checklist"
+        light button + solid-navy "Review" button, ranked frequent-issues bars with counts and
+        "Last:" dates, View Checklist modal (grouped Standard 12 / BFP Additional 2 with green ✓ /
+        red ✗ and remarks), Review modal (context box, Driver's Submission box, 3-choice status
+        select, "Mark Reviewed & Update Status").
+    11. Sample seeder: per agency, yesterday's all-OK inspection already Reviewed + today's 2-issue
+        inspection Pending — so the page demonstrates itself.
+    12. CHECKPOINT B: inspections section vs prototype, with live seeded data → lead approves.
+
+Testing task:
+  Automated — `php artisan test`: BFP 14 vs others 12; flagged-without-remarks rejected; incomplete checklist rejected; admin can't submit; cross-agency blocked; review updates the vehicle.
+  Manual testing checklist (plain language):
+    In plain words: drivers fill a daily safety checklist on their phones; this screen is where
+    the admin reads and judges them. Driver submissions have no screen yet (that's the mobile
+    app), so the robot tests stand in for the driver.
+      [ ] `php artisan test` all green.  Why: proves the driver-side rules you can't click yet —
+          a BFP driver's list has 14 boxes, others 12; a flagged item without an explanation is
+          rejected; nobody can submit for another agency's vehicle.
+      [ ] Inspections section vs prototype side-by-side  → identical, including the "2 Pending
+          Review" pill and the ranked issue bars.
+      [ ] Open today's seeded inspection (View Checklist)  → green checks and two red ✗ items
+          with the drivers' remarks; as BFP you also see the two extra BFP items.
+      [ ] Click Review, choose "Not Operational"  → the row flips to Reviewed, and on the
+          Vehicles page that vehicle now shows Not Operational.
+          Why: a bad inspection can take a vehicle off the road immediately (FR-10 + FR-18).
+      [ ] As the CHO admin  → only CHO's inspections exist here.  Why: the agency wall.
+
+---
+PHASE R4 — Days 7–8: Damage Reports + Repair Logs (FR-11, FR-12, FR-13)
+Goal: Drivers file damage reports (photo optional) by API; admins review them and update the vehicle's status; admins log repairs with source/parts/cost — screens identical to the prototype.
+Prototype source: `web/pages/inspections-damage.html` — the "Damage Reports" section; `web/pages/repairs.html`.
+
+Sub-tasks — Day 7 (Damage):
+  Block A:
+    1. Widget extraction from the damage section (pending pill, table with photo "View" button,
+       red "Review & Assess" button, red review modal).
+    2. Copy the damage section → the relevant part of `inspections.blade.php` verbatim (joined
+       below the frequent-issues block, exactly like the prototype layout).
+    3. CHECKPOINT A: raw copy vs prototype section — pixel-identical.
+  Block B:
+    4. `damage_reports` migration/model per the Data Dictionary; photo storage via `php artisan storage:link`.
+    5. APIs: `POST /damage-reports` (multipart photo optional, date auto-set, Pending), `GET`
+       list/show (driver sees own, admin sees agency), `PATCH /{id}/review` (Reviewed + vehicle status).
+    6. Replace hardcoded rows with live data, wire the photo View button and the red Review & Assess modal.
+    7. Automated tests: damage submit/review suites.
+    8. CHECKPOINT B: damage section vs prototype, with live seeded data → lead approves.
+
+Sub-tasks — Day 8 (Repairs):
+  Block A:
+    9. Widget extraction from `repairs.html` (wide table spacing, add/edit modals, source-conditional
+       shop-name field).
+    10. Copy `repairs.html` → `repairs.blade.php` verbatim.
+    11. CHECKPOINT A: raw copy vs prototype — pixel-identical.
+  Block B:
+    12. `repair_logs` migration/model; APIs `GET/POST/PUT /repairs` (source enum; External Repair
+        Shop requires the shop name).
+    13. Replace hardcoded rows with live data, including the "specify shop" reveal when External
+        Repair Shop is chosen.
+    14. Sample seeders for both modules; automated tests: repair suite.
+    15. CHECKPOINT B: repairs page vs prototype, with live seeded data → lead approves.
+
+Testing task:
+  Automated — `php artisan test`: photo optional; empty damage description rejected; admin-submit refused; External source without shop name rejected; cross-agency review blocked; review writes the one shared vehicle status.
+  Manual testing checklist (plain language):
+    In plain words: when something breaks, the driver reports it with a photo, the admin judges
+    it, and repairs get written into the vehicle's history book.
+      [ ] Damage section vs prototype side-by-side  → identical, including the red
+          "Review & Assess" button and red-headed modal.
+      [ ] Open a seeded report's photo  → the picture displays.  Why: photo evidence is stored (FR-11).
+      [ ] Review & Assess one, set "Not Operational"  → the vehicle's status changes everywhere.
+          Why: a damaged vehicle is immediately marked unusable (FR-12 + FR-18).
+      [ ] Repairs page: log a repair choosing "External Repair Shop"  → a shop-name box appears
+          and is required.  Why: the record says WHO fixed it (FR-13).
+      [ ] As another agency's admin  → none of these reports/repairs are visible.
+
+---
+PHASE R5 — Days 9–10: Preventive Maintenance (FR-14)
+Goal: Admins create mileage- or time-based PM schedules with configurable Due-Soon thresholds; the system flips statuses to Due Soon/Due automatically; completion is recorded manually — screen identical to `pm.html`.
+Prototype source: `web/pages/pm.html`.
+
+Sub-tasks — Day 9 (data + API — no screen yet, so no checkpoints today):
+  1. Widget extraction from `pm.html` (tabs for active/completed, create/edit/complete modals,
+     status badges incl. Upcoming) — recorded now, used Day 10.
+  2. `pm_schedules` migration/model per the Data Dictionary (both types, thresholds, completion fields).
+  3. APIs: `GET/POST/PUT /pm-schedules`, `GET /{id}`, `PATCH /{id}/complete` — mileage-based
+     requires km fields, time-based requires a date; completing stores the 4 completion fields and
+     NEVER auto-creates the next cycle.
+  4. Automated tests: schedule/completion suites.
+
+Sub-tasks — Day 10 (automation + screen):
+  5. `php artisan rvms:recalculate-pm` command: computes Upcoming / Due Soon / Due from current
+     mileage or dates vs the thresholds; registered in the scheduler.
+  6. Automated tests: recompute boundary cases for both types.
+  Block A:
+    7. Copy `pm.html` → `pm.blade.php` verbatim.
+    8. CHECKPOINT A: raw copy vs prototype — pixel-identical.
+  Block B:
+    9. Replace hardcoded rows with live data (active + completed views, all modals, badges).
+    10. Sample seeder: one mileage-based near its threshold, one time-based, one completed — per agency.
+    11. CHECKPOINT B: PM page vs prototype, with live seeded data → lead approves.
+
+Testing task:
+  Automated — `php artisan test`: 422 for missing km/date per type; completion stores fields; recompute flips statuses exactly at the boundaries; isolation.
+  Manual testing checklist (plain language):
+    In plain words: this is the automatic reminder calendar for oil changes and services. You are
+    checking that the calendar flips to "Due Soon" BY ITSELF when a vehicle gets close.
+      [ ] PM page vs prototype side-by-side  → identical, including the Upcoming badge color.
+      [ ] Create one Mileage-Based schedule (needs a km interval) and one Time-Based (needs a
+          date)  → both save.  Why: both maintenance styles exist in your agencies (FR-14).
+      [ ] The magic moment: in tinker raise a vehicle's `current_mileage` to near its due point,
+          run `php artisan rvms:recalculate-pm`, refresh the page  → the badge flipped to
+          "Due Soon" or "Due" on its own.  Why: nobody has to remember maintenance — the system does.
+      [ ] Mark one Completed with date/source/parts/remarks  → it moves to the completed view and
+          NO new schedule appears by itself.  Why: each cycle is entered deliberately, no surprises.
+      [ ] `php artisan schedule:list`  → shows the recalculation job runs automatically.
+
+---
+PHASE R6 — Day 11: Dispatch + Availability (FR-15, FR-16, FR-17)
+Goal: Opening a dispatch automatically marks the vehicle Dispatched; closing it records the return status; availability shows every vehicle's live status — screen identical to `dispatch.html`.
+Prototype source: `web/pages/dispatch.html`.
+
+Sub-tasks (Day 11):
+  Block A:
+    1. Widget extraction from `dispatch.html` (active-dispatch banner, open/close modals,
+       "Others — specify" reveal).
+    2. Copy `dispatch.html` → `dispatch.blade.php` verbatim.
+    3. CHECKPOINT A: raw copy vs prototype — pixel-identical.
+  Block B:
+    4. `dispatches` migration/model per the Data Dictionary (active = `time_in IS NULL`).
+    5. APIs: `POST /dispatches` (sets vehicle → Dispatched; Others requires `mission_other`),
+       `PATCH /{id}/close` (time in + 3-choice return status → vehicle updated), `GET /dispatches`,
+       `PUT /{id}`, `GET /vehicles/availability`.
+    6. Replace hardcoded rows with live data; sample seeder (one active, one completed per agency).
+    7. Automated tests: open/close/availability suites.
+    8. CHECKPOINT B: dispatch page vs prototype, with live seeded data → lead approves.
+
+Testing task:
+  Automated — `php artisan test`: open flips status; Others without detail rejected; each return status lands on the vehicle; availability is agency-only.
+  Manual testing checklist (plain language):
+    In plain words: this is the logbook of "who took which vehicle where." You are checking that
+    taking a vehicle out and bringing it back updates its status with zero extra steps.
+      [ ] Dispatch page vs prototype side-by-side  → identical, including the active-count banner.
+      [ ] Open a dispatch  → that vehicle instantly shows "Dispatched" on the Vehicles page too.
+          Why: everyone sees the truck is out, from every screen (FR-15 + FR-18).
+      [ ] Close it choosing "Under Preventive Maintenance"  → the vehicle now shows exactly that.
+          Why: the return condition is recorded the moment it parks (FR-16).
+      [ ] Pick mission "Others" without typing what it is  → refused until you specify.
+      [ ] As another agency's admin  → their dispatch page shows only their own logbook.
+
+---
+PHASE R7 — Days 12–13: Notifications + FCM (FR-21, FR-03)
+Goal: Every FR-21 alert is saved in the database and delivered — bell + notifications page identical to the prototype; drivers get real push messages via Firebase.
+Prototype source: `web/pages/notifications.html` + the topbar bell dropdown present on every prototype page.
+
+Sub-tasks — Day 12 (storage + delivery — no screen wiring yet, so no checkpoints today):
+  1. Widget extraction from `notifications.html` + the bell dropdown — recorded now, used Day 13.
+  2. `notifications` migration/model per the Data Dictionary (8-type enum incl. New_Access_Request).
+  3. APIs: `GET /notifications`, `PATCH /{id}/read`, `PATCH /read-all`, `POST /fcm-token` (driver
+     device registration).
+  4. `FcmService` — server-side PHP, Google HTTP v1, queued sends (faked in local testing).
+  5. Automated tests: notification API + token suites.
+
+Sub-tasks — Day 13 (triggers + screens):
+  6. Event triggers: new damage report → ALL agency admins; vehicle status change → the assigned
+     driver; driver self-registration → ALL agency admins (New_Access_Request).
+  7. Scheduled alerts: `rvms:license-alerts` (Expiring Soon/Expired → admins) + PM Due Soon/Due
+     (→ admins, PM Reminder → drivers); both in the scheduler.
+  8. Automated tests: trigger suite (FCM transport faked).
+  Block A:
+    9. Copy the bell dropdown markup into the layout + copy `notifications.html` → `notifications.blade.php`
+       verbatim.
+    10. CHECKPOINT A: raw copy vs prototype (both the bell and the page) — pixel-identical.
+  Block B:
+    11. Wire the bell to live unread counts/latest items; replace the notifications page's
+        hardcoded rows with live data grouped Today / Yesterday / Earlier; wire mark-read/mark-all.
+    12. CHECKPOINT B: bell + notifications page vs prototype, with live seeded data → lead approves.
+
+Testing task:
+  Automated — `php artisan test`: users see only their own notifications; foreign mark-read blocked; triggers create the right rows for the right people; commands generate license/PM alerts.
+  Manual testing checklist (plain language):
+    In plain words: this is the doorbell. You are checking that the right person gets rung for
+    the right event — and that you can silence it by reading.
+    Note: real phone pushes need Firebase credentials; locally the "send" is simulated, but the
+    notification rows you check in the database and on screen are real.
+      [ ] Bell + notifications page vs prototype side-by-side  → identical, grouped
+          Today / Yesterday / Earlier.
+      [ ] Make something happen: change a vehicle's status, file a damage report (robot test or
+          curl), run `php artisan rvms:license-alerts`  → the bell count rises and rows appear —
+          status change rings the DRIVER, damage/license ring ALL the agency's admins (both BFP
+          admins!).  Why: alerts go to everyone responsible, not just one inbox (FR-21).
+      [ ] Click one notification read, then "mark all read"  → the red count drops to zero.
+      [ ] As another agency's admin  → your bell shows only your agency's news.
+
+---
+PHASE R8 — Days 14–15: Dashboard + Reports (FR-19, FR-20)
+Goal: The dashboard's 8 live counters and all six filtered, printable reports — screens identical to `dashboard.html` and `reports.html`.
+Prototype source: `web/pages/dashboard.html` (full content), `web/pages/reports.html`.
+
+Sub-tasks — Day 14 (Dashboard):
+  Block A:
+    1. Widget extraction from `dashboard.html` (8 metric cards, action-required lists, layout).
+    2. Copy `dashboard.html` → `dashboard.blade.php` verbatim.
+    3. CHECKPOINT A: raw copy vs prototype — pixel-identical.
+  Block B:
+    4. `GET /dashboard/summary` API: the 4 status counts + total vehicles + total drivers +
+       expiring licenses + pending damage — agency-scoped.
+    5. Replace hardcoded numbers with live counts; the action-required lists render strictly as
+       links built from the same FR-19 counts (no new data claims).
+    6. Automated tests: summary suite (counts correct, never another agency's).
+    7. CHECKPOINT B: dashboard vs prototype, with live data → lead approves.
+
+Sub-tasks — Day 15 (Reports):
+  Block A:
+    8. Widget extraction from `reports.html` (type selector cards, filter row, print area).
+    9. Copy `reports.html` → `reports.blade.php` verbatim.
+    10. CHECKPOINT A: raw copy vs prototype — pixel-identical.
+  Block B:
+    11. `GET /reports/{type}` ×6 (inspections, damage, repairs-maintenance, pm, dispatch,
+        vehicle-status) with the documented filters; 422 on bad ranges.
+    12. Replace hardcoded content with live filtered data; print-friendly report views, each
+        STAMPED with the generating admin's name + generation date (FR-20).
+    13. Automated tests: per-report suite.
+    14. CHECKPOINT B: reports page vs prototype, with live data → lead approves.
+
+Testing task:
+  Automated — `php artisan test`: summary + six report shapes, filters honored, malformed dates rejected, full isolation.
+  Manual testing checklist (plain language):
+    In plain words: the dashboard is the fleet at a glance; reports are what you print for the
+    boss. You are checking the numbers never lie and the printouts are presentable.
+      [ ] Dashboard vs prototype side-by-side  → identical cards; in tinker count something by
+          hand (e.g. Operational vehicles) → matches the card exactly.
+          Why: the summary is computed live from the same records, never a stale copy (FR-19).
+      [ ] Reports page: run each of the six types with a date range  → only matching rows appear.
+      [ ] Ctrl+P on a report  → clean printable layout, stamped with YOUR name and today's date.
+          Why: printed records show who produced them and when (FR-20).
+      [ ] All numbers and rows are yours only — spot-check as a second agency.
+
+---
+PHASE R9 — Day 16: Profile Page (FR-04)
+Goal: The profile screen identical to `profile.html`, rescoped to what the requirements back: the admin edits their OWN account; agency information is display-only.
+Prototype source: `web/pages/profile.html`.
+
+Sub-tasks (Day 16):
+  Block A:
+    1. Widget extraction from `profile.html`.
+    2. Copy `profile.html` → `profile.blade.php` verbatim.
+    3. CHECKPOINT A: raw copy vs prototype — pixel-identical.
+  Block B:
+    4. Wire the admin's own name/email/password editing (FR-04, web surface); agency
+       name/location/contact shown READ-ONLY (no FR backs editing agency info — documented
+       omission per design decision 7).
+    5. Enable the sidebar Profile link; automated tests: web profile update (incl. password re-login).
+    6. Clear any parked UI nits from the checkpoint feedback of R1–R8.
+    7. CHECKPOINT B: profile page vs prototype, with live data → lead approves.
+
+Testing task:
+  Automated — `php artisan test`: own-profile update rules (unique email, confirmed password), no cross-user edits.
+  Manual testing checklist (plain language):
+    In plain words: your own account settings. You are checking you can change your password —
+    and that nobody can quietly rewrite the agency's identity.
+      [ ] Profile page vs prototype side-by-side  → identical layout.
+      [ ] Change your password, sign out, sign in with the new one  → works.
+      [ ] Agency name/contact fields  → visible but not editable.
+          Why: no requirement allows editing agency identity; showing it read-only keeps the
+          prototype look without inventing a feature.
+
+---
+PHASE R10 — Days 17–18: Hardening + Final Verification (NFR-01…NFR-05)
+Goal: The whole system meets the quality attributes, the complete suite is green, and every screen passes a final side-by-side.
+Prototype source: all 10 screens (final pass).
+
+Sub-tasks — Day 17 (performance + security):
+  1. Pagination on every list endpoint + page; eager-loading/N+1 audit with query-count assertions.
+  2. Login rate limiting (429 after repeated failures); password strength rules; HTTPS/encrypted-transport config notes.
+  3. `AgencyIsolationSweepTest`: parameterized proof that EVERY list/show/update/delete endpoint blocks cross-agency access.
+
+Sub-tasks — Day 18 (reliability + compatibility + final pass):
+  4. Queue retry/backoff for FCM + scheduled jobs; idempotent status writes; single-status consistency check across all modules.
+  5. Consistent JSON envelope + API contract notes handed to the Android build (its consumer).
+  6. Chrome / Firefox / Edge pass on every page.
+  7. FINAL CHECKPOINT B: all 10 screens vs the prototype with the lead — the v2 exit gate.
+
+Testing task:
+  Automated — `php artisan test`: full R0–R9 regression + isolation sweep + rate-limit + pagination/N+1 assertions.
+  Manual testing checklist (plain language):
+    In plain words: the final safety inspection of the whole building. Nothing new is built
+    today — everything is re-checked harder.
+      [ ] Run the login curl (guide section C) with a WRONG password ~6 times fast  → it starts
+          refusing with "429 Too Many Requests".  Why: password-guessing robots get locked out.
+      [ ] Change one vehicle's status once  → the SAME status shows on the vehicle row, the
+          availability list, the dashboard card, and the vehicle-status report.
+          Why: one truth, never conflicting copies (FR-18 / NFR-04).
+      [ ] Long lists arrive in pages, and pages load fast.  Why: it stays quick when real data grows.
+      [ ] Open the dashboard in Chrome, Firefox, and Edge  → same look, same behavior (NFR-05).
+      [ ] `php artisan test`  → the entire suite green, one last time.
+
+---
+
+Coverage: FR-01–FR-04 (R0/R1/R9; approval flow in R2), FR-05–FR-08 (R2), FR-09/FR-10 (R3), FR-11–FR-13 (R4), FR-14 (R5), FR-15–FR-17 (R6), FR-18 (every status-writing phase R2–R6), FR-21 (R7), FR-19/FR-20 (R8), NFR-01–NFR-05 (throughout, sealed in R10).
 
 ---
 
