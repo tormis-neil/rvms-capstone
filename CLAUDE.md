@@ -422,6 +422,10 @@ Testing task (end of phase):
           Why: login works and the account carries its agency.
       [ ] Sign out, log in as the CHO admin  → the top now shows "City Health Office".
           Why: each admin sees only their OWN agency — the core privacy rule (FR-02).
+      [ ] Sign out, log in as the SECOND BFP admin (bfp.admin2@rvms.local)  → same
+          "Bureau of Fire Protection" context as the first BFP admin.
+          Why: an agency may have more than one administrator account (per the interviews),
+          and both must work identically.
       [ ] Sign out, try to log in with a driver account  → refused ("use the mobile app").
           Why: the web dashboard is admin-only; drivers use the phone app.
       [ ] Signed out, type /dashboard in the address bar  → bounced back to login.
@@ -483,6 +487,9 @@ Testing task (end of phase):
           Why: admin-added drivers don't need approval (FR-06).
       [ ] Sign out, log in as the CHO admin, open Vehicles/Drivers  → you do NOT see the BFP
           records.  Why: agencies can't see each other's data (FR-02) — the key security check.
+      [ ] Log in as the second BFP admin (bfp.admin2@rvms.local), open Vehicles/Drivers  →
+          the SAME BFP records the first BFP admin sees, and you can edit/approve too.
+          Why: multiple admins of one agency share the same records and rights.
 
     License monitoring (no screen yet — check by data):
       [ ] `php artisan tinker` → `$u = App\Models\User::where('role','driver')->first();`
