@@ -77,6 +77,16 @@ class User extends Authenticatable
     }
 
     /**
+     * All vehicles this driver is the primary driver of — a driver may
+     * hold more than one vehicle (Ch4 ERD); each vehicle still has at
+     * most one primary driver.
+     */
+    public function assignedVehicles(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Vehicle::class, 'assigned_driver_id');
+    }
+
+    /**
      * License state against the agency's configurable warning window
      * (FR-08): 'Valid' | 'Expiring Soon' | 'Expired', or null when the
      * account has no license on file.

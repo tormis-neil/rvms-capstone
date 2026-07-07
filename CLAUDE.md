@@ -81,7 +81,10 @@ A few deliberate modeling decisions:
    `active` immediately), or drivers self-register and start `pending` until their agency
    admin approves/rejects them. `users.status` tracks `pending`/`active`/`rejected`. Drivers
    and admins can self-edit their own name/email/password with no approval or notification
-   (FR-04). Agency administrator accounts are provisioned (seeded) only; there is no admin self-registration, and the public registration endpoint is driver-only.
+   (FR-04). Agency administrator accounts are provisioned (seeded) only; there is no admin self-registration, and the public registration endpoint is driver-only. An agency may
+   have MORE THAN ONE administrator account (per the interviews — e.g., logistics and
+   operations officers); the seeder includes a second BFP admin as the sample, and no code
+   may assume a single admin per agency (notifications target ALL of an agency's admins).
 7. **Deliberately excluded (objectives audit, July 2026 — do not add):** no admin-remarks
    columns on vehicle status changes or inspection/damage reviews; no passenger/patient
    fields on dispatches (privacy + outside vehicle-management scope); no agency-info
@@ -419,6 +422,10 @@ Testing task (end of phase):
           Why: login works and the account carries its agency.
       [ ] Sign out, log in as the CHO admin  → the top now shows "City Health Office".
           Why: each admin sees only their OWN agency — the core privacy rule (FR-02).
+      [ ] Sign out, log in as the SECOND BFP admin (bfp.admin2@rvms.local)  → same
+          "Bureau of Fire Protection" context as the first BFP admin.
+          Why: an agency may have more than one administrator account (per the interviews),
+          and both must work identically.
       [ ] Sign out, try to log in with a driver account  → refused ("use the mobile app").
           Why: the web dashboard is admin-only; drivers use the phone app.
       [ ] Signed out, type /dashboard in the address bar  → bounced back to login.
@@ -426,7 +433,7 @@ Testing task (end of phase):
 
     Look at the saved data (optional — `php artisan tinker`, then `exit`):
       [ ] `App\Models\Agency::pluck('code')`  → the 4 codes (BFP, PNP, CDRRMO, CHO).
-      [ ] `App\Models\User::count()`  → 12.
+      [ ] `App\Models\User::count()`  → 13 (5 admins — BFP has two — + 8 drivers).
       [ ] `App\Models\User::first()->password`  → a scrambled `$2y$...` hash (never plain text).
           Why: passwords are stored safely, not readable.
 
@@ -480,6 +487,9 @@ Testing task (end of phase):
           Why: admin-added drivers don't need approval (FR-06).
       [ ] Sign out, log in as the CHO admin, open Vehicles/Drivers  → you do NOT see the BFP
           records.  Why: agencies can't see each other's data (FR-02) — the key security check.
+      [ ] Log in as the second BFP admin (bfp.admin2@rvms.local), open Vehicles/Drivers  →
+          the SAME BFP records the first BFP admin sees, and you can edit/approve too.
+          Why: multiple admins of one agency share the same records and rights.
 
     License monitoring (no screen yet — check by data):
       [ ] `php artisan tinker` → `$u = App\Models\User::where('role','driver')->first();`
