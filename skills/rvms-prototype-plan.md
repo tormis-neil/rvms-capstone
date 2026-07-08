@@ -44,9 +44,9 @@ The development of the Rescue Vehicle Management System will follow a structured
 | Phase | Activities | Schedule |
 |---------|---------|---------|
 | Planning & Data Gathering | Research, interviews, workflow analysis, requirements gathering, Chapters 1–3 preparation | May 2026 |
-| Proposed Prototype Design | UI/UX design, workflow finalization, wireframing, prototype planning | June 2026 |
-| Software Development | Mobile app development, web dashboard development, database implementation, API development, module integration | July – September 2026 |
-| Testing & Deployment | Unit testing, integration testing, user acceptance testing, bug fixing, pilot testing, deployment preparation, Chapters 4–5 completion | October – November 2026 |
+| Prototype Design, Evaluation, and Refinement | UI/UX design, workflow finalization, wireframing, prototype planning, stakeholder evaluation and refinement | June – July 2026 |
+| System Development and Implementation | Mobile app development, web dashboard development, database implementation, API development, module integration | July – September 2026 |
+| Testing & Deployment | Unit testing, integration testing, user acceptance testing, bug fixing, pilot testing, deployment preparation, Chapters 4–5 completion | September – October 2026 |
 
 ---
 
@@ -113,7 +113,7 @@ Purpose:
 
 ## Backend and Full System Stack
 
-The following tools form the backend and full system stack as defined in the capstone manuscript. These will be implemented during the Software Development phase (July–September 2026), not during the prototype phase.
+The following tools form the backend and full system stack as defined in the capstone manuscript. These will be implemented during the System Development and Implementation phase (July–September 2026), not during the prototype phase.
 
 ### Laravel
 **Version:** Laravel 11 (PHP 8.2+)
@@ -161,7 +161,7 @@ Users:
 Users:
 - Agency Administrators
 
-# NOTE: The prototype development will NOT contain any backend-related tasks (Laravel, MySQL, FCM). All data used in the prototype will be sample or static data that simulates real-world tasks and scenarios. Backend implementation will follow the full system stack defined above during the Software Development phase.
+# NOTE: The prototype development will NOT contain any backend-related tasks (Laravel, MySQL, FCM). All data used in the prototype will be sample or static data that simulates real-world tasks and scenarios. Backend implementation will follow the full system stack defined above during the System Development and Implementation phase.
 
 ---
 
