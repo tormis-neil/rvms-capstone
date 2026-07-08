@@ -168,7 +168,7 @@ The functional requirements define the core features and capabilities that the R
 | **FR-04** | Self-Service Profile Management | Allows Authorized Drivers and Agency Administrators to update their own name, email, and password without administrator approval. |
 | **FR-05** | Vehicle Record Management | Enables Agency Administrators to add, update, and view vehicle records, including vehicle type, plate number, make, model, engine number, chassis number, current mileage, assigned agency, and assigned driver. |
 | **FR-06** | Driver Record Management | Enables Agency Administrators to add, update, and view driver records, including name, agency, license number, and license expiry date. |
-| **FR-07** | Assigned Vehicle Viewing | Allows Authorized Drivers to view the complete details and current operational status of their assigned vehicle from the mobile application. |
+| **FR-07** | Assigned Vehicle Viewing | Allows Authorized Drivers to view the complete details and current operational status of the vehicle(s) assigned to them from the mobile application. |
 | **FR-08** | License Expiry Monitoring | Automatically detects driver licenses that are approaching expiry or have expired and alerts the Agency Administrator through a consolidated monitoring view. |
 | **FR-09** | Digital BLOWBAGETS Inspection | Allows Authorized Drivers to submit daily inspections using a standardized digital checklist of twelve items, with two additional items for BFP vehicles, marking each item OK or Has Issue and requiring remarks for flagged items. |
 | **FR-10** | Inspection Monitoring | Allows Agency Administrators to review submitted inspection results, view inspection history per vehicle and per driver, and monitor frequently reported issues. |
