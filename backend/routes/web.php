@@ -1,9 +1,16 @@
 <?php
 
+use App\Http\Controllers\Web\AuthController;
 use Illuminate\Support\Facades\Route;
 
-// R1 Block A preview routes — replaced with real auth routes in Block B.
-Route::get('/login', fn () => view('auth.login'))->name('login');
-Route::get('/dashboard', fn () => view('dashboard'))->name('dashboard');
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
+});
 
-Route::get('/', fn () => redirect()->route('login'));
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::view('/dashboard', 'dashboard')->name('dashboard');
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+});
+
+Route::get('/', fn () => redirect()->route(auth()->check() ? 'dashboard' : 'login'));

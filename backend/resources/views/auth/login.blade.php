@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RVMS - Sign In</title>
-    <link rel="icon" type="image/svg+xml" href="assets/img/rvms-logo.svg">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('assets/img/rvms-logo.svg') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="{{ asset('assets/css/style.css') }}" rel="stylesheet">
     <style>
         .auth-wrapper {
             min-height: 100vh;
@@ -105,29 +105,38 @@
             <h4 class="text-center text-navy fw-bold mb-1">Rescue Vehicle<br>Management System</h4>
             <p class="text-center text-secondary small mb-4">Sign in to your agency admin account</p>
 
-            <!-- Form -->
-            <form action="pages/dashboard.html" method="GET">
+            <!-- Form (wired to the web session login route — R1 Block B) -->
+            <form action="{{ route('login.attempt') }}" method="POST">
+                @csrf
                 <div class="mb-3">
                     <label for="email" class="form-label text-secondary small fw-semibold">Email</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                        <input type="email" class="form-control py-2" id="email" placeholder="admin@agency.gov.ph" required>
+                        <input type="email" name="email" value="{{ old('email') }}" class="form-control py-2" id="email" placeholder="admin@agency.gov.ph" required>
                     </div>
+                    {{-- Validation feedback — documented addition (no error state in the prototype) --}}
+                    @error('email')
+                        <div class="small text-danger mt-1">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="mb-2">
                     <label for="password" class="form-label text-secondary small fw-semibold">Password</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                        <input type="password" class="form-control py-2" id="password" placeholder="Enter your password" required>
+                        <input type="password" name="password" class="form-control py-2" id="password" placeholder="Enter your password" required>
                         <button type="button" class="btn btn-light border" id="togglePassword" tabindex="-1" aria-label="Show password">
                             <i class="bi bi-eye" id="togglePasswordIcon"></i>
                         </button>
                     </div>
+                    @error('password')
+                        <div class="small text-danger mt-1">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="d-flex justify-content-end mb-4">
-                    <a href="#" class="small text-navy text-decoration-none fw-semibold">Forgot password?</a>
+                    {{-- Opens the contact-your-administrator modal (plan R1.5) instead of a dead link --}}
+                    <a href="#" class="small text-navy text-decoration-none fw-semibold" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">Forgot password?</a>
                 </div>
 
                 <button type="submit" class="btn btn-navy w-100 py-2 mb-4">Sign In</button>
@@ -138,36 +147,39 @@
                 </p>
             </form>
 
-            <!-- Prototype demo quick access (agency is bound to the account; this switcher is a demo aid only) -->
-            <div class="demo-divider mb-3">Prototype Demo — View As</div>
-            <div class="row g-2">
-                <div class="col-3">
-                    <a href="pages/dashboard.html?agency=BFP" class="agency-chip w-100">
-                        <i class="bi bi-fire"></i>BFP
-                    </a>
-                </div>
-                <div class="col-3">
-                    <a href="pages/dashboard.html?agency=PNP" class="agency-chip w-100">
-                        <i class="bi bi-shield-shaded"></i>PNP
-                    </a>
-                </div>
-                <div class="col-3">
-                    <a href="pages/dashboard.html?agency=CDRRMO" class="agency-chip w-100">
-                        <i class="bi bi-life-preserver"></i>CDRRMO
-                    </a>
-                </div>
-                <div class="col-3">
-                    <a href="pages/dashboard.html?agency=CHO" class="agency-chip w-100">
-                        <i class="bi bi-heart-pulse"></i>CHO
-                    </a>
-                </div>
-            </div>
-            <p class="text-center text-secondary mt-2 mb-0" style="font-size: 0.7rem;">
-                In the live system, your agency is identified automatically from your account.
-            </p>
+            {{-- The prototype's "Prototype Demo — View As" agency chips are omitted here:
+                 the prototype itself labels them a demo-only aid, and the live system
+                 identifies the agency from the account (documented omission, plan R1.5). --}}
         </div>
     </div>
 
+    <!-- Forgot Password — contact-your-administrator modal (documented addition, plan R1.5) -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light">
+                    <h6 class="modal-title fw-bold"><i class="bi bi-key me-2"></i>Forgot Password</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small mb-2">
+                        Password resets are handled by your system administrator.
+                    </p>
+                    <p class="small text-secondary mb-0">
+                        Please contact your agency's system administrator to have your
+                        password reset. You will receive your new sign-in credentials
+                        directly from them.
+                    </p>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS is required for the modal (the prototype login page had no modal) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const passwordInput = document.getElementById('password');
         const toggleBtn = document.getElementById('togglePassword');

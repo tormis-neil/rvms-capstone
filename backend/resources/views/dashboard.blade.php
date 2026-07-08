@@ -1,5 +1,8 @@
 @extends('layouts.app')
 
+{{-- R1 ships the dashboard SHELL (chrome) only. The content below is the
+     prototype's static demo data, left verbatim on purpose — it goes live
+     with real counts in Phase R8 (FR-19). --}}
 @section('content')
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h3 class="fw-bold mb-0" style="color: var(--primary);">Fleet Overview</h3>
