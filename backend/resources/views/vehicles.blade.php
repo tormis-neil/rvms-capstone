@@ -1,0 +1,473 @@
+@extends('layouts.app')
+
+@section('title', 'RVMS - Vehicles')
+
+@section('content')
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h3 class="fw-bold mb-0" style="color: var(--primary);">Vehicle Management</h3>
+                        <p class="text-secondary mb-0">Manage agency rescue vehicles</p>
+                    </div>
+                    <button class="btn btn-navy text-white fw-medium px-4 py-2 bg-navy rounded-3" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
+                        <i class="bi bi-plus-lg me-2"></i>Add Vehicle
+                    </button>
+                </div>
+
+                <!-- Filters -->
+                <div class="card border-0 shadow-sm rounded-3 mb-4">
+                    <div class="card-body p-3">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" placeholder="Search plate no, make, model...">
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select">
+                                    <option value="">All Types</option>
+                                    <option value="Fire Truck">Fire Truck</option>
+                                    <option value="Rescue Van">Rescue Van</option>
+                                    <option value="Water Tanker">Water Tanker</option>
+                                    <option value="Service Vehicle">Service Vehicle</option>
+                                    <option value="Ambulance">Ambulance</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select">
+                                    <option value="">All Statuses</option>
+                                    <option value="Operational">Operational</option>
+                                    <option value="Dispatched">Dispatched</option>
+                                    <option value="Under PM">Under Preventive Maintenance</option>
+                                    <option value="Not Operational">Not Operational</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-outline-secondary w-100">Filter</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vehicle Table -->
+                <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="py-3 text-secondary fw-semibold small">PLATE NO.</th>
+                                    <th class="py-3 text-secondary fw-semibold small">VEHICLE DETAILS</th>
+                                    <th class="py-3 text-secondary fw-semibold small">ASSIGNED DRIVER</th>
+                                    <th class="py-3 text-secondary fw-semibold small">MILEAGE</th>
+                                    <th class="py-3 text-secondary fw-semibold small">STATUS</th>
+                                    <th class="py-3 text-secondary fw-semibold small text-end">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rows-vehicles">
+                                <tr data-plate="ABC-1234" data-type="Fire Truck" data-makemodel="Isuzu FTR 850" data-driver="Juan Dela Cruz" data-mileage="45,230 km" data-status="Operational" data-badge="badge-operational" data-engine="4HK1-TC-587234" data-chassis="JALC4W14697100345">
+                                    <td class="fw-bold">ABC-1234</td>
+                                    <td>
+                                        <div class="fw-semibold">Fire Truck</div>
+                                        <div class="small text-secondary">Isuzu FTR 850</div>
+                                    </td>
+                                    <td>Juan Dela Cruz</td>
+                                    <td>45,230 km</td>
+                                    <td>
+                                        <span class="badge badge-operational px-3 py-2 rounded-pill">Operational</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                    </td>
+                                </tr>
+                                <tr data-plate="BCD-2310" data-type="Fire Truck" data-makemodel="Hino 500" data-driver="Ricardo Bautista" data-mileage="38,420 km" data-status="Dispatched" data-badge="badge-dispatched" data-engine="J08E-WD-441203" data-chassis="JHDFG8JL5GX128466">
+                                    <td class="fw-bold">BCD-2310</td>
+                                    <td>
+                                        <div class="fw-semibold">Fire Truck</div>
+                                        <div class="small text-secondary">Hino 500</div>
+                                    </td>
+                                    <td>Ricardo Bautista</td>
+                                    <td>38,420 km</td>
+                                    <td>
+                                        <span class="badge badge-dispatched px-3 py-2 rounded-pill">Dispatched</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                    </td>
+                                </tr>
+                                <tr data-plate="CDE-3421" data-type="Rescue Van" data-makemodel="Toyota Hiace" data-driver="Allan Reyes" data-mileage="51,780 km" data-status="Operational" data-badge="badge-operational" data-engine="2KD-7896543" data-chassis="JTFSS22P5G0123456">
+                                    <td class="fw-bold">CDE-3421</td>
+                                    <td>
+                                        <div class="fw-semibold">Rescue Van</div>
+                                        <div class="small text-secondary">Toyota Hiace</div>
+                                    </td>
+                                    <td>Allan Reyes</td>
+                                    <td>51,780 km</td>
+                                    <td>
+                                        <span class="badge badge-operational px-3 py-2 rounded-pill">Operational</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                    </td>
+                                </tr>
+                                <tr data-plate="EFG-4532" data-type="Water Tanker" data-makemodel="Isuzu FVR" data-driver="Carlos Mendoza" data-mileage="81,650 km" data-status="Under PM" data-badge="badge-pm" data-engine="6HK1-XS-778812" data-chassis="JALFVR34LC7000891">
+                                    <td class="fw-bold">EFG-4532</td>
+                                    <td>
+                                        <div class="fw-semibold">Water Tanker</div>
+                                        <div class="small text-secondary">Isuzu FVR</div>
+                                    </td>
+                                    <td>Carlos Mendoza</td>
+                                    <td>81,650 km</td>
+                                    <td>
+                                        <span class="badge status-badge badge-pm px-3 py-2 rounded-pill">Under Preventive Maintenance</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                    </td>
+                                </tr>
+                                <tr data-plate="FGH-5643" data-type="Service Vehicle" data-makemodel="Mitsubishi L300" data-driver="Ramon Cruz" data-mileage="96,300 km" data-status="Not Operational" data-badge="badge-not-operational" data-engine="4D56-CC-884109" data-chassis="MMBJNKA40CD034567">
+                                    <td class="fw-bold">FGH-5643</td>
+                                    <td>
+                                        <div class="fw-semibold">Service Vehicle</div>
+                                        <div class="small text-secondary">Mitsubishi L300</div>
+                                    </td>
+                                    <td>Ramon Cruz</td>
+                                    <td>96,300 km</td>
+                                    <td>
+                                        <span class="badge badge-not-operational px-3 py-2 rounded-pill">Not Operational</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                    </td>
+                                </tr>
+                                <tr data-plate="GHI-6754" data-type="Ambulance" data-makemodel="Nissan Urvan" data-driver="Felipe Ramos" data-mileage="64,120 km" data-status="Operational" data-badge="badge-operational" data-engine="ZD30-DD-445566" data-chassis="JN1TG4E25Z0067432">
+                                    <td class="fw-bold">GHI-6754</td>
+                                    <td>
+                                        <div class="fw-semibold">Ambulance</div>
+                                        <div class="small text-secondary">Nissan Urvan</div>
+                                    </td>
+                                    <td>Felipe Ramos</td>
+                                    <td>64,120 km</td>
+                                    <td>
+                                        <span class="badge badge-operational px-3 py-2 rounded-pill">Operational</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer bg-white border-top py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small text-secondary js-vehicle-count">Showing 1 to 6 of 6 vehicles</span>
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                                <li class="page-item active"><a class="page-link bg-navy border-0" href="#">1</a></li>
+                                <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+@endsection
+
+@section('modals')
+    <!-- Add Vehicle Modal -->
+    <div class="modal fade" id="addVehicleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-navy text-white">
+                    <h5 class="modal-title fw-bold">Register New Vehicle</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Plate Number</label>
+                                <input type="text" class="form-control" placeholder="e.g. ABC-1234">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Vehicle Type</label>
+                                <select class="form-select">
+                                    <option>Fire Truck</option>
+                                    <option>Rescue Van</option>
+                                    <option>Water Tanker</option>
+                                    <option>Service Vehicle</option>
+                                    <option>Ambulance</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Make/Brand</label>
+                                <input type="text" class="form-control" placeholder="e.g. Isuzu">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Model</label>
+                                <input type="text" class="form-control" placeholder="e.g. FTR 850">
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Chassis Number</label>
+                                <input type="text" class="form-control" placeholder="Chassis No.">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Engine Number</label>
+                                <input type="text" class="form-control" placeholder="Engine No.">
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Current Mileage (km)</label>
+                                <input type="number" class="form-control" value="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Assigned Driver</label>
+                                <select class="form-select js-driver-options" data-keep-first="true">
+                                    <option>Unassigned</option>
+                                    <option>Juan Dela Cruz</option>
+                                    <option>Ricardo Bautista</option>
+                                    <option>Allan Reyes</option>
+                                    <option>Carlos Mendoza</option>
+                                    <option>Ramon Cruz</option>
+                                    <option>Felipe Ramos</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-navy bg-navy text-white" data-bs-dismiss="modal">Register Vehicle</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Vehicle Modal -->
+    <div class="modal fade" id="editVehicleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-navy text-white">
+                    <h5 class="modal-title fw-bold">Edit Vehicle Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Plate Number</label>
+                                <input type="text" class="form-control" id="evPlate" value="ABC-1234">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Vehicle Type</label>
+                                <select class="form-select">
+                                    <option selected>Fire Truck</option>
+                                    <option>Rescue Van</option>
+                                    <option>Water Tanker</option>
+                                    <option>Service Vehicle</option>
+                                    <option>Ambulance</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Make/Brand</label>
+                                <input type="text" class="form-control" value="Isuzu">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Model</label>
+                                <input type="text" class="form-control" value="FTR 850">
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Engine Number</label>
+                                <input type="text" class="form-control" id="evEngine" value="4HK1-TC-587234">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Chassis Number</label>
+                                <input type="text" class="form-control" id="evChassis" value="JALC4W14697100345">
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Current Mileage (km)</label>
+                                <input type="number" class="form-control" id="evMileage" value="45230">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Assigned Driver</label>
+                                <select class="form-select js-driver-options" data-keep-first="true">
+                                    <option>Unassigned</option>
+                                    <option selected>Juan Dela Cruz</option>
+                                    <option>Ricardo Bautista</option>
+                                    <option>Allan Reyes</option>
+                                    <option>Carlos Mendoza</option>
+                                    <option>Ramon Cruz</option>
+                                    <option>Felipe Ramos</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-navy bg-navy text-white" data-bs-dismiss="modal">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Vehicle Modal -->
+    <div class="modal fade" id="viewVehicleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold">Vehicle Information</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="text-center mb-4">
+                        <div class="bg-light rounded d-inline-flex p-4 mb-2">
+                            <i class="bi bi-truck fs-1 text-secondary"></i>
+                        </div>
+                        <h4 class="fw-bold mb-1" id="vvPlate">ABC-1234</h4>
+                        <span class="badge badge-operational px-3 py-1 rounded-pill" id="vvStatus">Operational</span>
+                    </div>
+                    
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <span class="text-secondary small fw-semibold">Vehicle Type</span>
+                            <span class="fw-medium" id="vvType">Fire Truck</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <span class="text-secondary small fw-semibold">Make & Model</span>
+                            <span class="fw-medium" id="vvMakeModel">Isuzu FTR 850</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <span class="text-secondary small fw-semibold">Assigned Driver</span>
+                            <span class="fw-medium" id="vvDriver">Juan Dela Cruz</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <span class="text-secondary small fw-semibold">Current Mileage</span>
+                            <span class="fw-medium" id="vvMileage">45,230 km</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <span class="text-secondary small fw-semibold">Engine No.</span>
+                            <span class="fw-medium text-uppercase" id="vvEngine">4HK1-TC-587234</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <span class="text-secondary small fw-semibold">Chassis No.</span>
+                            <span class="fw-medium text-uppercase" id="vvChassis">JALC4W14697100345</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Vehicle Status Modal -->
+    <div class="modal fade" id="updateStatusModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-navy text-white">
+                    <h5 class="modal-title fw-bold">Update Vehicle Status</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-4">
+                        <div>
+                            <div class="fw-bold" id="usVehicle">ABC-1234 (Fire Truck)</div>
+                            <div class="small text-secondary" id="usDriver">Juan Dela Cruz</div>
+                        </div>
+                        <span class="badge badge-operational px-3 py-2 rounded-pill" id="usStatus">Operational</span>
+                    </div>
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">New Operational Status</label>
+                            <select class="form-select">
+                                <option>Operational</option>
+                                <option>Not Operational</option>
+                                <option>Under Preventive Maintenance</option>
+                            </select>
+                            <div class="form-text">Dispatched status is set automatically by the Dispatch module and cannot be assigned here.</div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold">Remarks (Optional)</label>
+                            <textarea class="form-control" rows="2" placeholder="Reason for the status change..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn bg-navy text-white" data-bs-dismiss="modal">Update Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section('scripts')
+    <script>
+        // Populate modals from the clicked row's data attributes
+        const badgeClasses = ['badge-operational', 'badge-dispatched', 'badge-pm', 'badge-not-operational'];
+        // Full status label — matches the driver mobile app wording.
+        const STATUS_DISPLAY = { 'Under PM': 'Under Preventive Maintenance' };
+        const showStatus = s => STATUS_DISPLAY[s] || s;
+
+        function rowData(event) {
+            const row = event.relatedTarget && event.relatedTarget.closest('tr');
+            return row ? row.dataset : null;
+        }
+
+        document.getElementById('viewVehicleModal').addEventListener('show.bs.modal', event => {
+            const d = rowData(event);
+            if (!d) return;
+            document.getElementById('vvPlate').textContent = d.plate;
+            document.getElementById('vvType').textContent = d.type;
+            document.getElementById('vvMakeModel').textContent = d.makemodel;
+            document.getElementById('vvDriver').textContent = d.driver;
+            document.getElementById('vvMileage').textContent = d.mileage;
+            document.getElementById('vvEngine').textContent = d.engine;
+            document.getElementById('vvChassis').textContent = d.chassis;
+            const badge = document.getElementById('vvStatus');
+            badge.classList.remove(...badgeClasses);
+            badge.classList.add('status-badge', d.badge);
+            badge.textContent = showStatus(d.status);
+        });
+
+        document.getElementById('editVehicleModal').addEventListener('show.bs.modal', event => {
+            const d = rowData(event);
+            if (!d) return;
+            document.getElementById('evPlate').value = d.plate;
+            document.getElementById('evEngine').value = d.engine;
+            document.getElementById('evChassis').value = d.chassis;
+            document.getElementById('evMileage').value = d.mileage.replace(/[^0-9]/g, '');
+        });
+
+        document.getElementById('updateStatusModal').addEventListener('show.bs.modal', event => {
+            const d = rowData(event);
+            if (!d) return;
+            document.getElementById('usVehicle').textContent = d.plate + ' (' + d.type + ')';
+            document.getElementById('usDriver').textContent = d.driver;
+            const badge = document.getElementById('usStatus');
+            badge.classList.remove(...badgeClasses);
+            badge.classList.add('status-badge', d.badge);
+            badge.textContent = showStatus(d.status);
+        });
+    </script>
+@endsection

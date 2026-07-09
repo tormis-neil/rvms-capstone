@@ -115,7 +115,9 @@
         </main>
     </div>
 
+@yield('modals')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+@yield('scripts')
     {{-- The prototype's agency.js demo-data layer is omitted: the chrome above renders
          the logged-in admin's real agency from the database (documented omission). --}}
 </body>

@@ -10,6 +10,8 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::view('/dashboard', 'dashboard')->name('dashboard');
+    // R2 Block A preview — replaced with the real controller route in Block B.
+    Route::view('/vehicles', 'vehicles')->name('vehicles');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
