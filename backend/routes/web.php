@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Web\AuthController;
+use App\Http\Controllers\Web\VehicleController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -10,8 +11,13 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::view('/dashboard', 'dashboard')->name('dashboard');
-    // R2 Block A preview — replaced with the real controller route in Block B.
-    Route::view('/vehicles', 'vehicles')->name('vehicles');
+
+    // Vehicles (FR-05, FR-18)
+    Route::get('/vehicles', [VehicleController::class, 'index'])->name('vehicles');
+    Route::post('/vehicles', [VehicleController::class, 'store'])->name('vehicles.store');
+    Route::put('/vehicles/{vehicle}', [VehicleController::class, 'update'])->name('vehicles.update');
+    Route::patch('/vehicles/{vehicle}/status', [VehicleController::class, 'updateStatus'])->name('vehicles.status');
+
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 

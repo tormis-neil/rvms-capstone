@@ -13,36 +13,55 @@
                     </button>
                 </div>
 
-                <!-- Filters -->
+                {{-- Success/error feedback banners — documented addition (the prototype has no alert state) --}}
+                @if (session('status'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ session('status') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+                @if ($errors->any())
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <ul class="mb-0 small">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+
+                <!-- Filters (live server-side search/type/status) -->
                 <div class="card border-0 shadow-sm rounded-3 mb-4">
                     <div class="card-body p-3">
+                        <form method="GET" action="{{ route('vehicles') }}">
                         <div class="row g-3">
                             <div class="col-md-4">
-                                <input type="text" class="form-control" placeholder="Search plate no, make, model...">
+                                <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Search plate no, make, model...">
                             </div>
                             <div class="col-md-3">
-                                <select class="form-select">
+                                <select class="form-select" name="type">
                                     <option value="">All Types</option>
-                                    <option value="Fire Truck">Fire Truck</option>
-                                    <option value="Rescue Van">Rescue Van</option>
-                                    <option value="Water Tanker">Water Tanker</option>
-                                    <option value="Service Vehicle">Service Vehicle</option>
-                                    <option value="Ambulance">Ambulance</option>
+                                    {{-- Type options are live data — the prototype listed its 5 demo types --}}
+                                    @foreach ($types as $type)
+                                    <option value="{{ $type }}" @selected(request('type') === $type)>{{ $type }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <select class="form-select">
+                                <select class="form-select" name="status">
                                     <option value="">All Statuses</option>
-                                    <option value="Operational">Operational</option>
-                                    <option value="Dispatched">Dispatched</option>
-                                    <option value="Under PM">Under Preventive Maintenance</option>
-                                    <option value="Not Operational">Not Operational</option>
+                                    <option value="Operational" @selected(request('status') === 'Operational')>Operational</option>
+                                    <option value="Dispatched" @selected(request('status') === 'Dispatched')>Dispatched</option>
+                                    <option value="Under Preventive Maintenance" @selected(request('status') === 'Under Preventive Maintenance')>Under Preventive Maintenance</option>
+                                    <option value="Not Operational" @selected(request('status') === 'Not Operational')>Not Operational</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
                                 <button class="btn btn-outline-secondary w-100">Filter</button>
                             </div>
                         </div>
+                        </form>
                     </div>
                 </div>
 
@@ -61,16 +80,30 @@
                                 </tr>
                             </thead>
                             <tbody id="rows-vehicles">
-                                <tr data-plate="ABC-1234" data-type="Fire Truck" data-makemodel="Isuzu FTR 850" data-driver="Juan Dela Cruz" data-mileage="45,230 km" data-status="Operational" data-badge="badge-operational" data-engine="4HK1-TC-587234" data-chassis="JALC4W14697100345">
-                                    <td class="fw-bold">ABC-1234</td>
+                                {{-- Live rows — same markup the prototype's demo JS painted per row --}}
+                                @forelse ($vehicles as $vehicle)
+                                <tr data-id="{{ $vehicle->id }}"
+                                    data-plate="{{ $vehicle->plate_number }}"
+                                    data-type="{{ $vehicle->type }}"
+                                    data-make="{{ $vehicle->make }}"
+                                    data-model="{{ $vehicle->model }}"
+                                    data-makemodel="{{ $vehicle->make }} {{ $vehicle->model }}"
+                                    data-driver="{{ $vehicle->assignedDriver->name ?? 'Unassigned' }}"
+                                    data-driver-id="{{ $vehicle->assigned_driver_id }}"
+                                    data-mileage="{{ $vehicle->mileageLabel() }}"
+                                    data-status="{{ $vehicle->status }}"
+                                    data-badge="{{ $vehicle->badgeClass() }}"
+                                    data-engine="{{ $vehicle->engine_number }}"
+                                    data-chassis="{{ $vehicle->chassis_number }}">
+                                    <td class="fw-bold">{{ $vehicle->plate_number }}</td>
                                     <td>
-                                        <div class="fw-semibold">Fire Truck</div>
-                                        <div class="small text-secondary">Isuzu FTR 850</div>
+                                        <div class="fw-semibold">{{ $vehicle->type }}</div>
+                                        <div class="small text-secondary">{{ $vehicle->make }} {{ $vehicle->model }}</div>
                                     </td>
-                                    <td>Juan Dela Cruz</td>
-                                    <td>45,230 km</td>
+                                    <td>{{ $vehicle->assignedDriver->name ?? 'Unassigned' }}</td>
+                                    <td>{{ $vehicle->mileageLabel() }}</td>
                                     <td>
-                                        <span class="badge badge-operational px-3 py-2 rounded-pill">Operational</span>
+                                        <span class="badge status-badge {{ $vehicle->badgeClass() }} px-3 py-2 rounded-pill">{{ $vehicle->status }}</span>
                                     </td>
                                     <td class="text-end">
                                         <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
@@ -78,104 +111,15 @@
                                         <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
                                     </td>
                                 </tr>
-                                <tr data-plate="BCD-2310" data-type="Fire Truck" data-makemodel="Hino 500" data-driver="Ricardo Bautista" data-mileage="38,420 km" data-status="Dispatched" data-badge="badge-dispatched" data-engine="J08E-WD-441203" data-chassis="JHDFG8JL5GX128466">
-                                    <td class="fw-bold">BCD-2310</td>
-                                    <td>
-                                        <div class="fw-semibold">Fire Truck</div>
-                                        <div class="small text-secondary">Hino 500</div>
-                                    </td>
-                                    <td>Ricardo Bautista</td>
-                                    <td>38,420 km</td>
-                                    <td>
-                                        <span class="badge badge-dispatched px-3 py-2 rounded-pill">Dispatched</span>
-                                    </td>
-                                    <td class="text-end">
-                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
-                                    </td>
+                                @empty
+                                <tr>
+                                    <td colspan="6" class="text-center text-secondary py-4">No vehicles found.</td>
                                 </tr>
-                                <tr data-plate="CDE-3421" data-type="Rescue Van" data-makemodel="Toyota Hiace" data-driver="Allan Reyes" data-mileage="51,780 km" data-status="Operational" data-badge="badge-operational" data-engine="2KD-7896543" data-chassis="JTFSS22P5G0123456">
-                                    <td class="fw-bold">CDE-3421</td>
-                                    <td>
-                                        <div class="fw-semibold">Rescue Van</div>
-                                        <div class="small text-secondary">Toyota Hiace</div>
-                                    </td>
-                                    <td>Allan Reyes</td>
-                                    <td>51,780 km</td>
-                                    <td>
-                                        <span class="badge badge-operational px-3 py-2 rounded-pill">Operational</span>
-                                    </td>
-                                    <td class="text-end">
-                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
-                                    </td>
-                                </tr>
-                                <tr data-plate="EFG-4532" data-type="Water Tanker" data-makemodel="Isuzu FVR" data-driver="Carlos Mendoza" data-mileage="81,650 km" data-status="Under PM" data-badge="badge-pm" data-engine="6HK1-XS-778812" data-chassis="JALFVR34LC7000891">
-                                    <td class="fw-bold">EFG-4532</td>
-                                    <td>
-                                        <div class="fw-semibold">Water Tanker</div>
-                                        <div class="small text-secondary">Isuzu FVR</div>
-                                    </td>
-                                    <td>Carlos Mendoza</td>
-                                    <td>81,650 km</td>
-                                    <td>
-                                        <span class="badge status-badge badge-pm px-3 py-2 rounded-pill">Under Preventive Maintenance</span>
-                                    </td>
-                                    <td class="text-end">
-                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
-                                    </td>
-                                </tr>
-                                <tr data-plate="FGH-5643" data-type="Service Vehicle" data-makemodel="Mitsubishi L300" data-driver="Ramon Cruz" data-mileage="96,300 km" data-status="Not Operational" data-badge="badge-not-operational" data-engine="4D56-CC-884109" data-chassis="MMBJNKA40CD034567">
-                                    <td class="fw-bold">FGH-5643</td>
-                                    <td>
-                                        <div class="fw-semibold">Service Vehicle</div>
-                                        <div class="small text-secondary">Mitsubishi L300</div>
-                                    </td>
-                                    <td>Ramon Cruz</td>
-                                    <td>96,300 km</td>
-                                    <td>
-                                        <span class="badge badge-not-operational px-3 py-2 rounded-pill">Not Operational</span>
-                                    </td>
-                                    <td class="text-end">
-                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
-                                    </td>
-                                </tr>
-                                <tr data-plate="GHI-6754" data-type="Ambulance" data-makemodel="Nissan Urvan" data-driver="Felipe Ramos" data-mileage="64,120 km" data-status="Operational" data-badge="badge-operational" data-engine="ZD30-DD-445566" data-chassis="JN1TG4E25Z0067432">
-                                    <td class="fw-bold">GHI-6754</td>
-                                    <td>
-                                        <div class="fw-semibold">Ambulance</div>
-                                        <div class="small text-secondary">Nissan Urvan</div>
-                                    </td>
-                                    <td>Felipe Ramos</td>
-                                    <td>64,120 km</td>
-                                    <td>
-                                        <span class="badge badge-operational px-3 py-2 rounded-pill">Operational</span>
-                                    </td>
-                                    <td class="text-end">
-                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
-                                    </td>
-                                </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
-                    <div class="card-footer bg-white border-top py-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="small text-secondary js-vehicle-count">Showing 1 to 6 of 6 vehicles</span>
-                            <ul class="pagination pagination-sm mb-0">
-                                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-                                <li class="page-item active"><a class="page-link bg-navy border-0" href="#">1</a></li>
-                                <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
-                            </ul>
-                        </div>
-                    </div>
+                    @include('partials.table-footer', ['paginator' => $vehicles, 'label' => 'vehicles'])
                 </div>
 
 @endsection
@@ -189,68 +133,67 @@
                     <h5 class="modal-title fw-bold">Register New Vehicle</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
+                {{-- Live form — posts to vehicles.store (FR-05) --}}
+                <form method="POST" action="{{ route('vehicles.store') }}">
+                @csrf
                 <div class="modal-body p-4">
-                    <form>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Plate Number</label>
-                                <input type="text" class="form-control" placeholder="e.g. ABC-1234">
+                                <input type="text" name="plate_number" value="{{ old('plate_number') }}" class="form-control" placeholder="e.g. ABC-1234" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Vehicle Type</label>
-                                <select class="form-select">
-                                    <option>Fire Truck</option>
-                                    <option>Rescue Van</option>
-                                    <option>Water Tanker</option>
-                                    <option>Service Vehicle</option>
-                                    <option>Ambulance</option>
+                                <select class="form-select" name="type">
+                                    {{-- Prototype's 5 demo types + any type already in the agency's fleet --}}
+                                    @foreach ($types as $type)
+                                    <option @selected(old('type') === $type)>{{ $type }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Make/Brand</label>
-                                <input type="text" class="form-control" placeholder="e.g. Isuzu">
+                                <input type="text" name="make" value="{{ old('make') }}" class="form-control" placeholder="e.g. Isuzu" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Model</label>
-                                <input type="text" class="form-control" placeholder="e.g. FTR 850">
+                                <input type="text" name="model" value="{{ old('model') }}" class="form-control" placeholder="e.g. FTR 850" required>
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Chassis Number</label>
-                                <input type="text" class="form-control" placeholder="Chassis No.">
+                                <input type="text" name="chassis_number" value="{{ old('chassis_number') }}" class="form-control" placeholder="Chassis No.">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Engine Number</label>
-                                <input type="text" class="form-control" placeholder="Engine No.">
+                                <input type="text" name="engine_number" value="{{ old('engine_number') }}" class="form-control" placeholder="Engine No.">
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Current Mileage (km)</label>
-                                <input type="number" class="form-control" value="0">
+                                <input type="number" name="current_mileage" class="form-control" value="{{ old('current_mileage', 0) }}" min="0" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Assigned Driver</label>
-                                <select class="form-select js-driver-options" data-keep-first="true">
-                                    <option>Unassigned</option>
-                                    <option>Juan Dela Cruz</option>
-                                    <option>Ricardo Bautista</option>
-                                    <option>Allan Reyes</option>
-                                    <option>Carlos Mendoza</option>
-                                    <option>Ramon Cruz</option>
-                                    <option>Felipe Ramos</option>
+                                <select class="form-select" name="assigned_driver_id">
+                                    <option value="">Unassigned</option>
+                                    {{-- Live driver options — the agency's active drivers --}}
+                                    @foreach ($drivers as $driver)
+                                    <option value="{{ $driver->id }}" @selected(old('assigned_driver_id') == $driver->id)>{{ $driver->name }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
-                    </form>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-navy bg-navy text-white" data-bs-dismiss="modal">Register Vehicle</button>
+                    <button type="submit" class="btn btn-navy bg-navy text-white">Register Vehicle</button>
                 </div>
+                </form>
             </div>
         </div>
     </div>
@@ -263,68 +206,66 @@
                     <h5 class="modal-title fw-bold">Edit Vehicle Details</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
+                {{-- Live form — action is set per-row by the page script (vehicles.update) --}}
+                <form method="POST" id="editVehicleForm" action="#">
+                @csrf
+                @method('PUT')
                 <div class="modal-body p-4">
-                    <form>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Plate Number</label>
-                                <input type="text" class="form-control" id="evPlate" value="ABC-1234">
+                                <input type="text" name="plate_number" class="form-control" id="evPlate" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Vehicle Type</label>
-                                <select class="form-select">
-                                    <option selected>Fire Truck</option>
-                                    <option>Rescue Van</option>
-                                    <option>Water Tanker</option>
-                                    <option>Service Vehicle</option>
-                                    <option>Ambulance</option>
+                                <select class="form-select" name="type" id="evType">
+                                    @foreach ($types as $type)
+                                    <option>{{ $type }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Make/Brand</label>
-                                <input type="text" class="form-control" value="Isuzu">
+                                <input type="text" name="make" class="form-control" id="evMake" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Model</label>
-                                <input type="text" class="form-control" value="FTR 850">
+                                <input type="text" name="model" class="form-control" id="evModel" required>
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Engine Number</label>
-                                <input type="text" class="form-control" id="evEngine" value="4HK1-TC-587234">
+                                <input type="text" name="engine_number" class="form-control" id="evEngine">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Chassis Number</label>
-                                <input type="text" class="form-control" id="evChassis" value="JALC4W14697100345">
+                                <input type="text" name="chassis_number" class="form-control" id="evChassis">
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Current Mileage (km)</label>
-                                <input type="number" class="form-control" id="evMileage" value="45230">
+                                <input type="number" name="current_mileage" class="form-control" id="evMileage" min="0" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Assigned Driver</label>
-                                <select class="form-select js-driver-options" data-keep-first="true">
-                                    <option>Unassigned</option>
-                                    <option selected>Juan Dela Cruz</option>
-                                    <option>Ricardo Bautista</option>
-                                    <option>Allan Reyes</option>
-                                    <option>Carlos Mendoza</option>
-                                    <option>Ramon Cruz</option>
-                                    <option>Felipe Ramos</option>
+                                <select class="form-select" name="assigned_driver_id" id="evDriver">
+                                    <option value="">Unassigned</option>
+                                    @foreach ($drivers as $driver)
+                                    <option value="{{ $driver->id }}">{{ $driver->name }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
-                    </form>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-navy bg-navy text-white" data-bs-dismiss="modal">Save Changes</button>
+                    <button type="submit" class="btn btn-navy bg-navy text-white">Save Changes</button>
                 </div>
+                </form>
             </div>
         </div>
     </div>
@@ -388,6 +329,10 @@
                     <h5 class="modal-title fw-bold">Update Vehicle Status</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
+                {{-- Live form — action is set per-row by the page script (vehicles.status, FR-18) --}}
+                <form method="POST" id="updateStatusForm" action="#">
+                @csrf
+                @method('PATCH')
                 <div class="modal-body p-4">
                     <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-4">
                         <div>
@@ -396,26 +341,24 @@
                         </div>
                         <span class="badge badge-operational px-3 py-2 rounded-pill" id="usStatus">Operational</span>
                     </div>
-                    <form>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">New Operational Status</label>
-                            <select class="form-select">
+                            <select class="form-select" name="status">
                                 <option>Operational</option>
                                 <option>Not Operational</option>
                                 <option>Under Preventive Maintenance</option>
                             </select>
                             <div class="form-text">Dispatched status is set automatically by the Dispatch module and cannot be assigned here.</div>
                         </div>
-                        <div class="mb-2">
-                            <label class="form-label fw-semibold">Remarks (Optional)</label>
-                            <textarea class="form-control" rows="2" placeholder="Reason for the status change..."></textarea>
-                        </div>
-                    </form>
+                        {{-- The prototype's "Remarks (Optional)" textarea is omitted: the approved
+                             schema deliberately excludes admin-remarks columns on vehicle status
+                             changes (design decision 7 — documented omission). --}}
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn bg-navy text-white" data-bs-dismiss="modal">Update Status</button>
+                    <button type="submit" class="btn bg-navy text-white">Update Status</button>
                 </div>
+                </form>
             </div>
         </div>
     </div>
@@ -450,20 +393,32 @@
             badge.textContent = showStatus(d.status);
         });
 
+        // Live wiring: per-row form action URLs (vehicles.update / vehicles.status)
+        const editActionTemplate = @json(route('vehicles.update', ['vehicle' => '__ID__']));
+        const statusActionTemplate = @json(route('vehicles.status', ['vehicle' => '__ID__']));
+
         document.getElementById('editVehicleModal').addEventListener('show.bs.modal', event => {
             const d = rowData(event);
             if (!d) return;
+            document.getElementById('editVehicleForm').action = editActionTemplate.replace('__ID__', d.id);
             document.getElementById('evPlate').value = d.plate;
+            document.getElementById('evType').value = d.type;
+            document.getElementById('evMake').value = d.make;
+            document.getElementById('evModel').value = d.model;
             document.getElementById('evEngine').value = d.engine;
             document.getElementById('evChassis').value = d.chassis;
             document.getElementById('evMileage').value = d.mileage.replace(/[^0-9]/g, '');
+            document.getElementById('evDriver').value = d.driverId || '';
         });
 
         document.getElementById('updateStatusModal').addEventListener('show.bs.modal', event => {
             const d = rowData(event);
             if (!d) return;
+            document.getElementById('updateStatusForm').action = statusActionTemplate.replace('__ID__', d.id);
             document.getElementById('usVehicle').textContent = d.plate + ' (' + d.type + ')';
             document.getElementById('usDriver').textContent = d.driver;
+            const statusSelect = document.querySelector('#updateStatusForm select[name=status]');
+            if (d.status !== 'Dispatched') statusSelect.value = d.status;
             const badge = document.getElementById('usStatus');
             badge.classList.remove(...badgeClasses);
             badge.classList.add('status-badge', d.badge);

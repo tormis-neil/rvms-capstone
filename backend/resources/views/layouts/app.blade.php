@@ -49,7 +49,7 @@
                 </a>
 
                 <div class="px-4 pt-3 pb-2 small text-white-50 text-uppercase fw-semibold">Fleets</div>
-                <a href="#" class="nav-item" title="Available in a later phase (R2)">
+                <a href="{{ route('vehicles') }}" class="nav-item {{ request()->routeIs('vehicles') ? 'active' : '' }}">
                     <i class="bi bi-truck"></i> Vehicles
                 </a>
                 <a href="#" class="nav-item" title="Available in a later phase (R2)">
