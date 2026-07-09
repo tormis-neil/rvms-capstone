@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -69,6 +70,12 @@ class User extends Authenticatable
         return $this->belongsTo(Agency::class);
     }
 
+    /** Vehicle(s) this driver is the primary driver of — may be more than one. */
+    public function vehicles(): HasMany
+    {
+        return $this->hasMany(Vehicle::class, 'assigned_driver_id');
+    }
+
     /** Only driver accounts. */
     public function scopeDrivers(Builder $query): Builder
     {
@@ -88,5 +95,30 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === self::STATUS_ACTIVE;
+    }
+
+    /**
+     * License status against the driver's agency configurable threshold
+     * (FR-08): Expired / Expiring Soon / Valid. Null when no license on file.
+     */
+    public function licenseStatus(): ?string
+    {
+        if ($this->license_expiry_date === null) {
+            return null;
+        }
+
+        $today = Carbon::today();
+
+        if ($this->license_expiry_date->lt($today)) {
+            return 'Expired';
+        }
+
+        $warningDays = $this->agency?->license_expiry_warning_days ?? 30;
+
+        if ($this->license_expiry_date->lte($today->copy()->addDays($warningDays))) {
+            return 'Expiring Soon';
+        }
+
+        return 'Valid';
     }
 }
