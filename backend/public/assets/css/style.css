@@ -1,0 +1,301 @@
+:root {
+    /* Primary Brand Colors */
+    --primary: #1B2F72;
+    --primary-dark: #0E1C4A;
+    --primary-light: #2A429A;
+    --accent: #D4A017;
+    --accent-light: #E8BA3C;
+
+    /* Vehicle Status Colors */
+    --status-operational: #16A34A;
+    --status-dispatched: #2563EB;
+    --status-not-operational: #DC2626;
+    --status-under-pm: #D97706;
+
+    /* Neutral Colors */
+    --bg: #F5F7FA;
+    --surface: #FFFFFF;
+    --border: #E2E8F0;
+    --text-primary: #0F172A;
+    --text-secondary: #64748B;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+}
+
+.bg-navy {
+    background-color: var(--primary) !important;
+}
+
+.text-gold {
+    color: var(--accent) !important;
+}
+
+.splash-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.logo-circle {
+    width: 100px;
+    height: 100px;
+    background-color: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.logo-text {
+    color: var(--primary-dark);
+    font-size: 2.25rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    margin: 0;
+}
+
+/* Dashboard Layout */
+.wrapper {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 250px;
+    background-color: var(--primary);
+    color: var(--surface);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transition: all 0.3s;
+}
+
+.sidebar-header {
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-logo {
+    width: 40px;
+    height: 40px;
+    background-color: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--primary-dark);
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+
+.sidebar-logo-img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.sidebar-nav {
+    padding: 1.5rem 0;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.nav-item {
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--surface);
+}
+
+.nav-item.active {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--surface);
+    border-left-color: var(--accent);
+    font-weight: 600;
+}
+
+/* Main Content */
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Top Navbar */
+.topbar {
+    height: 70px;
+    background-color: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    flex-shrink: 0;
+}
+
+/* Content Body */
+.content-body {
+    flex-grow: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+/* Cards */
+.card-stat {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+}
+
+.card-stat:hover {
+    transform: translateY(-2px);
+}
+
+/* Notification Bell */
+.notif-dropdown {
+    width: 340px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* Themed tabs (PM Schedules, etc.) */
+.nav-tabs {
+    border-bottom: 1px solid var(--border);
+}
+.nav-tabs .nav-link {
+    color: var(--text-secondary);
+    font-weight: 600;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    padding: 0.6rem 1rem;
+}
+.nav-tabs .nav-link:hover {
+    color: var(--primary);
+    border-bottom-color: var(--border);
+}
+.nav-tabs .nav-link.active {
+    color: var(--primary);
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid var(--primary);
+}
+
+.notif-item {
+    white-space: normal;
+}
+
+.notif-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+}
+
+/* Repair Logs table — extra breathing room (more columns) */
+.repairs-table > :not(caption) > * > * {
+    padding-top: 0.9rem;
+    padding-bottom: 0.9rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    vertical-align: middle;
+}
+
+/* Agency logo (sidebar + topbar) */
+.agency-logo-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #fff;
+}
+
+.agency-badge-logo {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Vehicle status badges — colors match the driver mobile app exactly */
+.badge-operational {
+    background-color: rgba(22, 163, 74, 0.1);
+    color: var(--status-operational);
+}
+.badge-dispatched {
+    background-color: rgba(37, 99, 235, 0.1);
+    color: var(--status-dispatched);
+}
+.badge-pm {
+    background-color: rgba(217, 119, 6, 0.1);
+    color: var(--status-under-pm);
+}
+.badge-not-operational {
+    background-color: rgba(220, 38, 38, 0.1);
+    color: var(--status-not-operational);
+}
+
+/* Review status badges (Pending / Reviewed) — kept off the four vehicle
+   status colors so green/blue/red/orange keep a single meaning, matching the
+   driver mobile app (Pending = slate gray, Reviewed = navy). */
+.badge-pending {
+    background-color: rgba(100, 116, 139, 0.12);
+    color: var(--text-secondary);
+}
+.badge-reviewed {
+    background-color: rgba(27, 47, 114, 0.1);
+    color: var(--primary);
+}
+
+/* Preventive maintenance "Upcoming" status — a calm slate that reads clearly
+   as scheduled-but-not-yet-due, distinct from the green "ready/done" signal. */
+.badge-upcoming {
+    background-color: #EEF2F7;
+    color: #475569;
+}
+
+/* Status pills stay on one line so the full "Under Preventive Maintenance"
+   label does not break awkwardly inside table cells. */
+.status-badge {
+    white-space: nowrap;
+}
+
+/* Print: isolate the generated report so the sidebar, topbar, report-type
+   cards, and action buttons are excluded from the printout / saved PDF. */
+@media print {
+    body * { visibility: hidden; }
+    #reportPrintArea, #reportPrintArea * { visibility: visible; }
+    #reportPrintArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        box-shadow: none !important;
+    }
+    .no-print { display: none !important; }
+}
+
