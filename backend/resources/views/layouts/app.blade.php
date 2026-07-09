@@ -49,7 +49,7 @@
                 </a>
 
                 <div class="px-4 pt-3 pb-2 small text-white-50 text-uppercase fw-semibold">Fleets</div>
-                <a href="#" class="nav-item" title="Available in a later phase (R2)">
+                <a href="{{ route('vehicles') }}" class="nav-item {{ request()->routeIs('vehicles') ? 'active' : '' }}">
                     <i class="bi bi-truck"></i> Vehicles
                 </a>
                 <a href="#" class="nav-item" title="Available in a later phase (R2)">
@@ -115,7 +115,9 @@
         </main>
     </div>
 
+@yield('modals')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+@yield('scripts')
     {{-- The prototype's agency.js demo-data layer is omitted: the chrome above renders
          the logged-in admin's real agency from the database (documented omission). --}}
 </body>
