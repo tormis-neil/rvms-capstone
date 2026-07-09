@@ -52,7 +52,7 @@
                 <a href="{{ route('vehicles') }}" class="nav-item {{ request()->routeIs('vehicles') ? 'active' : '' }}">
                     <i class="bi bi-truck"></i> Vehicles
                 </a>
-                <a href="#" class="nav-item" title="Available in a later phase (R2)">
+                <a href="{{ route('drivers') }}" class="nav-item {{ request()->routeIs('drivers') ? 'active' : '' }}">
                     <i class="bi bi-person-badge"></i> Drivers
                 </a>
 
