@@ -23,6 +23,7 @@ class VehicleResource extends JsonResource
             'chassis_number' => $this->chassis_number,
             'current_mileage' => $this->current_mileage,
             'status' => $this->status,
+            'remarks' => $this->remarks,
             'assigned_driver' => $this->whenLoaded('assignedDriver', fn () => [
                 'id' => $this->assignedDriver->id,
                 'name' => $this->assignedDriver->name,

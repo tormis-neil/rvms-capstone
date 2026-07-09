@@ -57,6 +57,7 @@ class Vehicle extends Model
         'chassis_number',
         'current_mileage',
         'status',
+        'remarks',
     ];
 
     protected function casts(): array

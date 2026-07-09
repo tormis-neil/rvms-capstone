@@ -94,7 +94,8 @@
                                     data-status="{{ $vehicle->status }}"
                                     data-badge="{{ $vehicle->badgeClass() }}"
                                     data-engine="{{ $vehicle->engine_number }}"
-                                    data-chassis="{{ $vehicle->chassis_number }}">
+                                    data-chassis="{{ $vehicle->chassis_number }}"
+                                    data-remarks="{{ $vehicle->remarks }}">
                                     <td class="fw-bold">{{ $vehicle->plate_number }}</td>
                                     <td>
                                         <div class="fw-semibold">{{ $vehicle->type }}</div>
@@ -350,9 +351,13 @@
                             </select>
                             <div class="form-text">Dispatched status is set automatically by the Dispatch module and cannot be assigned here.</div>
                         </div>
-                        {{-- The prototype's "Remarks (Optional)" textarea is omitted: the approved
-                             schema deliberately excludes admin-remarks columns on vehicle status
-                             changes (design decision 7 — documented omission). --}}
+                        {{-- Reinstated per project-lead decision (2026-07): stores only the LATEST
+                             note on the vehicle (like current_mileage), not a change history.
+                             Documented deviation from design decision 7 — see CLAUDE.md. --}}
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold">Remarks (Optional)</label>
+                            <textarea class="form-control" name="remarks" id="usRemarks" rows="2" placeholder="Reason for the status change..."></textarea>
+                        </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
@@ -417,6 +422,9 @@
             document.getElementById('updateStatusForm').action = statusActionTemplate.replace('__ID__', d.id);
             document.getElementById('usVehicle').textContent = d.plate + ' (' + d.type + ')';
             document.getElementById('usDriver').textContent = d.driver;
+            // Pre-filled with the existing note (like the Edit modal's other fields) so
+            // submitting without editing does not silently erase it.
+            document.getElementById('usRemarks').value = d.remarks || '';
             const statusSelect = document.querySelector('#updateStatusForm select[name=status]');
             if (d.status !== 'Dispatched') statusSelect.value = d.status;
             const badge = document.getElementById('usStatus');
