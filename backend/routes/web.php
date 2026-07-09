@@ -18,6 +18,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::put('/vehicles/{vehicle}', [VehicleController::class, 'update'])->name('vehicles.update');
     Route::patch('/vehicles/{vehicle}/status', [VehicleController::class, 'updateStatus'])->name('vehicles.status');
 
+    // R2 Block A preview — replaced with the real controller route in Block B.
+    Route::view('/drivers', 'drivers')->name('drivers');
+
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 

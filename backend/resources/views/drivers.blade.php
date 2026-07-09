@@ -1,0 +1,386 @@
+@extends('layouts.app')
+
+@section('title', 'RVMS - Drivers')
+
+@section('content')
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h3 class="fw-bold mb-0" style="color: var(--primary);">Driver Management</h3>
+                        <p class="text-secondary mb-0">Manage authorized drivers and monitor license expiry</p>
+                    </div>
+                    <button class="btn btn-navy text-white fw-medium px-4 py-2 bg-navy rounded-3" data-bs-toggle="modal" data-bs-target="#addDriverModal">
+                        <i class="bi bi-plus-lg me-2"></i>Add Driver
+                    </button>
+                </div>
+
+                <!-- License Status Summary -->
+                <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
+                    <div class="col">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-operational);">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-secondary small fw-semibold mb-1">VALID LICENSES</p>
+                                    <h2 class="fw-bold mb-0 js-lic-valid">4</h2>
+                                </div>
+                                <div class="bg-success bg-opacity-10 text-success rounded p-2">
+                                    <i class="bi bi-patch-check fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-under-pm);">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-secondary small fw-semibold mb-1">EXPIRING SOON</p>
+                                    <h2 class="fw-bold mb-0 js-lic-soon">1</h2>
+                                </div>
+                                <div class="bg-warning bg-opacity-10 text-warning rounded p-2">
+                                    <i class="bi bi-hourglass-split fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-not-operational);">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-secondary small fw-semibold mb-1">EXPIRED</p>
+                                    <h2 class="fw-bold mb-0 js-lic-expired">1</h2>
+                                </div>
+                                <div class="bg-danger bg-opacity-10 text-danger rounded p-2">
+                                    <i class="bi bi-x-octagon fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="card border-0 shadow-sm rounded-3 mb-4">
+                    <div class="card-body p-3">
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <input type="text" class="form-control" placeholder="Search driver name or license no...">
+                            </div>
+                            <div class="col-md-4">
+                                <select class="form-select">
+                                    <option value="">License Status (All)</option>
+                                    <option value="Valid">Valid</option>
+                                    <option value="Expiring Soon">Expiring Soon</option>
+                                    <option value="Expired">Expired</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-outline-secondary w-100">Filter</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Driver Table -->
+                <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="py-3 text-secondary fw-semibold small">DRIVER NAME</th>
+                                    <th class="py-3 text-secondary fw-semibold small">LICENSE NO.</th>
+                                    <th class="py-3 text-secondary fw-semibold small">EXPIRY DATE</th>
+                                    <th class="py-3 text-secondary fw-semibold small">LICENSE STATUS</th>
+                                    <th class="py-3 text-secondary fw-semibold small">ASSIGNED VEHICLE</th>
+                                    <th class="py-3 text-secondary fw-semibold small text-end">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rows-drivers">
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">Juan Dela Cruz</div>
+                                        <div class="small text-secondary">juan.delacruz@bfp.gov.ph</div>
+                                    </td>
+                                    <td class="font-monospace text-secondary">N01-12-345678</td>
+                                    <td>Dec 15, 2027</td>
+                                    <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Valid</span></td>
+                                    <td>ABC-1234 (Fire Truck)</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">Ricardo Bautista</div>
+                                        <div class="small text-secondary">ricardo.bautista@bfp.gov.ph</div>
+                                    </td>
+                                    <td class="font-monospace text-secondary">N01-14-220815</td>
+                                    <td class="text-warning fw-bold">Jul 8, 2026</td>
+                                    <td><span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">Expiring Soon</span></td>
+                                    <td>BCD-2310 (Fire Truck)</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">Allan Reyes</div>
+                                        <div class="small text-secondary">allan.reyes@bfp.gov.ph</div>
+                                    </td>
+                                    <td class="font-monospace text-secondary">N01-16-334455</td>
+                                    <td>Sep 21, 2028</td>
+                                    <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Valid</span></td>
+                                    <td>CDE-3421 (Rescue Van)</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">Carlos Mendoza</div>
+                                        <div class="small text-secondary">carlos.mendoza@bfp.gov.ph</div>
+                                    </td>
+                                    <td class="font-monospace text-secondary">N01-11-556677</td>
+                                    <td>Feb 14, 2028</td>
+                                    <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Valid</span></td>
+                                    <td>EFG-4532 (Water Tanker)</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">Ramon Cruz</div>
+                                        <div class="small text-secondary">ramon.cruz@bfp.gov.ph</div>
+                                    </td>
+                                    <td class="font-monospace text-secondary">N01-09-778899</td>
+                                    <td class="text-danger fw-bold">May 28, 2026</td>
+                                    <td><span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill">Expired</span></td>
+                                    <td>FGH-5643 (Service Vehicle)</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">Felipe Ramos</div>
+                                        <div class="small text-secondary">felipe.ramos@bfp.gov.ph</div>
+                                    </td>
+                                    <td class="font-monospace text-secondary">N01-13-990011</td>
+                                    <td>Nov 3, 2027</td>
+                                    <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Valid</span></td>
+                                    <td>GHI-6754 (Ambulance)</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+@endsection
+
+@section('modals')
+    <!-- Add Driver Modal -->
+    <div class="modal fade" id="addDriverModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-navy text-white">
+                    <h5 class="modal-title fw-bold">Register New Driver</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Full Name</label>
+                            <input type="text" class="form-control" placeholder="First Last">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email</label>
+                            <input type="email" class="form-control" placeholder="e.g. juan.delacruz@bfp.gov.ph">
+                            <div class="form-text">Used as the driver's sign-in account for the mobile app.</div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Password</label>
+                                <input type="password" class="form-control" placeholder="Set a password">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Confirm Password</label>
+                                <input type="password" class="form-control" placeholder="Re-enter password">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">License Number</label>
+                            <input type="text" class="form-control" placeholder="e.g. N01-12-345678">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">License Expiry Date</label>
+                            <input type="date" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Assign Vehicle (Optional)</label>
+                            <select class="form-select js-vehicle-options" data-keep-first="true">
+                                <option>Unassigned</option>
+                                <option>ABC-1234 (Fire Truck)</option>
+                                <option>BCD-2310 (Fire Truck)</option>
+                                <option>CDE-3421 (Rescue Van)</option>
+                                <option>EFG-4532 (Water Tanker)</option>
+                                <option>FGH-5643 (Service Vehicle)</option>
+                                <option>GHI-6754 (Ambulance)</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-navy bg-navy text-white" data-bs-dismiss="modal">Register Driver</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Driver Modal -->
+    <div class="modal fade" id="editDriverModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-navy text-white">
+                    <h5 class="modal-title fw-bold">Edit Driver Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Full Name</label>
+                            <input type="text" class="form-control" id="edName" value="Juan Dela Cruz">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email</label>
+                            <input type="email" class="form-control" id="edEmail" value="juan.delacruz@bfp.gov.ph">
+                            <div class="form-text">Used as the driver's sign-in account for the mobile app.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">New Password</label>
+                            <input type="password" class="form-control" placeholder="Leave blank to keep current password">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">License Number</label>
+                            <input type="text" class="form-control" id="edLicense" value="N01-12-345678">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">License Expiry Date</label>
+                            <input type="date" class="form-control" value="2027-12-15">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Assign Vehicle</label>
+                            <select class="form-select js-vehicle-options" data-keep-first="true">
+                                <option>Unassigned</option>
+                                <option selected>ABC-1234 (Fire Truck)</option>
+                                <option>BCD-2310 (Fire Truck)</option>
+                                <option>CDE-3421 (Rescue Van)</option>
+                                <option>EFG-4532 (Water Tanker)</option>
+                                <option>FGH-5643 (Service Vehicle)</option>
+                                <option>GHI-6754 (Ambulance)</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-navy bg-navy text-white" data-bs-dismiss="modal">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update License Modal -->
+    <div class="modal fade" id="updateLicenseModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-navy text-white">
+                    <h5 class="modal-title fw-bold">Update Driver License</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-4">
+                        <div>
+                            <div class="fw-bold" id="ulName">Driver Name</div>
+                            <div class="small text-secondary">License <span class="font-monospace" id="ulLicense">—</span></div>
+                        </div>
+                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill" id="ulCurrentBadge">Valid</span>
+                    </div>
+                    <p class="text-secondary small mb-4">After the driver renews their license, enter the new expiry date. The license status updates automatically based on the date.</p>
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Current Expiry Date</label>
+                            <input type="text" class="form-control bg-light" id="ulCurrentExpiry" value="—" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">New Expiry Date</label>
+                            <input type="date" class="form-control" id="ulNewExpiry">
+                            <div class="mt-2 d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-light border" id="ulPlus5">+5 years</button>
+                                <button type="button" class="btn btn-sm btn-light border" id="ulPlus10">+10 years</button>
+                            </div>
+                        </div>
+                        <div class="alert alert-light border d-flex align-items-center mb-0">
+                            <i class="bi bi-info-circle text-primary me-2"></i>
+                            <div class="small">Resulting status: <span class="fw-bold" id="ulResult">—</span></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-navy bg-navy text-white" data-bs-dismiss="modal">Mark as Renewed</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Driver Modal -->
+    <div class="modal fade" id="viewDriverModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold">Driver Information</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="text-center mb-4">
+                        <div class="bg-light rounded-circle d-inline-flex justify-content-center align-items-center p-3 mb-2" style="width: 80px; height: 80px;">
+                            <i class="bi bi-person fs-1 text-secondary"></i>
+                        </div>
+                        <h4 class="fw-bold mb-1" id="vdName">Juan Dela Cruz</h4>
+                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-1 rounded-pill" id="vdStatusBadge">License Valid</span>
+                    </div>
+                    
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <span class="text-secondary small fw-semibold">Email</span>
+                            <span class="fw-medium" id="vdEmail">juan.delacruz@bfp.gov.ph</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <span class="text-secondary small fw-semibold">License No.</span>
+                            <span class="fw-medium font-monospace" id="vdLicense">N01-12-345678</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <span class="text-secondary small fw-semibold">Expiry Date</span>
+                            <span class="fw-medium" id="vdExpiry">Dec 15, 2027</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <span class="text-secondary small fw-semibold">Assigned Vehicle</span>
+                            <span class="fw-medium" id="vdVehicle">ABC-1234 (Fire Truck)</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
