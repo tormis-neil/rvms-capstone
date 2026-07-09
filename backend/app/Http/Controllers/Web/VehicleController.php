@@ -73,9 +73,10 @@ class VehicleController extends Controller
         // "Dispatched" is written by the Dispatch module alone (FR-15/FR-18).
         $validated = $request->validate([
             'status' => ['required', Rule::in(Vehicle::MANUAL_STATUSES)],
+            'remarks' => ['nullable', 'string'],
         ]);
 
-        $vehicle->update(['status' => $validated['status']]);
+        $vehicle->update($validated);
 
         return redirect()->route('vehicles')
             ->with('status', 'Vehicle status updated.');

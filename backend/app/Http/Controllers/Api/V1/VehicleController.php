@@ -57,7 +57,7 @@ class VehicleController extends Controller
 
     public function updateStatus(UpdateVehicleStatusRequest $request, Vehicle $vehicle)
     {
-        $vehicle->update(['status' => $request->validated('status')]);
+        $vehicle->update($request->safe()->only(['status', 'remarks']));
 
         return VehicleResource::make($vehicle->fresh()->load('assignedDriver'));
     }

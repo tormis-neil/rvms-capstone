@@ -86,10 +86,16 @@ A few deliberate modeling decisions:
    operations officers); the seeder includes a second BFP admin as the sample, and no code
    may assume a single admin per agency (notifications target ALL of an agency's admins).
 7. **Deliberately excluded (objectives audit, July 2026 — do not add):** no admin-remarks
-   columns on vehicle status changes or inspection/damage reviews; no passenger/patient
+   columns on inspection/damage reviews; no passenger/patient
    fields on dispatches (privacy + outside vehicle-management scope); no agency-info
    editing feature (no FR backs it). A driver MAY be the primary driver of more than one
    vehicle (Ch4 ERD); each vehicle still has at most one primary driver.
+   **Amendment (2026-07, implementation-level, project-lead approved):** `vehicles.remarks`
+   is an exception to this rule — a single optional note on the vehicle's most recent
+   manual status change, overwritten on each update (like `current_mileage`, NOT a change
+   log/history table). It exists only because the prototype's Update Status modal already
+   had a "Remarks (Optional)" field; no FR backs it and it is intentionally NOT mirrored
+   into the manuscript's Chapter 4 data dictionary — repo/code only.
 
 ## ERD PLAN
 
@@ -185,6 +191,7 @@ standard and not detailed below.
 | chassis_number | VARCHAR(50) | Yes | NULL | Chassis number (FR-05). |
 | current_mileage | INT UNSIGNED | No | 0 | Current odometer (km); manually updated, drives mileage-based PM (FR-14). |
 | status | ENUM('Operational','Dispatched','Not Operational','Under Preventive Maintenance') | No | 'Operational' | **Single shared operational status** (FR-18), written from every module. |
+| remarks | TEXT | Yes | NULL | **Implementation-level addition, not in the manuscript's data dictionary** (design decision 7 amendment, 2026-07). Optional note on the most recent manual status change via the Update Status modal; overwritten on each update, no history kept. No FR backs it. |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
 
 ### `inspection_checklist_items` — FR-09 (reference/seed catalog)

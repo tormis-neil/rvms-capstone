@@ -167,6 +167,30 @@ class VehicleApiTest extends TestCase
             ->assertJsonValidationErrors(['status']);
     }
 
+    public function test_status_update_accepts_optional_remarks_and_overwrites_on_each_change(): void
+    {
+        $vehicle = Vehicle::factory()->create(['agency_id' => $this->agency->id]);
+
+        $this->actingAsAdmin();
+
+        $this->patchJson("/api/v1/vehicles/{$vehicle->id}/status", [
+            'status' => Vehicle::STATUS_UNDER_PM,
+            'remarks' => 'Sent for brake inspection.',
+        ])->assertOk()->assertJsonPath('data.remarks', 'Sent for brake inspection.');
+
+        // Omitting remarks entirely (e.g. the API caller does not send the key)
+        // leaves the existing note untouched — no history, but no silent wipe either.
+        $this->patchJson("/api/v1/vehicles/{$vehicle->id}/status", [
+            'status' => Vehicle::STATUS_OPERATIONAL,
+        ])->assertOk()->assertJsonPath('data.remarks', 'Sent for brake inspection.');
+
+        // An explicit empty value overwrites/clears the note (like current_mileage).
+        $this->patchJson("/api/v1/vehicles/{$vehicle->id}/status", [
+            'status' => Vehicle::STATUS_NOT_OPERATIONAL,
+            'remarks' => '',
+        ])->assertOk()->assertJsonPath('data.remarks', null);
+    }
+
     public function test_driver_token_is_refused_on_admin_vehicle_routes(): void
     {
         $driver = User::factory()->driver()->create(['agency_id' => $this->agency->id]);

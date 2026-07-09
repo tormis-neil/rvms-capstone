@@ -91,6 +91,19 @@ class WebVehiclePageTest extends TestCase
             ->assertSessionHasErrors('status');
     }
 
+    public function test_status_update_accepts_optional_remarks(): void
+    {
+        $vehicle = Vehicle::factory()->create(['agency_id' => $this->agency->id]);
+
+        $this->actingAs($this->admin)
+            ->patch("/vehicles/{$vehicle->id}/status", [
+                'status' => Vehicle::STATUS_NOT_OPERATIONAL,
+                'remarks' => 'Transmission slipping.',
+            ])->assertRedirect(route('vehicles'));
+
+        $this->assertSame('Transmission slipping.', $vehicle->fresh()->remarks);
+    }
+
     public function test_cross_agency_vehicle_web_routes_return_404(): void
     {
         $foreign = Vehicle::factory()->create();

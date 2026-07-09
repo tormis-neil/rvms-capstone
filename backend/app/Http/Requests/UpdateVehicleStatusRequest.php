@@ -21,6 +21,7 @@ class UpdateVehicleStatusRequest extends FormRequest
     {
         return [
             'status' => ['required', Rule::in(Vehicle::STATUSES)],
+            'remarks' => ['nullable', 'string'],
         ];
     }
 
