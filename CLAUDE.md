@@ -96,6 +96,18 @@ A few deliberate modeling decisions:
    log/history table). It exists only because the prototype's Update Status modal already
    had a "Remarks (Optional)" field; no FR backs it and it is intentionally NOT mirrored
    into the manuscript's Chapter 4 data dictionary — repo/code only.
+8. **Dispatch odometer capture (2026-07, prototype-testing feedback — CDRRMO-confirmed, backed by
+   FR-15/FR-16, IN the manuscript).** Two optional columns on `dispatches` — `odometer_out`
+   (recorded at time out) and `odometer_in` (recorded at time in) — digitize the odometer field
+   the agencies already fill on their paper dispatch form. Readings are keyed manually by the admin
+   from the vehicle's own odometer; this is NOT GPS/IoT/telematics (all still excluded — Ch1 Scope &
+   Limitations). Both are nullable so agencies that don't track odometer are not forced to. On close,
+   when `odometer_in` is present and greater than the vehicle's `current_mileage`, it updates
+   `current_mileage` (mileage-on-arrival → feeds mileage-based PM, FR-14). The prototype's dispatch
+   form has time out/in but no odometer field, so the two inputs are a documented addition to the
+   dispatch open/close modals. Unlike `vehicles.remarks`, this IS mirrored into the manuscript
+   (FR-15/FR-16 wording + the `dispatches` data-dictionary rows); the ERD diagram is unchanged
+   (two new attributes on the existing Dispatch entity — no new entity or relationship).
 
 ## ERD PLAN
 
@@ -189,7 +201,7 @@ standard and not detailed below.
 | model | VARCHAR(100) | No | — | Model (FTR 850, Hiace…). |
 | engine_number | VARCHAR(50) | Yes | NULL | Engine number (FR-05). |
 | chassis_number | VARCHAR(50) | Yes | NULL | Chassis number (FR-05). |
-| current_mileage | INT UNSIGNED | No | 0 | Current odometer (km); manually updated, drives mileage-based PM (FR-14). |
+| current_mileage | INT UNSIGNED | No | 0 | Current odometer (km); drives mileage-based PM (FR-14). Updated manually on the vehicle, or automatically from the time-in odometer reading when a dispatch is closed (`dispatches.odometer_in`, FR-16). |
 | status | ENUM('Operational','Dispatched','Not Operational','Under Preventive Maintenance') | No | 'Operational' | **Single shared operational status** (FR-18), written from every module. |
 | remarks | TEXT | Yes | NULL | **Implementation-level addition, not in the manuscript's data dictionary** (design decision 7 amendment, 2026-07). Optional note on the most recent manual status change via the Update Status modal; overwritten on each update, no history kept. No FR backs it. |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
@@ -288,7 +300,9 @@ standard and not detailed below.
 | mission_other | VARCHAR(255) | Yes | NULL | Free text when mission_type = Others (prototype `missionOther`). |
 | location | VARCHAR(255) | No | — | Dispatch location (FR-15). |
 | time_out | DATETIME | No | — | Date/time out; opening sets vehicle → Dispatched (FR-15). |
+| odometer_out | INT UNSIGNED | Yes | NULL | **Optional** odometer reading at time out (FR-15). Digitizes the odometer field on the agencies' existing paper dispatch form (CDRRMO-confirmed); manually keyed from the vehicle's own odometer, NOT device-captured. Nullable — agencies that do not track it leave it blank. |
 | time_in | DATETIME | Yes | NULL | Date/time in on close; NULL = active (FR-16). |
+| odometer_in | INT UNSIGNED | Yes | NULL | **Optional** odometer reading at time in (FR-16). On close, when present and greater than the vehicle's `current_mileage`, it updates `vehicles.current_mileage` (mileage-on-arrival → feeds mileage-based PM, FR-14). Nullable. |
 | return_status | ENUM('Operational','Not Operational','Under Preventive Maintenance') | Yes | NULL | Return status chosen on close (FR-16). |
 | remarks | TEXT | Yes | NULL | Optional close remarks (plan §6.8). |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
@@ -700,24 +714,36 @@ Sub-tasks (Day 11):
     2. Copy `dispatch.html` → `dispatch.blade.php` verbatim.
     3. CHECKPOINT A: raw copy vs prototype — pixel-identical.
   Block B:
-    4. `dispatches` migration/model per the Data Dictionary (active = `time_in IS NULL`).
-    5. APIs: `POST /dispatches` (sets vehicle → Dispatched; Others requires `mission_other`),
-       `PATCH /{id}/close` (time in + 3-choice return status → vehicle updated), `GET /dispatches`,
-       `PUT /{id}`, `GET /vehicles/availability`.
-    6. Replace hardcoded rows with live data; sample seeder (one active, one completed per agency).
-    7. Automated tests: open/close/availability suites.
+    4. `dispatches` migration/model per the Data Dictionary (active = `time_in IS NULL`),
+       including the two optional odometer columns (`odometer_out`, `odometer_in`).
+    5. APIs: `POST /dispatches` (sets vehicle → Dispatched; Others requires `mission_other`;
+       optional `odometer_out`), `PATCH /{id}/close` (time in + 3-choice return status → vehicle
+       updated; optional `odometer_in`, and when present & greater than the vehicle's current
+       mileage it updates `vehicles.current_mileage` — mileage-on-arrival, FR-16 → FR-14),
+       `GET /dispatches`, `PUT /{id}`, `GET /vehicles/availability`.
+    6. Replace hardcoded rows with live data; add the two odometer fields to the open/close
+       modals (a documented addition — the prototype's dispatch form has time out/in but no
+       odometer field; digitizes the agencies' existing paper odometer field, CDRRMO-confirmed);
+       sample seeder (one active, one completed per agency).
+    7. Automated tests: open/close/availability suites, incl. odometer optional + mileage-on-close.
     8. CHECKPOINT B: dispatch page vs prototype, with live seeded data → lead approves.
 
 Testing task:
-  Automated — `php artisan test`: open flips status; Others without detail rejected; each return status lands on the vehicle; availability is agency-only.
+  Automated — `php artisan test`: open flips status; Others without detail rejected; each return status lands on the vehicle; odometer optional; closing with a higher time-in odometer bumps the vehicle's current mileage; availability is agency-only.
   Manual testing checklist (plain language):
     In plain words: this is the logbook of "who took which vehicle where." You are checking that
     taking a vehicle out and bringing it back updates its status with zero extra steps.
-      [ ] Dispatch page vs prototype side-by-side  → identical, including the active-count banner.
+      [ ] Dispatch page vs prototype side-by-side  → identical, including the active-count banner
+          (plus the added optional odometer field in the open/close modals — a documented addition).
       [ ] Open a dispatch  → that vehicle instantly shows "Dispatched" on the Vehicles page too.
           Why: everyone sees the truck is out, from every screen (FR-15 + FR-18).
       [ ] Close it choosing "Under Preventive Maintenance"  → the vehicle now shows exactly that.
           Why: the return condition is recorded the moment it parks (FR-16).
+      [ ] Close a dispatch and type a higher odometer reading for "time in"  → the vehicle's mileage
+          on the Vehicles page goes up to match.  Why: bringing a truck back keeps its mileage
+          current on its own, which feeds the maintenance reminders (FR-16 → FR-14).
+      [ ] Leave the odometer blank  → the dispatch still saves.  Why: it is optional; agencies that
+          don't track odometer are not forced to.
       [ ] Pick mission "Others" without typing what it is  → refused until you specify.
       [ ] As another agency's admin  → their dispatch page shows only their own logbook.
 
