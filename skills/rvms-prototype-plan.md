@@ -563,6 +563,7 @@ OPENING A DISPATCH
                 Patrol / Administrative Travel / Others (Specify)
             Location
             Date and Time Out
+            Odometer Out (optional — read from the vehicle's odometer)
         → Saves dispatch
     → System automatically sets Vehicle Status → Dispatched
 
@@ -576,6 +577,7 @@ CLOSING A DISPATCH
     Vehicle returns
     Agency Admin → Opens dispatch record → Close Dispatch
         → Logs Date and Time In
+        → Logs Odometer In (optional — read from the vehicle's odometer)
         → Logs Remarks (optional)
         → System prompts: Set return status
             → Operational          (vehicle returned fit for use)
@@ -583,6 +585,15 @@ CLOSING A DISPATCH
             → Under PM             (maintenance needed on return)
         → Saves
     → System updates Vehicle Status to selected return status
+    → If Odometer In is provided and higher than the vehicle's current
+      mileage, System updates Vehicle current mileage (feeds mileage-based PM)
+```
+> Odometer fields digitize the odometer column on the agencies' existing paper
+> dispatch form (CDRRMO-confirmed). Both are optional; readings are keyed
+> manually by the admin — not GPS/IoT captured. Documented addition to the
+> dispatch open/close modals (the prototype form has time out/in but no
+> odometer field).
+```
 ```
 
 ---
@@ -781,7 +792,7 @@ Displays a real-time summary of fleet status for the Agency Administrator's own 
 
 ### Dispatch Logging and Monitoring — Admin Web Dashboard
 
-Allows Agency Administrators to record vehicle dispatches with Vehicle, Driver, Mission Type (Fire Response, Medical Response, Rescue Operation, Patrol, Administrative Travel, or Others), Location, and Date and Time Out. Vehicle status automatically changes to Dispatched when a dispatch is opened. When closed, the administrator is prompted to set the return status (Operational, Not Operational, or Under PM). A dispatch monitoring view displays the current deployment status of all agency vehicles.
+Allows Agency Administrators to record vehicle dispatches with Vehicle, Driver, Mission Type (Fire Response, Medical Response, Rescue Operation, Patrol, Administrative Travel, or Others), Location, Date and Time Out, and an optional Odometer reading at time out. Vehicle status automatically changes to Dispatched when a dispatch is opened. When closed, the administrator logs the Date and Time In and an optional Odometer reading at time in, and is prompted to set the return status (Operational, Not Operational, or Under PM); when the time-in odometer reading is higher than the vehicle's current mileage, the vehicle's current mileage is updated from it. A dispatch monitoring view displays the current deployment status of all agency vehicles.
 
 ---
 
