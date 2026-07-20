@@ -27,6 +27,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::patch('/drivers/{driver}/approve', [DriverController::class, 'approve'])->name('drivers.approve');
     Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject'])->name('drivers.reject');
 
+    // R3 Block A preview — replaced with the real controller route in Block B.
+    Route::view('/inspections', 'inspections')->name('inspections');
+
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
