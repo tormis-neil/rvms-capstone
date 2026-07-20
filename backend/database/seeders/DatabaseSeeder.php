@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             VehicleSeeder::class,
             InspectionChecklistSeeder::class,
+            InspectionSeeder::class,
         ]);
     }
 }
