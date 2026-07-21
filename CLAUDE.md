@@ -465,6 +465,20 @@ Sub-tasks (Day 1):
   6. Enforcement layer: `AgencyScope` global scope + `BelongsToAgency` trait (auto-stamps `agency_id` on create) + `role:` middleware alias.
   7. Automated tests: AuthLogin, Register, Profile, Me, Logout, AgencyScope unit, MultiAdmin (~29 tests).
 
+  MOBILE (parallel track) — networking foundation (plumbing, no screen; mirrors this phase's "wiring"):
+    M1. Add Retrofit + OkHttp + the kotlinx.serialization converter to `mobile/app/build.gradle.kts`.
+    M2. `data/remote/ApiService.kt` — the Retrofit interface (login/register/logout/me to start);
+        `data/remote/dto/*.kt` — request/response DTOs matching the API JSON envelope.
+    M3. `data/remote/ApiClient.kt` — one base-URL constant (`http://127.0.0.1:8000/api/v1`), OkHttp
+        logging, and an **auth interceptor** that attaches `Authorization: Bearer <token>`.
+    M4. `data/TokenStore.kt` — DataStore-backed token persistence (replaces the fake in-memory auth).
+    M5. Replace the mock `data/Session.kt` singleton with a real session backed by `/me` + TokenStore;
+        keep the same shape the screens already read so no Compose UI changes.
+    M6. `network_security_config` allowing cleartext to `127.0.0.1`/`10.0.2.2` (dev only).
+    M7. Mobile unit tests: DTO (de)serialization + interceptor attaches the token (`./gradlew test`).
+    MOBILE CHECKPOINT: lead builds the app; it compiles and a hard-coded login call against the running
+    API returns a token (proven in Logcat) — no screen wired yet, this is the app's "electricity".
+
 Testing task:
   Automated — `php artisan test`: login/logout/me/register/profile rules; pending driver blocked; revoked token dies; global scope filters and auto-stamps agency_id; two same-agency admins see the same data.
   Manual testing checklist (plain language):
@@ -507,6 +521,58 @@ Every phase that produces a screen is split into two blocks, in this exact order
       A phase does not close until the lead approves Checkpoint B.
 
 ---
+
+## THE MOBILE APP — PARALLEL TRACK inside every driver-facing phase (read once)
+
+This is ONE product on two platforms sharing one API. The Kotlin/Jetpack Compose driver app
+(`mobile/`) already has every screen built from the prototype, currently driven by mock
+`SampleData`/`Session`. Mobile work is therefore NOT rebuilding screens — it is wiring the
+existing, validated UI to the REAL API, exactly the way the web pages were wired: **keep the
+look identical, swap fake data for real API calls.** The mobile sub-tasks live INSIDE the same
+phase as the matching web/backend work (one phase, one goal, separate platform tasks).
+
+**Mobile method (mirrors the web Block A / Block B):**
+- **MOBILE Block A — data layer:** the Retrofit service call + response models (DTOs) + repository
+  method for the feature.
+- **MOBILE Block B — wire the screen:** replace `SampleData` with the repository call in that
+  screen's state holder / ViewModel; the Compose UI itself is untouched (same discipline as
+  Non-Negotiable Rule 9 — do not restyle the validated prototype UI).
+- **MOBILE CHECKPOINT (lead's gate):** the lead builds & runs the app in Android Studio and
+  confirms (1) the screen looks identical to the prototype, and (2) it now shows real backend
+  data / performs the real action against the running API. **A driver-facing phase does not close
+  until BOTH the web Checkpoint B AND the mobile checkpoint pass.**
+
+**Honest build-loop constraint:** the assistant cannot compile or run Android in its environment.
+So the mobile loop is collaborative: assistant writes Kotlin → **lead builds & runs it in Android
+Studio** → lead reports errors/results → assistant fixes → repeat. Mobile unit tests are written by
+the assistant and run by the lead with `./gradlew test`, sitting alongside `php artisan test`.
+
+**Base URL:** `http://127.0.0.1:8000/api/v1` reached via `adb reverse tcp:8000 tcp:8000` (the lead's
+USB method); an emulator would use `http://10.0.2.2:8000/api/v1`. One base-URL constant switches it.
+Cleartext traffic to localhost is enabled for dev via a network-security-config (dev only).
+
+**Which phases carry a mobile block (all the driver-facing ones):**
+| Phase | Mobile feature | Endpoint(s) |
+|---|---|---|
+| **R0** | Networking foundation — Retrofit/OkHttp, JSON, DataStore token store, auth interceptor, repository, real `Session` (plumbing, no screen) | (all) |
+| **R1** | Sign In / Sign Up / Sign Out + Splash routing by saved token (FR-01, FR-03) | `POST /login`, `/register`, `/logout`; `GET /me` |
+| **R2** | My Vehicle — the driver's assigned vehicle(s) + live status (FR-07) | `GET /my-vehicle` |
+| **R3** | BLOWBAGETS checklist + submit + own history/detail (FR-09) | `GET /inspections/checklist`, `POST /inspections`, `GET /inspections` |
+| **R4** | Damage report + optional photo (FR-11) | `POST /damage-reports` (multipart) |
+| **R7** | FCM device token + receive push + notifications list/read (FR-21) | `POST /fcm-token`, `GET /notifications`, `PATCH /{id}/read` |
+| **R9** | Driver self-edit own name/email/password (FR-04) | `PATCH /me/profile` |
+| **R10** | Final two-platform end-to-end + hardening | (all) |
+
+R5 (PM), R6 (Dispatch), and R8 (Dashboard/Reports) are **admin-only → no mobile block**; the driver
+app passively reflects their effects (a vehicle going Dispatched/Under PM shows on My Vehicle from
+R2; PM/status alerts arrive as notifications from R7).
+
+**Catch-up:** the backend is at R3 but the app is at zero, so the mobile blocks for **R0 → R3 are
+built first (catch-up)**, after which the mobile block and the web/backend work of each phase are
+done together (lockstep) from R4 onward. Each driver-facing phase's sub-task list below now ends
+with a **"MOBILE (parallel track)"** block.
+
+---
 PHASE R1 — Day 2: Login Page + Dashboard Shell (verbatim)
 Goal: The login screen and the dashboard frame (sidebar, topbar) look IDENTICAL to the prototype, and only agency administrators can enter.
 Prototype source: `web/login.html` + the sidebar/topbar chrome of `web/pages/dashboard.html`.
@@ -532,6 +598,22 @@ Sub-tasks (Day 2):
     8. Automated tests: web login/logout/guest-redirect/driver-blocked.
     9. CHECKPOINT B: side-by-side with `login.html` and `dashboard.html`, now logged in — identical
        chrome, live agency name/logo — send to the project lead, wait for approval.
+
+  MOBILE (parallel track) — Sign In / Sign Up / Sign Out + Splash routing (FR-01, FR-03):
+    MOBILE Block A (data layer):
+      M1. `AuthRepository` methods: `login`, `register`, `logout`, `me` (over the R0 ApiService).
+    MOBILE Block B (wire screens — Compose UI untouched):
+      M2. `SignInScreen`: replace the fake sign-in with a real `POST /login`; on success store the
+          token (TokenStore) and route into the driver shell; show the API's 403 reason
+          (pending/rejected) and 401 (bad credentials) inline.
+      M3. `SignUpScreen`: real `POST /register` (driver-only, created `pending`); on success show the
+          "waiting for admin approval" state; cannot log in until approved.
+      M4. `SplashScreen`: route by saved token — valid token → `/me` → driver shell; none → Sign In.
+      M5. Sign Out: real `POST /logout` + clear TokenStore, back to Sign In.
+      M6. Mobile unit tests: AuthRepository maps success/403/401/422 correctly.
+    MOBILE CHECKPOINT: lead builds & runs — the app's login/register/logout screens look identical to
+    the prototype AND now authenticate against the real API (a seeded driver logs in; a pending
+    self-registration is refused until the admin approves on the web).
 
 Testing task:
   Automated — `php artisan test`: web guard rules (admin in, driver refused, guest redirected, logout kills session).
@@ -593,6 +675,17 @@ Sub-tasks — Day 4 (Drivers):
     15. Automated tests: DriverApi + LicenseMonitoring suites (approve/reject, isolation, threshold
         boundaries, multi-vehicle listing).
     16. CHECKPOINT B: drivers page vs prototype, with live seeded data → lead approves.
+
+  MOBILE (parallel track) — My Vehicle + live status (FR-07):
+    MOBILE Block A (data layer):
+      M1. `VehicleRepository.myVehicle()` over `GET /my-vehicle` (a driver may hold several — returns all).
+    MOBILE Block B (wire screens — Compose UI untouched):
+      M2. `VehicleInfoScreen` / the home "My Vehicle" card: replace `SampleData` with the repository
+          call; render plate/type/make/model + the live four-value status badge from the API.
+      M3. A driver with more than one assigned vehicle sees all of them (same list UI, real data).
+      M4. Mobile unit tests: VehicleRepository maps the payload + the empty (no vehicle) state.
+    MOBILE CHECKPOINT: lead builds & runs — "My Vehicle" looks identical to the prototype AND shows
+    the exact vehicle(s)/status the admin assigned on the web (drives the [BOTH] cross-platform check).
 
 Testing task:
   Automated — `php artisan test`: full R0–R2 suite green.
@@ -694,6 +787,23 @@ Sub-tasks — Day 6 (screen):
     11. Sample seeder: per agency, yesterday's all-OK inspection already Reviewed + today's 2-issue
         inspection Pending — so the page demonstrates itself.
     12. CHECKPOINT B: inspections section vs prototype, with live seeded data → lead approves.
+
+  MOBILE (parallel track) — BLOWBAGETS checklist + submit + own history (FR-09):
+    MOBILE Block A (data layer):
+      M1. `InspectionRepository`: `checklist()` over `GET /inspections/checklist` (14 for BFP driver,
+          12 otherwise), `submit()` over `POST /inspections`, `history()`/`detail()` over
+          `GET /inspections` + `GET /inspections/{id}` (driver sees own).
+    MOBILE Block B (wire screens — Compose UI untouched):
+      M2. `NewInspectionScreen`: build the checklist rows from the live catalog (BFP driver gets the
+          2 extra items); OK/Has Issue per item; **remarks required on Has Issue** (client-side guard
+          mirrors the API 422); submit real `POST /inspections`.
+      M3. `InspectionScreen` (history) + `InspectionDetailScreen`: replace `SampleData` with the
+          driver's real submissions from the API.
+      M4. Mobile unit tests: submit maps success/422 (flagged-without-remark, incomplete); checklist
+          size differs BFP vs non-BFP.
+    MOBILE CHECKPOINT: lead builds & runs — the checklist looks identical to the prototype, shows 14
+    items for a BFP driver, blocks a flagged item with no remark, and a real submit appears as a
+    Pending row on the admin's web Inspections page (drives the [BOTH] core cross-platform flow).
 
 Testing task:
   Automated — `php artisan test`: BFP 14 vs others 12; flagged-without-remarks rejected; incomplete checklist rejected; admin can't submit; cross-agency blocked; review updates the vehicle.
