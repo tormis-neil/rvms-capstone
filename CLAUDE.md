@@ -395,6 +395,45 @@ install, localhost only so no internet needed). Run it in PowerShell:
 report it with the exact message — don't push past a failing check.
 
 ---
+
+## Testing BOTH platforms (web admin + mobile app) — READ THIS ONCE TOO
+
+The system has two front doors sharing one database: the **web admin dashboard** (browser,
+run by XAMPP) and the **mobile app** (the Android app the drivers use). Some features live on
+one platform, some cross both. Every phase's manual checklist below is now **tagged** so you
+always know where you are and what to do.
+
+**The labels (used on every manual step):**
+- **[AUTO]** — you just run one command (`php artisan test`). The robot proves the rules.
+- **[WEB]** — you click in the **browser** (the admin dashboard).
+- **[MOBILE]** — you tap in the **phone app** (as a driver).
+- **[BOTH]** — a cross-platform check: do something on one platform, then confirm it on the other.
+
+**Each step is written as:**
+- **Do this:** the exact action (which button, which command, what to type).
+- **Why:** what it proves (and which FR it maps to).
+- **You should see:** the expected result.
+- **Report back:** the one or two things to tell me so I understand your result (the what/why/how).
+
+**Who does what:** *I* always seed realistic sample data and write the [AUTO] tests. *You* do the
+hands-on clicking and typing on both platforms and report back. When a phase is **[WEB] only**,
+you never need the phone; when it's **[WEB + MOBILE]**, you'll use both.
+
+**One-time mobile setup (so the phone can reach your laptop's API):**
+1. On the laptop, start the app open to your network (not just localhost):
+   `php artisan serve --host=0.0.0.0 --port=8000`
+2. Find your laptop's Wi-Fi address: in PowerShell run `ipconfig` and read the **IPv4 Address**
+   (looks like `192.168.1.15`).
+3. In the mobile app's settings/config, point the server URL at **your laptop's address**, e.g.
+   `http://192.168.1.15:8000` — NOT `127.0.0.1` (on the phone, `127.0.0.1` means the phone itself).
+4. The **phone and laptop must be on the same Wi-Fi**. If it can't connect, allow port 8000 through
+   the Windows Firewall (or briefly disable it while testing at home).
+5. Log in on the app as a **driver** (e.g. `ramon.villanueva@rvms.local` / `password`); log in on the
+   web as an **admin** (e.g. `bfp.admin@rvms.local` / `password`). Both now read/write the same data.
+
+> A phase tagged **[WEB] only** does not need any of the mobile setup — just the browser.
+
+---
 PHASE R0 — Day 1: Plumbing Foundation (no screens yet)
 Goal: A running Laravel 11 + MySQL app where logging in returns a Sanctum token carrying the user's role and agency, and every future database query is automatically limited to the caller's own agency.
 Prototype source: none — this is invisible plumbing, so the two-checkpoint screen method (below) does not apply to this phase.
@@ -540,25 +579,68 @@ Sub-tasks — Day 4 (Drivers):
 Testing task:
   Automated — `php artisan test`: full R0–R2 suite green.
   Manual testing checklist (plain language):
+    Platforms this phase touches: WEB + MOBILE.
     In plain words: these are the two filing cabinets — vehicles and drivers. You are checking
-    that the cabinets look exactly like the prototype's and that BFP's cabinet is invisible to CHO.
-      [ ] Vehicles page vs prototype side-by-side  → identical: same buttons (eye / pencil /
-          circular-arrows icons), same filter bar, same badge pills, same "Showing X to Y" footer.
-      [ ] Click Add Vehicle, fill it like the prototype's example placeholders  → it appears in
-          the table.  Why: the fleet record works (FR-05).
-      [ ] Use the circular-arrows button  → only 3 status choices, with the note that "Dispatched"
-          comes from the Dispatch module.  Why: statuses can't contradict each other (FR-18).
-      [ ] Drivers page  → the three colored license cards (VALID / EXPIRING SOON / EXPIRED) show
-          numbers.  In tinker, set a driver's `license_expiry_date` to next week, refresh  → the
-          EXPIRING SOON card goes up by one and that row's date turns orange.
+    that the cabinets look exactly like the prototype's, that BFP's cabinet is invisible to CHO,
+    and that a driver can see their assigned vehicle on the phone.
+
+    [AUTO]
+      [ ] Do this: `php artisan test`.
+          Why: proves the vehicle/driver rules — plate unique per agency, a driver can hold more
+               than one vehicle, and one agency can never read another's records (FR-02/05/06/07).
+          You should see: all green.
+          Report back: green, or paste the first red line.
+
+    [WEB] (browser, as bfp.admin@rvms.local)
+      [ ] Do this: open Vehicles next to the prototype's vehicles page.
+          Why: the screen must match the validated prototype (Non-Negotiable Rule 9).
+          You should see: identical buttons (eye / pencil / circular-arrows), filter bar, badge
+               pills, and the "Showing X to Y" footer.
+          Report back: match or not; if not, what looks different.
+      [ ] Do this: click Add Vehicle, fill it like the example placeholders, save.
+          Why: the fleet record works (FR-05).
+          You should see: the new vehicle appears in the table.
+      [ ] Do this: click the circular-arrows (Update Status) button on any vehicle.
+          Why: statuses can't contradict each other — "Dispatched" is set by the Dispatch module
+               alone (FR-18).
+          You should see: only 3 status choices + the note about Dispatched.
+      [ ] Do this: open Drivers. In `php artisan tinker`, set a driver's `license_expiry_date` to
+          next week, then refresh the page.
           Why: the system watches licenses automatically (FR-08).
-      [ ] Register a driver from the API (guide section C) or use seeded pending data  → an
-          "Access Requests" box appears; Approve turns them Active.  Why: self-registered drivers
-          wait for the admin (FR-03).
-      [ ] Assign a second vehicle to a driver who already has one  → the driver now lists BOTH
-          plates.  Why: a driver may hold several vehicles; each vehicle has one primary driver.
-      [ ] Log in as the CHO admin  → none of BFP's vehicles or drivers exist here.
+          You should see: the EXPIRING SOON card goes up by one and that row's date turns orange.
+      [ ] Do this: use seeded pending data (or register a driver — see [MOBILE] below), then click
+          Approve in the "Access Requests" box.
+          Why: self-registered drivers wait for the admin (FR-03).
+          You should see: the driver moves into the main table as Active.
+      [ ] Do this: assign a second vehicle to a driver who already has one (Edit driver → Assign).
+          Why: a driver may hold several vehicles; each vehicle still has one primary driver.
+          You should see: that driver now lists BOTH plates.
+      [ ] Do this: log out, log in as the CHO admin, open Vehicles and Drivers.
           Why: the agency wall — the most important security rule (FR-02).
+          You should see: none of BFP's vehicles or drivers here.
+          Report back: confirm CHO sees only CHO's records.
+
+    [MOBILE] (phone app, as ramon.villanueva@rvms.local — do the one-time mobile setup first)
+      [ ] Do this: open the app, log in as the driver, open "My Vehicle".
+          Why: a driver sees the vehicle(s) assigned to them (FR-07).
+          You should see: the plate, type, and current status of the vehicle the admin assigned to
+               you on the web.
+          Report back: does the vehicle shown on the phone match what's assigned on the web?
+      [ ] Do this (self-registration): from the app's sign-up screen, register a NEW driver for your
+          agency and submit.
+          Why: drivers self-register and wait for admin approval (FR-03).
+          You should see: a "pending approval" message; you cannot log in yet.
+
+    [BOTH] (assignment shows up across platforms)
+      [ ] Do this (WEB): assign a vehicle to your driver; then (MOBILE) refresh "My Vehicle".
+          Why: the admin's assignment reaches the driver's phone through the shared database (FR-07).
+          You should see (MOBILE): the newly assigned vehicle now appears.
+          Report back: did the phone show the vehicle the admin just assigned?
+      [ ] Do this (MOBILE): self-register a driver; then (WEB) open Drivers.
+          Why: a self-registration on the phone becomes an Access Request for the admin (FR-03).
+          You should see (WEB): the new applicant in the "Access Requests" box; Approve turns them
+               Active, after which they can log in on the app.
+          Report back: did the applicant appear on the web, and could they log in after approval?
 
 ---
 PHASE R3 — Days 5–6: Digital BLOWBAGETS Inspections (FR-09, FR-10)
@@ -598,20 +680,62 @@ Sub-tasks — Day 6 (screen):
 Testing task:
   Automated — `php artisan test`: BFP 14 vs others 12; flagged-without-remarks rejected; incomplete checklist rejected; admin can't submit; cross-agency blocked; review updates the vehicle.
   Manual testing checklist (plain language):
-    In plain words: drivers fill a daily safety checklist on their phones; this screen is where
-    the admin reads and judges them. Driver submissions have no screen yet (that's the mobile
-    app), so the robot tests stand in for the driver.
-      [ ] `php artisan test` all green.  Why: proves the driver-side rules you can't click yet —
-          a BFP driver's list has 14 boxes, others 12; a flagged item without an explanation is
-          rejected; nobody can submit for another agency's vehicle.
-      [ ] Inspections section vs prototype side-by-side  → identical, including the "2 Pending
-          Review" pill and the ranked issue bars.
-      [ ] Open today's seeded inspection (View Checklist)  → green checks and two red ✗ items
-          with the drivers' remarks; as BFP you also see the two extra BFP items.
-      [ ] Click Review, choose "Not Operational"  → the row flips to Reviewed, and on the
-          Vehicles page that vehicle now shows Not Operational.
+    Platforms this phase touches: WEB + MOBILE.
+    In plain words: drivers fill a daily safety checklist on their phones; the web screen is where
+    the admin reads and judges them. This is the first real "driver does something on the phone,
+    admin sees it on the web" test.
+
+    [AUTO]
+      [ ] Do this: `php artisan test`.
+          Why: proves the checklist rules — a BFP driver's list has 14 items, others 12; a flagged
+               item without an explanation is rejected; an incomplete checklist is rejected; nobody
+               can submit for another agency's vehicle (FR-09).
+          You should see: all green.
+          Report back: green, or paste the first red line.
+
+    [WEB] (browser, as bfp.admin@rvms.local)
+      [ ] Do this: open Inspections & Damage next to the prototype's inspections section.
+          Why: the screen must match the validated prototype (Non-Negotiable Rule 9).
+          You should see: identical layout, incl. the "N Pending Review" pill and the ranked
+               Frequently Reported Issues bars.
+      [ ] Do this: on today's seeded inspection, click View Checklist.
+          Why: the admin sees exactly what the driver submitted (FR-10).
+          You should see: green checks for OK items and red ✗ for flagged items with the driver's
+               remarks; as BFP you also see the 2 extra BFP items (Hydraulic System, Fire Pump).
+      [ ] Do this: click Review, choose "Not Operational", submit; then open the Vehicles page.
           Why: a bad inspection can take a vehicle off the road immediately (FR-10 + FR-18).
-      [ ] As the CHO admin  → only CHO's inspections exist here.  Why: the agency wall.
+          You should see: the inspection row flips to Reviewed, and that vehicle now shows
+               Not Operational on the Vehicles page.
+      [ ] Do this: log in as the CHO admin, open Inspections.
+          Why: the agency wall (FR-02).
+          You should see: only CHO's inspections here.
+          Report back: confirm CHO sees only CHO's inspections.
+
+    [MOBILE] (phone app, as ramon.villanueva@rvms.local — do the one-time mobile setup first)
+      [ ] Do this: open the app, log in, tap New Inspection, pick your vehicle. Mark "Brakes" as
+          Has Issue and type a remark ("unusual noise"); leave the rest OK; tap Submit.
+          Why: a driver submits the daily BLOWBAGETS checklist from the field (FR-09).
+          You should see: a success message; the inspection appears in your history on the phone.
+      [ ] Do this: on the checklist, try to submit with an item marked Has Issue but no remark.
+          Why: a flagged item must be explained (FR-09).
+          You should see: the app blocks it and asks for the remark.
+      [ ] Do this: notice how many checklist items your app shows.
+          Why: BFP drivers get 14 items (12 + Hydraulic System + Fire Pump); other agencies get 12.
+          You should see: 14 boxes for a BFP driver (12 for PNP/CDRRMO/CHO drivers).
+          Report back: how many items showed, and whether the flagged-without-remark was blocked.
+
+    [BOTH] (driver submits, admin reviews — the core cross-platform flow)
+      [ ] Do this (MOBILE): submit the inspection above with Brakes flagged. Then (WEB) open
+          Inspections & Damage as the admin.
+          Why: a real submission travels phone → API → shared database → admin screen (FR-09/FR-10).
+          You should see (WEB): a new "Today" row for that vehicle, red "Has Issue", your remark,
+               marked Pending.
+          Report back: did the row appear on the web, and did the remark match what you typed?
+      [ ] Do this (WEB): Review that inspection and set "Not Operational". Then (MOBILE) refresh
+          "My Vehicle" in the app.
+          Why: the admin's decision reaches the driver's phone (FR-10 + FR-18).
+          You should see (MOBILE): the vehicle's status now reads Not Operational.
+          Report back: did the phone show the status the admin just set?
 
 ---
 PHASE R4 — Days 7–8: Damage Reports + Repair Logs (FR-11, FR-12, FR-13)
