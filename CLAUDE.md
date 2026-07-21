@@ -419,17 +419,35 @@ always know where you are and what to do.
 hands-on clicking and typing on both platforms and report back. When a phase is **[WEB] only**,
 you never need the phone; when it's **[WEB + MOBILE]**, you'll use both.
 
-**One-time mobile setup (so the phone can reach your laptop's API):**
-1. On the laptop, start the app open to your network (not just localhost):
-   `php artisan serve --host=0.0.0.0 --port=8000`
-2. Find your laptop's Wi-Fi address: in PowerShell run `ipconfig` and read the **IPv4 Address**
-   (looks like `192.168.1.15`).
-3. In the mobile app's settings/config, point the server URL at **your laptop's address**, e.g.
-   `http://192.168.1.15:8000` — NOT `127.0.0.1` (on the phone, `127.0.0.1` means the phone itself).
-4. The **phone and laptop must be on the same Wi-Fi**. If it can't connect, allow port 8000 through
-   the Windows Firewall (or briefly disable it while testing at home).
-5. Log in on the app as a **driver** (e.g. `ramon.villanueva@rvms.local` / `password`); log in on the
-   web as an **admin** (e.g. `bfp.admin@rvms.local` / `password`). Both now read/write the same data.
+**One-time mobile setup — REAL PHONE over USB (the method we use):**
+This runs the app on your actual phone, plugged in by USB cable, with no Wi-Fi needed. The
+`adb reverse` trick forwards the phone's own `127.0.0.1:8000` through the cable to your laptop.
+1. On the phone: Settings → About Phone → tap **Build Number** 7 times to unlock Developer Options,
+   then Settings → Developer Options → turn on **USB Debugging**. Plug the phone into the laptop and
+   tap **Allow** on the "Allow USB debugging?" prompt.
+2. On the laptop, start the server normally (plain localhost is fine with this method):
+   `php artisan serve --port=8000`
+3. In a terminal, run once per session (Android Studio installs `adb`; it's on the PATH after an SDK
+   install, or under `%LOCALAPPDATA%\Android\Sdk\platform-tools`):
+   `adb reverse tcp:8000 tcp:8000`
+   Confirm the phone is connected with `adb devices` (it should list one device, not "unauthorized").
+4. In the mobile app's server URL/config, use **`http://127.0.0.1:8000`** — because `adb reverse` makes
+   the phone's localhost point at the laptop. No IP, no Wi-Fi, no firewall changes.
+5. Run the app onto the phone from Android Studio (green ▶). Log in as a **driver**
+   (e.g. `ramon.villanueva@rvms.local` / `password`); log in on the web as an **admin**
+   (e.g. `bfp.admin@rvms.local` / `password`). Both now read/write the same database.
+   Watch **Logcat** in Android Studio for app-side errors while testing.
+
+> If `adb reverse` ever drops (phone unplugged/re-plugged), just run it again — it's per-session.
+
+**Alternative — same Wi-Fi (no USB):** start with `php artisan serve --host=0.0.0.0 --port=8000`,
+run `ipconfig` to get the laptop's **IPv4 Address** (e.g. `192.168.1.15`), point the app at
+`http://192.168.1.15:8000`, keep phone + laptop on the same Wi-Fi, and allow port 8000 through the
+Windows Firewall. (Handy if you can't plug in; USB is otherwise simpler.)
+
+**Alternative — Android emulator (no phone):** point the app at **`http://10.0.2.2:8000`** (the
+emulator's special alias for the laptop's localhost); plain `php artisan serve` works, no `adb reverse`
+needed. Note: reliable **push notifications (R7)** need an emulator image **with Google Play**.
 
 > A phase tagged **[WEB] only** does not need any of the mobile setup — just the browser.
 
