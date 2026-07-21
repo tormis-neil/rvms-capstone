@@ -23,7 +23,7 @@ class InspectionController extends Controller
     public function index(Request $request): View
     {
         $inspections = Inspection::query()
-            ->with(['vehicle', 'driver', 'items'])
+            ->with(['vehicle', 'driver', 'items.checklistItem'])
             ->latest('inspection_date')
             ->latest('id')
             ->get();
