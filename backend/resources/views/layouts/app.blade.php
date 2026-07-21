@@ -30,7 +30,7 @@
                 </a>
 
                 <div class="px-4 pt-3 pb-2 small text-white-50 text-uppercase fw-semibold">Maintenance</div>
-                <a href="#" class="nav-item" title="Available in a later phase (R3–R4)">
+                <a href="{{ route('inspections') }}" class="nav-item {{ request()->routeIs('inspections') ? 'active' : '' }}">
                     <i class="bi bi-exclamation-triangle"></i> Inspections & Damage
                 </a>
                 <a href="#" class="nav-item" title="Available in a later phase (R5)">

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\DriverController;
+use App\Http\Controllers\Web\InspectionController;
 use App\Http\Controllers\Web\VehicleController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +27,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::patch('/drivers/{driver}/license', [DriverController::class, 'updateLicense'])->name('drivers.license');
     Route::patch('/drivers/{driver}/approve', [DriverController::class, 'approve'])->name('drivers.approve');
     Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject'])->name('drivers.reject');
+
+    // Inspections (FR-10). Damage reports (the page's second half) arrive in R4.
+    Route::get('/inspections', [InspectionController::class, 'index'])->name('inspections');
+    Route::patch('/inspections/{inspection}/review', [InspectionController::class, 'review'])->name('inspections.review');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });

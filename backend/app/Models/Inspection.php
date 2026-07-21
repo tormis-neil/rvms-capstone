@@ -68,4 +68,46 @@ class Inspection extends Model
     {
         return $this->hasIssue() ? 'Has Issue' : 'All OK';
     }
+
+    /** DATE SUBMITTED label: Today / Yesterday / "Mon j, Y", from the submission time. */
+    public function dateLabel(): string
+    {
+        $submitted = $this->created_at ?? $this->inspection_date;
+
+        if ($submitted->isToday()) {
+            return 'Today';
+        }
+        if ($submitted->isYesterday()) {
+            return 'Yesterday';
+        }
+
+        return $submitted->format('M j, Y');
+    }
+
+    public function timeLabel(): string
+    {
+        return ($this->created_at ?? $this->inspection_date)->format('h:i A');
+    }
+
+    /** REMARKS column: the flagged items' remarks joined, or "None". */
+    public function remarksSummary(): string
+    {
+        $flagged = $this->items
+            ->where('status', InspectionItem::STATUS_HAS_ISSUE)
+            ->map(fn (InspectionItem $item) => $item->remarks)
+            ->filter()
+            ->implode('; ');
+
+        return $flagged !== '' ? $flagged : 'None';
+    }
+
+    public function reviewBadgeClass(): string
+    {
+        return $this->review_status === self::STATUS_REVIEWED ? 'badge-reviewed' : 'badge-pending';
+    }
+
+    public function resultBadgeClass(): string
+    {
+        return $this->hasIssue() ? 'badge-not-operational' : 'badge-operational';
+    }
 }
