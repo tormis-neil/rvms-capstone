@@ -408,6 +408,16 @@ always know where you are and what to do.
 - **[WEB]** — you click in the **browser** (the admin dashboard).
 - **[MOBILE]** — you tap in the **phone app** (as a driver).
 - **[BOTH]** — a cross-platform check: do something on one platform, then confirm it on the other.
+  It comes in two flavors, because "one system, two platforms, one database" must be *proven*, not
+  assumed — every admin action with a driver-facing consequence gets one of these lines so no
+  feature ships unverified:
+  - **[BOTH — active]** — the DRIVER does something on the phone (real mobile code) and the ADMIN
+    then sees it on the web (e.g., submit an inspection → it appears on the web Inspections page).
+  - **[BOTH — reflect]** — the ADMIN does something on the web (NO mobile code involved) and the
+    DRIVER's phone must passively *reflect* it (e.g., set a vehicle's status, or reassign it to
+    another driver → the driver's "My Vehicle" updates). The phone is not the thing being built —
+    it is the mirror that proves the shared database carried the change to the field. An admin
+    action that produces NO visible change on the driver's phone is a red flag, not a pass.
 
 **Each step is written as:**
 - **Do this:** the exact action (which button, which command, what to type).
@@ -742,16 +752,39 @@ Testing task:
           Why: drivers self-register and wait for admin approval (FR-03).
           You should see: a "pending approval" message; you cannot log in yet.
 
-    [BOTH] (assignment shows up across platforms)
-      [ ] Do this (WEB): assign a vehicle to your driver; then (MOBILE) refresh "My Vehicle".
-          Why: the admin's assignment reaches the driver's phone through the shared database (FR-07).
-          You should see (MOBILE): the newly assigned vehicle now appears.
-          Report back: did the phone show the vehicle the admin just assigned?
+    [BOTH — active] (the driver acts on the phone, the admin sees it on the web)
       [ ] Do this (MOBILE): self-register a driver; then (WEB) open Drivers.
           Why: a self-registration on the phone becomes an Access Request for the admin (FR-03).
           You should see (WEB): the new applicant in the "Access Requests" box; Approve turns them
                Active, after which they can log in on the app.
           Report back: did the applicant appear on the web, and could they log in after approval?
+
+    [BOTH — reflect] (the admin acts on the web; NO mobile code — the phone must mirror it)
+      [ ] Do this (WEB): assign a vehicle to your driver; then (MOBILE) refresh "My Vehicle".
+          Why: the admin's assignment reaches the driver's phone through the shared database (FR-07).
+          You should see (MOBILE): the newly assigned vehicle now appears.
+          Report back: did the phone show the vehicle the admin just assigned?
+      [ ] Do this (WEB): reassign that vehicle to a DIFFERENT driver (Edit the vehicle → change the
+          assigned driver); then (MOBILE) refresh "My Vehicle" on the FIRST driver's phone.
+          Why: reassignment must both add the plate to the new driver AND drop it from the old one —
+               one vehicle has one primary driver (FR-05/FR-07).
+          You should see (MOBILE): the vehicle is GONE from the first driver's list (and, on the new
+               driver's phone, it now appears).
+          Report back: did the plate leave the old driver's phone and land on the new one's?
+      [ ] Do this (WEB): open the Update Status modal on the driver's assigned vehicle and set it to
+          "Not Operational"; then (MOBILE) refresh "My Vehicle".
+          Why: the vehicle's single shared status is written on the web and must show on the phone —
+               one truth, every screen (FR-18).
+          You should see (MOBILE): the status badge now reads "Not Operational".
+          Report back: did the phone's status badge match what the admin just set?
+      [ ] Do this (WEB): in `php artisan tinker` set the driver's `license_expiry_date` to next week,
+          refresh Drivers; (the driver-facing push for this arrives in R7 — for now confirm the web
+          side only).
+          Why: license monitoring is the admin's watch over the driver's own license (FR-08); its
+               phone-side alert is wired in R7, so today this is a WEB-only confirmation of an
+               essential, driver-related fact.
+          You should see (WEB): EXPIRING SOON card +1 and the row's date turns orange.
+          Report back: did the license flag turn on for that driver?
 
 ---
 PHASE R3 — Days 5–6: Digital BLOWBAGETS Inspections (FR-09, FR-10)
@@ -852,13 +885,15 @@ Testing task:
           You should see: 14 boxes for a BFP driver (12 for PNP/CDRRMO/CHO drivers).
           Report back: how many items showed, and whether the flagged-without-remark was blocked.
 
-    [BOTH] (driver submits, admin reviews — the core cross-platform flow)
+    [BOTH — active] (the driver submits on the phone, the admin sees it on the web)
       [ ] Do this (MOBILE): submit the inspection above with Brakes flagged. Then (WEB) open
           Inspections & Damage as the admin.
           Why: a real submission travels phone → API → shared database → admin screen (FR-09/FR-10).
           You should see (WEB): a new "Today" row for that vehicle, red "Has Issue", your remark,
                marked Pending.
           Report back: did the row appear on the web, and did the remark match what you typed?
+
+    [BOTH — reflect] (the admin reviews on the web; the phone must mirror the resulting status)
       [ ] Do this (WEB): Review that inspection and set "Not Operational". Then (MOBILE) refresh
           "My Vehicle" in the app.
           Why: the admin's decision reaches the driver's phone (FR-10 + FR-18).
