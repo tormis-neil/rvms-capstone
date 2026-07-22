@@ -28,13 +28,16 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
-    onSplashFinished: () -> Unit,
+    onSplashFinished: (isAuthenticated: Boolean) -> Unit,
+    checkSession: suspend () -> Boolean = { false },
     modifier: Modifier = Modifier,
 ) {
-    // Brief delay then navigate to sign-in
+    // Brief delay for the splash, then route by the saved token (FR-01):
+    // a valid token → driver shell, none/invalid → Sign In.
     LaunchedEffect(Unit) {
-        delay(2000L)
-        onSplashFinished()
+        delay(1500L)
+        val authenticated = runCatching { checkSession() }.getOrDefault(false)
+        onSplashFinished(authenticated)
     }
 
     Box(
@@ -77,3 +80,4 @@ fun SplashScreenPreview() {
         SplashScreen(onSplashFinished = {})
     }
 }
+

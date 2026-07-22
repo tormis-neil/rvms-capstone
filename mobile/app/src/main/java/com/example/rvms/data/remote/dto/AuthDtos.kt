@@ -60,6 +60,12 @@ data class MessageDto(
     val message: String? = null,
 )
 
+/** GET /agencies — the public agency directory, wrapped in `{ "data": [...] }`. */
+@Serializable
+data class AgencyListDto(
+    val data: List<AgencyDto> = emptyList(),
+)
+
 /** UserResource — a driver or admin account. License fields are null for admins. */
 @Serializable
 data class UserDto(

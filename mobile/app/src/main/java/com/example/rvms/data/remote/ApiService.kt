@@ -1,5 +1,6 @@
 package com.example.rvms.data.remote
 
+import com.example.rvms.data.remote.dto.AgencyListDto
 import com.example.rvms.data.remote.dto.LoginRequestDto
 import com.example.rvms.data.remote.dto.LoginResponseDto
 import com.example.rvms.data.remote.dto.MessageDto
@@ -29,6 +30,10 @@ interface ApiService {
 
     @POST("register")
     suspend fun register(@Body body: RegisterRequestDto): Response<UserEnvelopeDto>
+
+    /** Public agency directory for the Sign Up dropdown (FR-03). */
+    @GET("agencies")
+    suspend fun agencies(): Response<AgencyListDto>
 
     @POST("logout")
     suspend fun logout(): Response<MessageDto>

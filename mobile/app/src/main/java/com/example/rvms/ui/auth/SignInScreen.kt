@@ -3,7 +3,6 @@ package com.example.rvms.ui.auth
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,10 +23,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -36,15 +35,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rvms.R
-import com.example.rvms.data.Agency
-import com.example.rvms.data.Session
-import com.example.rvms.theme.Background
+import com.example.rvms.data.LoginResult
+import com.example.rvms.data.ServiceLocator
 import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.RVMSTheme
-import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
+import kotlinx.coroutines.launch
 
 @Composable
 fun SignInScreen(
@@ -55,7 +53,8 @@ fun SignInScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
-    var selectedAgency by remember { mutableStateOf(Agency.BFP) }
+    var loading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier =
@@ -85,30 +84,9 @@ fun SignInScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Demo agency selector (prototype only) — picks which agency account to sign in as
-        Text(
-            text = "Sign in as",
-            style = MaterialTheme.typography.labelMedium,
-            color = TextSecondary,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Agency.entries.forEach { agency ->
-                AgencyChip(
-                    label = agency.code,
-                    selected = selectedAgency == agency,
-                    onClick = { selectedAgency = agency },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
+        // The prototype's demo agency chips are omitted: real sign-in uses email +
+        // password and the server returns the account's own agency (documented
+        // omission, mirroring the web login's dropped demo agency chips).
 
         // Email Field
         OutlinedTextField(
@@ -153,7 +131,8 @@ fun SignInScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Sign In Button
+        // Sign In Button — real POST /login (FR-01). Shows the API's 422 (bad
+        // credentials) and 403 (pending/rejected) reasons inline.
         Button(
             onClick = {
                 when {
@@ -163,11 +142,23 @@ fun SignInScreen(
                         error = "Please enter a valid email address."
                     else -> {
                         error = null
-                        Session.signInAs(selectedAgency)
-                        onNavigateToHome()
+                        loading = true
+                        scope.launch {
+                            when (val result = ServiceLocator.authRepository.login(email, password)) {
+                                is LoginResult.Success -> {
+                                    loading = false
+                                    onNavigateToHome()
+                                }
+                                is LoginResult.Error -> {
+                                    loading = false
+                                    error = result.message
+                                }
+                            }
+                        }
                     }
                 }
             },
+            enabled = !loading,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -176,7 +167,7 @@ fun SignInScreen(
             colors = ButtonDefaults.buttonColors(containerColor = NavyBlue),
         ) {
             Text(
-                text = "Sign In",
+                text = if (loading) "Signing In…" else "Sign In",
                 color = White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -203,30 +194,6 @@ fun SignInScreen(
                 modifier = Modifier.clickable { onNavigateToSignUp() },
             )
         }
-    }
-}
-
-@Composable
-private fun AgencyChip(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (selected) NavyBlue else Background)
-            .clickable { onClick() }
-            .padding(vertical = 10.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = label,
-            color = if (selected) White else TextPrimary,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-        )
     }
 }
 

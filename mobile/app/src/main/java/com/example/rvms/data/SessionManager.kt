@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 class SessionManager(
     private val api: ApiService,
-    private val tokenStore: TokenStore,
+    private val tokenStore: TokenStorage,
 ) {
     private val _currentUser = MutableStateFlow<UserDto?>(null)
     val currentUser: StateFlow<UserDto?> = _currentUser.asStateFlow()
