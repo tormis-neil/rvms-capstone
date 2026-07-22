@@ -83,4 +83,15 @@ dependencies {
   implementation(libs.androidx.navigation3.ui)
   implementation(libs.androidx.navigation3.runtime)
   implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+
+  // Networking foundation (R0): Retrofit + OkHttp + kotlinx.serialization JSON,
+  // token persistence via DataStore. One HTTP layer for the whole app.
+  implementation(libs.retrofit)
+  implementation(libs.retrofit.converter.kotlinx.serialization)
+  implementation(libs.okhttp.logging.interceptor)
+  implementation(libs.kotlinx.serialization.json)
+  implementation(libs.androidx.datastore.preferences)
+
+  // Local tests for the network layer (DTO (de)serialization + interceptor)
+  testImplementation(libs.okhttp.mockwebserver)
 }
