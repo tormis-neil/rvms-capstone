@@ -33,7 +33,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.rvms.data.Session
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.example.rvms.data.ServiceLocator
+import com.example.rvms.ui.common.formatIsoDate
+import com.example.rvms.ui.common.initialsFor
+import com.example.rvms.ui.common.logoForAgencyCode
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.Gold
@@ -50,7 +55,16 @@ fun ProfileScreen(
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
-    val driver = Session.current.driver
+    // Real driver identity from the authenticated session (FR-01), replacing
+    // the prototype's mock Session/SampleData.
+    val currentUser by ServiceLocator.sessionManager.currentUser.collectAsState()
+    val name = currentUser?.name.orEmpty()
+    val email = currentUser?.email.orEmpty()
+    val agencyCode = currentUser?.agency?.code.orEmpty()
+    val agencyFullName = currentUser?.agency?.name.orEmpty()
+    val agencyLogo = logoForAgencyCode(currentUser?.agency?.code)
+    val licenseNo = currentUser?.licenseNumber ?: "—"
+    val licenseExpiry = formatIsoDate(currentUser?.licenseExpiryDate)
 
     Column(
         modifier = modifier
@@ -71,7 +85,7 @@ fun ProfileScreen(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = driver.initials,
+                text = initialsFor(name.ifBlank { "?" }),
                 color = White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
@@ -81,7 +95,7 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = driver.name,
+            text = name,
             style = MaterialTheme.typography.titleLarge,
             color = TextPrimary,
             fontWeight = FontWeight.Bold,
@@ -104,8 +118,8 @@ fun ProfileScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Image(
-                painter = painterResource(id = driver.agency.logo),
-                contentDescription = "${driver.agency.code} logo",
+                painter = painterResource(id = agencyLogo),
+                contentDescription = "$agencyCode logo",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .size(22.dp)
@@ -114,7 +128,7 @@ fun ProfileScreen(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = driver.agency.fullName,
+                text = agencyFullName,
                 color = Gold,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -140,11 +154,11 @@ fun ProfileScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                ProfileDetailRow("Full Name", driver.name)
-                ProfileDetailRow("Email", driver.email)
-                ProfileDetailRow("Agency", driver.agency.code)
-                ProfileDetailRow("License No.", driver.licenseNo)
-                ProfileDetailRow("License Expiry", driver.licenseExpiry)
+                ProfileDetailRow("Full Name", name)
+                ProfileDetailRow("Email", email)
+                ProfileDetailRow("Agency", agencyCode)
+                ProfileDetailRow("License No.", licenseNo)
+                ProfileDetailRow("License Expiry", licenseExpiry)
             }
         }
 

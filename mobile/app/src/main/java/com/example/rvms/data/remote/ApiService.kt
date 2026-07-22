@@ -6,6 +6,7 @@ import com.example.rvms.data.remote.dto.LoginResponseDto
 import com.example.rvms.data.remote.dto.MessageDto
 import com.example.rvms.data.remote.dto.RegisterRequestDto
 import com.example.rvms.data.remote.dto.UserEnvelopeDto
+import com.example.rvms.data.remote.dto.VehicleListDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -40,4 +41,8 @@ interface ApiService {
 
     @GET("me")
     suspend fun me(): Response<UserEnvelopeDto>
+
+    /** The driver's assigned vehicle(s) (FR-07) — a driver may hold several. */
+    @GET("my-vehicle")
+    suspend fun myVehicle(): Response<VehicleListDto>
 }

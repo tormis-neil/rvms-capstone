@@ -29,10 +29,14 @@ object ServiceLocator {
     lateinit var authRepository: AuthRepository
         private set
 
+    lateinit var vehicleRepository: VehicleRepository
+        private set
+
     fun init(context: Context) {
         tokenStore = TokenStore(context.applicationContext)
         api = ApiClient.create { tokenStore.cachedToken }
         sessionManager = SessionManager(api, tokenStore)
         authRepository = AuthRepository(api, sessionManager)
+        vehicleRepository = VehicleRepository(api)
     }
 }

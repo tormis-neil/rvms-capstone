@@ -54,6 +54,7 @@ fun DriverShellScreen(
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    // Still mock SampleData — wired to the real GET /notifications feed in R7.
     val unreadAlerts = Session.current.notifications.count { !it.isRead }
 
     val navItems = listOf(
