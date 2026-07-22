@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AgencyController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DriverController;
 use App\Http\Controllers\Api\V1\InspectionChecklistController;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Route;
 // Public (no token)
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
+// Agency directory for the driver self-registration dropdown (FR-03) — id/code/name only.
+Route::get('/agencies', [AgencyController::class, 'index']);
 
 // Authenticated (Sanctum bearer token)
 Route::middleware('auth:sanctum')->group(function () {

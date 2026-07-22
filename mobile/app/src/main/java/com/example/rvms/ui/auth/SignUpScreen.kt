@@ -28,9 +28,11 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,11 +44,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextAlign
 import com.example.rvms.R
+import com.example.rvms.data.RegisterResult
+import com.example.rvms.data.ServiceLocator
+import com.example.rvms.data.remote.dto.AgencyDto
 import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.RVMSTheme
 import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
+import kotlinx.coroutines.launch
 
 /**
  * Driver self-registration screen (FR-03). A driver registers by entering their
@@ -66,11 +72,18 @@ fun SignUpScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var submitted by remember { mutableStateOf(false) }
+    var loading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    // Agency Dropdown State
+    // Agency Dropdown State — real agencies fetched from the public directory so
+    // the driver submits a real agency_id (FR-03).
     var expanded by remember { mutableStateOf(false) }
-    val agencies = listOf("BFP", "PNP", "CDRRMO", "CHO")
-    var selectedAgency by remember { mutableStateOf("") }
+    var agencies by remember { mutableStateOf<List<AgencyDto>>(emptyList()) }
+    var selectedAgency by remember { mutableStateOf<AgencyDto?>(null) }
+
+    LaunchedEffect(Unit) {
+        agencies = runCatching { ServiceLocator.authRepository.agencies() }.getOrDefault(emptyList())
+    }
 
     val scrollState = rememberScrollState()
 
@@ -195,13 +208,13 @@ fun SignUpScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Agency Dropdown
+        // Agency Dropdown — real agencies from GET /agencies
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded },
         ) {
             OutlinedTextField(
-                value = selectedAgency,
+                value = selectedAgency?.code.orEmpty(),
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Agency") },
@@ -219,7 +232,7 @@ fun SignUpScreen(
             ) {
                 agencies.forEach { agency ->
                     DropdownMenuItem(
-                        text = { Text(agency) },
+                        text = { Text(agency.code) },
                         onClick = {
                             selectedAgency = agency
                             expanded = false
@@ -243,9 +256,10 @@ fun SignUpScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Register Button
+        // Register Button — real POST /register (driver-only, created pending, FR-03).
         Button(
             onClick = {
+                val agency = selectedAgency
                 when {
                     fullName.isBlank() || email.isBlank() ||
                         password.isBlank() || confirmPassword.isBlank() ->
@@ -256,14 +270,29 @@ fun SignUpScreen(
                         error = "Password must be at least 8 characters."
                     password != confirmPassword ->
                         error = "Passwords do not match."
-                    selectedAgency.isBlank() ->
+                    agency == null ->
                         error = "Please select your agency."
                     else -> {
                         error = null
-                        submitted = true
+                        loading = true
+                        scope.launch {
+                            val result = ServiceLocator.authRepository.register(
+                                agencyId = agency.id,
+                                name = fullName,
+                                email = email,
+                                password = password,
+                                passwordConfirmation = confirmPassword,
+                            )
+                            loading = false
+                            when (result) {
+                                is RegisterResult.Success -> submitted = true
+                                is RegisterResult.Error -> error = result.message
+                            }
+                        }
                     }
                 }
             },
+            enabled = !loading,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -272,7 +301,7 @@ fun SignUpScreen(
             colors = ButtonDefaults.buttonColors(containerColor = NavyBlue),
         ) {
             Text(
-                text = "Register",
+                text = if (loading) "Registering…" else "Register",
                 color = White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,

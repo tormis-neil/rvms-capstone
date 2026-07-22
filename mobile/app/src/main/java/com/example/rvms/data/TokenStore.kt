@@ -21,31 +21,31 @@ private val Context.authDataStore by preferencesDataStore(name = "rvms_auth")
  * startup via [prime]. This is the standard pattern for a DataStore-backed
  * token feeding an interceptor.
  */
-class TokenStore(private val context: Context) {
+class TokenStore(private val context: Context) : TokenStorage {
 
     @Volatile
-    var cachedToken: String? = null
+    override var cachedToken: String? = null
         private set
 
     /** Load the persisted token into the in-memory cache (call once at startup). */
-    suspend fun prime() {
+    override suspend fun prime() {
         cachedToken = read()
     }
 
     /** Persist the token and update the in-memory cache. */
-    suspend fun save(token: String) {
+    override suspend fun save(token: String) {
         cachedToken = token
         context.authDataStore.edit { prefs -> prefs[KEY_TOKEN] = token }
     }
 
     /** Read the persisted token (null if none). */
-    suspend fun read(): String? =
+    override suspend fun read(): String? =
         context.authDataStore.data
             .map { prefs -> prefs[KEY_TOKEN] }
             .firstOrNull()
 
     /** Clear the token on sign-out. */
-    suspend fun clear() {
+    override suspend fun clear() {
         cachedToken = null
         context.authDataStore.edit { prefs -> prefs.remove(KEY_TOKEN) }
     }

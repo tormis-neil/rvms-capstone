@@ -3,11 +3,13 @@ package com.example.rvms
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import com.example.rvms.data.ServiceLocator
 import com.example.rvms.ui.auth.SignInScreen
 import com.example.rvms.ui.auth.SignUpScreen
 import com.example.rvms.ui.damage.NewDamageReportScreen
@@ -16,10 +18,12 @@ import com.example.rvms.ui.inspection.NewInspectionScreen
 import com.example.rvms.ui.shell.DriverShellScreen
 import com.example.rvms.ui.splash.SplashScreen
 import com.example.rvms.ui.vehicle.VehicleInfoScreen
+import kotlinx.coroutines.launch
 
 @Composable
 fun MainNavigation() {
     val backStack = rememberNavBackStack(Splash)
+    val scope = rememberCoroutineScope()
 
     NavDisplay(
         backStack = backStack,
@@ -28,9 +32,11 @@ fun MainNavigation() {
             entryProvider {
                 entry<Splash> {
                     SplashScreen(
-                        onSplashFinished = {
+                        // Verify a saved token against /me; route accordingly (FR-01).
+                        checkSession = { ServiceLocator.sessionManager.bootstrap() },
+                        onSplashFinished = { authenticated ->
                             backStack.clear()
-                            backStack.add(SignIn)
+                            backStack.add(if (authenticated) Home else SignIn)
                         },
                     )
                 }
@@ -72,6 +78,8 @@ fun MainNavigation() {
                             backStack.add(InspectionDetail(index))
                         },
                         onSignOut = {
+                            // Best-effort server token revoke + clear the local token.
+                            scope.launch { ServiceLocator.sessionManager.signOut() }
                             backStack.clear()
                             backStack.add(SignIn)
                         },

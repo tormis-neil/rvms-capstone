@@ -26,9 +26,13 @@ object ServiceLocator {
     lateinit var sessionManager: SessionManager
         private set
 
+    lateinit var authRepository: AuthRepository
+        private set
+
     fun init(context: Context) {
         tokenStore = TokenStore(context.applicationContext)
         api = ApiClient.create { tokenStore.cachedToken }
         sessionManager = SessionManager(api, tokenStore)
+        authRepository = AuthRepository(api, sessionManager)
     }
 }
