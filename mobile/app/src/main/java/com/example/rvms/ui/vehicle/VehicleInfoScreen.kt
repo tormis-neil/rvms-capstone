@@ -28,6 +28,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,8 +41,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.rvms.data.Session
+import com.example.rvms.data.ServiceLocator
 import com.example.rvms.data.VehicleStatus
+import com.example.rvms.data.remote.dto.VehicleDto
+import com.example.rvms.ui.common.formatMileage
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
@@ -55,16 +63,18 @@ fun VehicleInfoScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val vehicle = Session.current.vehicle
-    val driver = Session.current.driver
-    val scrollState = rememberScrollState()
+    // The driver's assigned vehicle(s) from GET /my-vehicle (FR-07). A driver
+    // may hold several — each renders the same card layout below.
+    val currentUser by ServiceLocator.sessionManager.currentUser.collectAsState()
+    var vehicles by remember { mutableStateOf<List<VehicleDto>>(emptyList()) }
 
-    val statusColor = when (vehicle.status) {
-        VehicleStatus.OPERATIONAL -> StatusOperational
-        VehicleStatus.DISPATCHED -> StatusDispatched
-        VehicleStatus.UNDER_PM -> StatusUnderPM
-        VehicleStatus.NOT_OPERATIONAL -> StatusNotOperational
+    LaunchedEffect(Unit) {
+        vehicles = ServiceLocator.vehicleRepository.myVehicles()
     }
+
+    val driverName = currentUser?.name.orEmpty()
+    val agencyName = currentUser?.agency?.name.orEmpty()
+    val scrollState = rememberScrollState()
 
     Scaffold(
         modifier = modifier,
@@ -88,7 +98,64 @@ fun VehicleInfoScreen(
                 .padding(innerPadding)
                 .padding(16.dp),
         ) {
+            if (vehicles.isEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Surface),
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            text = "No Vehicle Assigned",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = TextPrimary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Your agency administrator has not assigned a vehicle to your account yet.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary,
+                        )
+                    }
+                }
+                return@Column
+            }
 
+            if (vehicles.size > 1) {
+                // A driver may be the primary driver of more than one vehicle
+                // (Ch4 ERD) — call that out once, above the repeated cards below.
+                Text(
+                    text = "You are assigned to ${vehicles.size} vehicles.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            vehicles.forEachIndexed { index, vehicle ->
+                VehicleCard(vehicle = vehicle, driverName = driverName, agencyName = agencyName)
+                if (index != vehicles.lastIndex) {
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun VehicleCard(vehicle: VehicleDto, driverName: String, agencyName: String) {
+    val status = VehicleStatus.fromApiLabel(vehicle.status)
+    val statusColor = when (status) {
+        VehicleStatus.OPERATIONAL -> StatusOperational
+        VehicleStatus.DISPATCHED -> StatusDispatched
+        VehicleStatus.UNDER_PM -> StatusUnderPM
+        VehicleStatus.NOT_OPERATIONAL -> StatusNotOperational
+    }
+
+    Column {
         // Vehicle Status Banner
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -109,7 +176,7 @@ fun VehicleInfoScreen(
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = vehicle.plateNo,
+                        text = vehicle.plateNumber,
                         color = Gold,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
@@ -124,7 +191,7 @@ fun VehicleInfoScreen(
                         .padding(horizontal = 14.dp, vertical = 6.dp),
                 ) {
                     Text(
-                        text = vehicle.status.label,
+                        text = status.label,
                         color = statusColor,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -153,12 +220,12 @@ fun VehicleInfoScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 DetailRow("Vehicle Type", vehicle.type)
-                DetailRow("Plate Number", vehicle.plateNo)
+                DetailRow("Plate Number", vehicle.plateNumber)
                 DetailRow("Make", vehicle.make)
                 DetailRow("Model", vehicle.model)
-                DetailRow("Engine No.", vehicle.engineNo)
-                DetailRow("Chassis No.", vehicle.chassisNo)
-                DetailRow("Current Mileage", vehicle.mileage)
+                DetailRow("Engine No.", vehicle.engineNumber ?: "—")
+                DetailRow("Chassis No.", vehicle.chassisNumber ?: "—")
+                DetailRow("Current Mileage", formatMileage(vehicle.currentMileage))
             }
         }
 
@@ -179,12 +246,9 @@ fun VehicleInfoScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                DetailRow("Assigned Driver", driver.name)
-                DetailRow("Agency", driver.agency.fullName)
+                DetailRow("Assigned Driver", driverName)
+                DetailRow("Agency", agencyName)
             }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

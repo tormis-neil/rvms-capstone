@@ -47,10 +47,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import com.example.rvms.data.ActivityKind
+import com.example.rvms.data.ServiceLocator
 import com.example.rvms.data.Session
+import com.example.rvms.data.VehicleStatus
+import com.example.rvms.data.remote.dto.VehicleDto
+import com.example.rvms.ui.common.LicenseState
+import com.example.rvms.ui.common.formatIsoDate
+import com.example.rvms.ui.common.formatMileage
+import com.example.rvms.ui.common.licenseState
+import com.example.rvms.ui.common.logoForAgencyCode
 import com.example.rvms.ui.common.statusColor
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.Gold
@@ -72,16 +81,25 @@ fun HomeScreen(
 ) {
     val scrollState = rememberScrollState()
 
-    // Simulated refresh — with the backend this will re-fetch driver data
+    // Real driver session (FR-01) + assigned vehicle(s) (FR-07), replacing the
+    // prototype's mock Session/SampleData for identity and vehicle data.
+    val currentUser by ServiceLocator.sessionManager.currentUser.collectAsState()
+    var vehicles by remember { mutableStateOf<List<VehicleDto>>(emptyList()) }
     var isRefreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    suspend fun refreshVehicles() {
+        vehicles = ServiceLocator.vehicleRepository.myVehicles()
+    }
+
+    LaunchedEffect(Unit) { refreshVehicles() }
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = {
             isRefreshing = true
             scope.launch {
-                delay(900)
+                refreshVehicles()
                 isRefreshing = false
             }
         },
@@ -96,12 +114,13 @@ fun HomeScreen(
             .padding(16.dp),
     ) {
         // Greeting with agency logo
-        val driver = Session.current.driver
-        val vehicle = Session.current.vehicle
+        val firstName = currentUser?.name?.substringBefore(' ') ?: "Driver"
+        val agencyLogo = logoForAgencyCode(currentUser?.agency?.code)
+        val agencyName = currentUser?.agency?.name.orEmpty()
         Row(verticalAlignment = Alignment.CenterVertically) {
             Image(
-                painter = painterResource(id = driver.agency.logo),
-                contentDescription = "${driver.agency.code} logo",
+                painter = painterResource(id = agencyLogo),
+                contentDescription = "${currentUser?.agency?.code} logo",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .size(48.dp)
@@ -111,12 +130,12 @@ fun HomeScreen(
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
-                    text = "Good day, ${driver.name.substringBefore(' ')}!",
+                    text = "Good day, $firstName!",
                     style = MaterialTheme.typography.headlineLarge,
                     color = TextPrimary,
                 )
                 Text(
-                    text = driver.agency.fullName,
+                    text = agencyName,
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary,
                 )
@@ -125,69 +144,96 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Assigned Vehicle Card
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onNavigateToVehicle() },
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = NavyBlue),
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+        // Assigned Vehicle Card — the driver's primary vehicle from GET
+        // /my-vehicle; a driver with several vehicles sees all of them on the
+        // Vehicle Info screen (FR-07).
+        val vehicle = vehicles.firstOrNull()
+        if (vehicle == null) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Surface),
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
                     Text(
-                        text = "Assigned Vehicle",
-                        color = White.copy(alpha = 0.8f),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.weight(1f),
+                        text = "No Vehicle Assigned",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold,
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    // Status Badge — long labels (e.g. "Under Preventive
-                    // Maintenance") wrap centered inside the pill
-                    val vehicleStatusColor = statusColor(vehicle.status)
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(vehicleStatusColor.copy(alpha = 0.2f))
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Your agency administrator has not assigned a vehicle to your account yet.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                    )
+                }
+            }
+        } else {
+            val vehicleStatus = VehicleStatus.fromApiLabel(vehicle.status)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToVehicle() },
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = NavyBlue),
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = vehicle.status.label,
-                            color = vehicleStatusColor,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            textAlign = TextAlign.Center,
-                            lineHeight = 16.sp,
+                            text = "Assigned Vehicle",
+                            color = White.copy(alpha = 0.8f),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f),
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        // Status Badge — long labels (e.g. "Under Preventive
+                        // Maintenance") wrap centered inside the pill
+                        val vehicleStatusColor = statusColor(vehicleStatus)
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(vehicleStatusColor.copy(alpha = 0.2f))
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                        ) {
+                            Text(
+                                text = vehicleStatus.label,
+                                color = vehicleStatusColor,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 16.sp,
+                            )
+                        }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = vehicle.type,
-                    color = White,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = vehicle.plateNo,
-                    color = Gold,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                    Text(
+                        text = vehicle.type,
+                        color = White,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = vehicle.plateNumber,
+                        color = Gold,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    InfoChip(vehicle.make, Modifier.weight(1f))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    InfoChip(vehicle.model, Modifier.weight(1f))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    InfoChip(vehicle.mileage, Modifier.weight(1f))
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        InfoChip(vehicle.make, Modifier.weight(1f))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        InfoChip(vehicle.model, Modifier.weight(1f))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        InfoChip(formatMileage(vehicle.currentMileage), Modifier.weight(1f))
+                    }
                 }
             }
         }
@@ -195,56 +241,65 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         // License Status (moved from Profile — driver readiness shown alongside
-        // vehicle readiness; license details remain on the Profile screen)
-        val licenseColor = if (driver.licenseExpiringSoon) StatusUnderPM else StatusOperational
-        val licenseLabel = if (driver.licenseExpiringSoon) "Expiring Soon" else "Valid"
-        val licenseBadge = if (driver.licenseExpiringSoon) "Action Needed" else "Active"
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Surface),
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column {
+        // vehicle readiness; license details remain on the Profile screen).
+        // Computed from the real /me payload — no license on file hides the card.
+        val license = licenseState(currentUser?.licenseExpiryDate, currentUser?.agency?.licenseExpiryWarningDays)
+        if (license != LicenseState.NONE) {
+            val expiringSoon = license == LicenseState.EXPIRING_SOON || license == LicenseState.EXPIRED
+            val licenseColor = if (expiringSoon) StatusUnderPM else StatusOperational
+            val licenseLabel = when (license) {
+                LicenseState.EXPIRED -> "Expired"
+                LicenseState.EXPIRING_SOON -> "Expiring Soon"
+                else -> "Valid"
+            }
+            val licenseBadge = if (expiringSoon) "Action Needed" else "Active"
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Surface),
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column {
+                            Text(
+                                text = "License Status",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary,
+                            )
+                            Text(
+                                text = licenseLabel,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = licenseColor,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(licenseColor.copy(alpha = 0.1f))
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                        ) {
+                            Text(
+                                text = licenseBadge,
+                                color = licenseColor,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
+                    if (expiringSoon) {
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "License Status",
+                            text = "Expires ${formatIsoDate(currentUser?.licenseExpiryDate)}. " +
+                                "Please coordinate with your agency administrator for renewal.",
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary,
                         )
-                        Text(
-                            text = licenseLabel,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = licenseColor,
-                            fontWeight = FontWeight.Bold,
-                        )
                     }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(licenseColor.copy(alpha = 0.1f))
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                    ) {
-                        Text(
-                            text = licenseBadge,
-                            color = licenseColor,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                }
-                if (driver.licenseExpiringSoon) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Expires ${driver.licenseExpiry}. Please coordinate with your " +
-                            "agency administrator for renewal.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary,
-                    )
                 }
             }
         }
@@ -287,7 +342,8 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Recent Activity
+        // Recent Activity — still mock SampleData; wired to the real
+        // inspection/damage history once those endpoints land (R3/R4).
         Text(
             text = "Recent Activity",
             style = MaterialTheme.typography.titleMedium,

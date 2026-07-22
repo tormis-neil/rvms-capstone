@@ -34,6 +34,13 @@ enum class VehicleStatus(val label: String) {
     DISPATCHED("Dispatched"),
     UNDER_PM("Under Preventive Maintenance"),
     NOT_OPERATIONAL("Not Operational"),
+    ;
+
+    companion object {
+        /** Maps the API's exact status string (FR-18) to this enum. */
+        fun fromApiLabel(label: String): VehicleStatus =
+            entries.firstOrNull { it.label == label } ?: OPERATIONAL
+    }
 }
 
 /** Status of a submitted damage report (Plan §6.5). */
