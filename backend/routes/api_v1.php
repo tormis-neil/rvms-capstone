@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\InspectionChecklistController;
 use App\Http\Controllers\Api\V1\InspectionController;
 use App\Http\Controllers\Api\V1\LicenseMonitoringController;
 use App\Http\Controllers\Api\V1\MyVehicleController;
+use App\Http\Controllers\Api\V1\PmScheduleController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\RepairLogController;
 use App\Http\Controllers\Api\V1\VehicleController;
@@ -67,6 +68,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/repairs', [RepairLogController::class, 'store']);
         Route::get('/repairs/{repair}', [RepairLogController::class, 'show'])->whereNumber('repair');
         Route::put('/repairs/{repair}', [RepairLogController::class, 'update'])->whereNumber('repair');
+
+        // Admin — preventive maintenance schedules (FR-14)
+        Route::get('/pm-schedules', [PmScheduleController::class, 'index']);
+        Route::post('/pm-schedules', [PmScheduleController::class, 'store']);
+        Route::get('/pm-schedules/{pmSchedule}', [PmScheduleController::class, 'show'])->whereNumber('pmSchedule');
+        Route::put('/pm-schedules/{pmSchedule}', [PmScheduleController::class, 'update'])->whereNumber('pmSchedule');
+        Route::patch('/pm-schedules/{pmSchedule}/complete', [PmScheduleController::class, 'complete'])->whereNumber('pmSchedule');
     });
 
     // Driver — assigned vehicle(s) (FR-07), checklist + inspection submission (FR-09),

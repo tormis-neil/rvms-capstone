@@ -4,6 +4,7 @@ use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\DamageReportController;
 use App\Http\Controllers\Web\DriverController;
 use App\Http\Controllers\Web\InspectionController;
+use App\Http\Controllers\Web\PmController;
 use App\Http\Controllers\Web\RepairController;
 use App\Http\Controllers\Web\VehicleController;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +40,12 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/repairs', [RepairController::class, 'index'])->name('repairs');
     Route::post('/repairs', [RepairController::class, 'store'])->name('repairs.store');
     Route::put('/repairs/{repair}', [RepairController::class, 'update'])->name('repairs.update');
+
+    // Preventive maintenance (FR-14)
+    Route::get('/pm', [PmController::class, 'index'])->name('pm');
+    Route::post('/pm', [PmController::class, 'store'])->name('pm.store');
+    Route::put('/pm/{pmSchedule}', [PmController::class, 'update'])->name('pm.update');
+    Route::patch('/pm/{pmSchedule}/complete', [PmController::class, 'complete'])->name('pm.complete');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });

@@ -33,7 +33,7 @@
                 <a href="{{ route('inspections') }}" class="nav-item {{ request()->routeIs('inspections') ? 'active' : '' }}">
                     <i class="bi bi-exclamation-triangle"></i> Inspections & Damage
                 </a>
-                <a href="#" class="nav-item" title="Available in a later phase (R5)">
+                <a href="{{ route('pm') }}" class="nav-item {{ request()->routeIs('pm') ? 'active' : '' }}">
                     <i class="bi bi-wrench-adjustable-circle"></i> PM Schedules
                 </a>
                 <a href="{{ route('repairs') }}" class="nav-item {{ request()->routeIs('repairs') ? 'active' : '' }}">
