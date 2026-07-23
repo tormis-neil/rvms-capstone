@@ -48,11 +48,15 @@ class InspectionRepositoryTest {
 
     @Test
     fun `checklist maps a BFP driver's 14 items including the two extras`() = runTest {
-        val items = (1..12).joinToString(",") {
+        val standard = (1..12).map {
             """{"id":$it,"name":"Item $it","is_bfp_only":false,"sort_order":$it}"""
-        } + ""","{"id":13,"name":"Hydraulic System","is_bfp_only":true,"sort_order":13},""" +
-            """{"id":14,"name":"Fire Pump","is_bfp_only":true,"sort_order":14}"""
-        server.enqueue(MockResponse().setResponseCode(200).setBody("""{"data":[$items]}"""))
+        }
+        val extras = listOf(
+            """{"id":13,"name":"Hydraulic System","is_bfp_only":true,"sort_order":13}""",
+            """{"id":14,"name":"Fire Pump","is_bfp_only":true,"sort_order":14}""",
+        )
+        val body = """{"data":[${(standard + extras).joinToString(",")}]}"""
+        server.enqueue(MockResponse().setResponseCode(200).setBody(body))
 
         val checklist = repo.checklist()
 

@@ -2,6 +2,8 @@ package com.example.rvms.data.remote
 
 import com.example.rvms.data.remote.dto.AgencyListDto
 import com.example.rvms.data.remote.dto.ChecklistDto
+import com.example.rvms.data.remote.dto.DamageEnvelopeDto
+import com.example.rvms.data.remote.dto.DamageListDto
 import com.example.rvms.data.remote.dto.InspectionEnvelopeDto
 import com.example.rvms.data.remote.dto.InspectionListDto
 import com.example.rvms.data.remote.dto.LoginRequestDto
@@ -11,10 +13,14 @@ import com.example.rvms.data.remote.dto.RegisterRequestDto
 import com.example.rvms.data.remote.dto.SubmitInspectionDto
 import com.example.rvms.data.remote.dto.UserEnvelopeDto
 import com.example.rvms.data.remote.dto.VehicleListDto
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Path
 
 /**
@@ -68,4 +74,20 @@ interface ApiService {
     /** Full detail of one of the driver's own inspections. */
     @GET("inspections/{id}")
     suspend fun inspectionDetail(@Path("id") id: Long): Response<InspectionEnvelopeDto>
+
+    // --- Damage reports (FR-11) ---
+
+    /** The driver's own damage-report history. */
+    @GET("damage-reports")
+    suspend fun myDamageReports(): Response<DamageListDto>
+
+    /** File a damage report — multipart so the photo (optional) can be attached. */
+    @Multipart
+    @POST("damage-reports")
+    suspend fun submitDamage(
+        @Part("vehicle_id") vehicleId: RequestBody,
+        @Part("nature_of_damage") natureOfDamage: RequestBody,
+        @Part("suspected_parts") suspectedParts: RequestBody?,
+        @Part photo: MultipartBody.Part?,
+    ): Response<DamageEnvelopeDto>
 }

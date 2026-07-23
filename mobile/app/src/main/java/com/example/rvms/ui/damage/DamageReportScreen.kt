@@ -33,21 +33,28 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rvms.data.ServiceLocator
+import com.example.rvms.data.SubmitDamageResult
 import com.example.rvms.data.remote.dto.VehicleDto
+import kotlinx.coroutines.launch
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.NavyBlue
@@ -87,10 +94,18 @@ fun NewDamageReportScreen(
 
     var natureOfDamage by remember { mutableStateOf("") }
     var suspectedParts by remember { mutableStateOf("") }
-    var photoAttached by remember { mutableStateOf(false) }
+    var photoUri by remember { mutableStateOf<Uri?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var submitting by remember { mutableStateOf(false) }
     var showSuccess by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    // Optional photo attachment (FR-11) — a real image picker.
+    val photoPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+    ) { uri -> if (uri != null) photoUri = uri }
 
     // Auto-filled by the system (Plan §6.5): the device's current date
     val dateReported = remember {
@@ -192,27 +207,30 @@ fun NewDamageReportScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Photo attachment (mocked toggle for the prototype)
+                    // Photo attachment (optional, FR-11) — opens the device image picker.
+                    val hasPhoto = photoUri != null
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(80.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(if (photoAttached) StatusOperational.copy(alpha = 0.1f) else Background)
+                            .background(if (hasPhoto) StatusOperational.copy(alpha = 0.1f) else Background)
                             .border(
                                 width = 1.dp,
-                                color = if (photoAttached) StatusOperational else TextSecondary.copy(alpha = 0.3f),
+                                color = if (hasPhoto) StatusOperational else TextSecondary.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(8.dp),
                             )
-                            .clickable { photoAttached = !photoAttached },
+                            .clickable {
+                                if (hasPhoto) photoUri = null else photoPicker.launch("image/*")
+                            },
                         contentAlignment = Alignment.Center,
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = if (photoAttached) "✓" else "📷", fontSize = 24.sp)
+                            Text(text = if (hasPhoto) "✓" else "📷", fontSize = 24.sp)
                             Text(
-                                text = if (photoAttached) "Photo attached (tap to remove)" else "Tap to attach photo (optional)",
+                                text = if (hasPhoto) "Photo attached (tap to remove)" else "Tap to attach photo (optional)",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (photoAttached) StatusOperational else TextSecondary,
+                                color = if (hasPhoto) StatusOperational else TextSecondary,
                             )
                         }
                     }
@@ -233,13 +251,39 @@ fun NewDamageReportScreen(
 
             Button(
                 onClick = {
-                    if (natureOfDamage.isBlank()) {
-                        error = "Nature of Damage is required."
-                    } else {
-                        error = null
-                        showSuccess = true
+                    val assignedVehicle = vehicle
+                    when {
+                        assignedVehicle == null ->
+                            error = "No vehicle is assigned to your account yet. Contact your agency administrator."
+                        natureOfDamage.isBlank() ->
+                            error = "Nature of Damage is required."
+                        else -> {
+                            error = null
+                            submitting = true
+                            // Read the picked image bytes (if any) off the main thread inside the coroutine.
+                            val uri = photoUri
+                            scope.launch {
+                                val photo = uri?.let {
+                                    runCatching {
+                                        context.contentResolver.openInputStream(it)?.use { s -> s.readBytes() }
+                                    }.getOrNull()?.let { bytes -> bytes to "damage.jpg" }
+                                }
+                                val result = ServiceLocator.damageRepository.submit(
+                                    vehicleId = assignedVehicle.id,
+                                    natureOfDamage = natureOfDamage,
+                                    suspectedParts = suspectedParts,
+                                    photo = photo,
+                                )
+                                submitting = false
+                                when (result) {
+                                    is SubmitDamageResult.Success -> showSuccess = true
+                                    is SubmitDamageResult.Error -> error = result.message
+                                }
+                            }
+                        }
                     }
                 },
+                enabled = !submitting,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
@@ -247,7 +291,7 @@ fun NewDamageReportScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = NavyBlue),
             ) {
                 Text(
-                    text = "Submit Report",
+                    text = if (submitting) "Submitting…" else "Submit Report",
                     color = White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,

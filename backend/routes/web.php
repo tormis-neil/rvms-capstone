@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Web\AuthController;
+use App\Http\Controllers\Web\DamageReportController;
 use App\Http\Controllers\Web\DriverController;
 use App\Http\Controllers\Web\InspectionController;
+use App\Http\Controllers\Web\RepairController;
 use App\Http\Controllers\Web\VehicleController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,9 +30,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::patch('/drivers/{driver}/approve', [DriverController::class, 'approve'])->name('drivers.approve');
     Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject'])->name('drivers.reject');
 
-    // Inspections (FR-10). Damage reports (the page's second half) arrive in R4.
+    // Inspections + Damage reports share one page (FR-10, FR-12).
     Route::get('/inspections', [InspectionController::class, 'index'])->name('inspections');
     Route::patch('/inspections/{inspection}/review', [InspectionController::class, 'review'])->name('inspections.review');
+    Route::patch('/damage-reports/{damageReport}/review', [DamageReportController::class, 'review'])->name('damage.review');
+
+    // Repair logs (FR-13)
+    Route::get('/repairs', [RepairController::class, 'index'])->name('repairs');
+    Route::post('/repairs', [RepairController::class, 'store'])->name('repairs.store');
+    Route::put('/repairs/{repair}', [RepairController::class, 'update'])->name('repairs.update');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
