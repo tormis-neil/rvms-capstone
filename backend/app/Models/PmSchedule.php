@@ -104,14 +104,14 @@ class PmSchedule extends Model
             : self::STATUS_UPCOMING;
     }
 
-    /** Badge class matching the prototype's status pills. */
+    /** Badge class matching the prototype's PM status pills. */
     public function statusBadgeClass(): string
     {
         return match ($this->status) {
-            self::STATUS_DUE => 'badge-not-operational',
-            self::STATUS_DUE_SOON => 'badge-under-pm',
-            self::STATUS_COMPLETED => 'badge-operational',
-            default => 'bg-light text-dark border', // Upcoming
+            self::STATUS_DUE => 'bg-danger',
+            self::STATUS_DUE_SOON => 'bg-warning text-dark',
+            self::STATUS_COMPLETED => 'bg-secondary',
+            default => 'badge-upcoming', // Upcoming
         };
     }
 
