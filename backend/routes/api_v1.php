@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AgencyController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\DamageReportController;
 use App\Http\Controllers\Api\V1\DriverController;
 use App\Http\Controllers\Api\V1\InspectionChecklistController;
 use App\Http\Controllers\Api\V1\InspectionController;
@@ -30,6 +31,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/inspections', [InspectionController::class, 'index']);
     Route::get('/inspections/{inspection}', [InspectionController::class, 'show'])->whereNumber('inspection');
 
+    // Damage reports history/detail — both roles (driver=own FR-11, admin=agency FR-12).
+    Route::get('/damage-reports', [DamageReportController::class, 'index']);
+    Route::get('/damage-reports/{damageReport}', [DamageReportController::class, 'show'])->whereNumber('damageReport');
+
     // Admin — vehicle records (FR-05, FR-18)
     Route::middleware('role:admin')->group(function () {
         Route::get('/vehicles', [VehicleController::class, 'index']);
@@ -52,12 +57,17 @@ Route::middleware('auth:sanctum')->group(function () {
         // shared group above (role-branched); these two stay admin-only.
         Route::get('/inspections/frequent-issues', [InspectionController::class, 'frequentIssues']);
         Route::patch('/inspections/{inspection}/review', [InspectionController::class, 'review'])->whereNumber('inspection');
+
+        // Admin — damage report review (FR-12). index/show are shared above.
+        Route::patch('/damage-reports/{damageReport}/review', [DamageReportController::class, 'review'])->whereNumber('damageReport');
     });
 
-    // Driver — assigned vehicle(s) (FR-07), checklist + inspection submission (FR-09)
+    // Driver — assigned vehicle(s) (FR-07), checklist + inspection submission (FR-09),
+    // damage report submission (FR-11)
     Route::middleware('role:driver')->group(function () {
         Route::get('/my-vehicle', MyVehicleController::class);
         Route::get('/inspections/checklist', InspectionChecklistController::class);
         Route::post('/inspections', [InspectionController::class, 'store']);
+        Route::post('/damage-reports', [DamageReportController::class, 'store']);
     });
 });
