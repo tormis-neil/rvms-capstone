@@ -39,10 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.rvms.data.NotificationType
-import com.example.rvms.data.Session
 import com.example.rvms.ui.common.ScreenHeader
-import com.example.rvms.ui.common.notificationColor
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.Surface
@@ -57,9 +54,9 @@ fun NotificationScreen(
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
-    val notifications = Session.current.notifications
 
-    // Simulated refresh — with the backend this will re-fetch notifications
+    // Notifications are delivered by the notifications backend + FCM in R7; a
+    // fresh account correctly shows none (no seeded sample data).
     var isRefreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -68,7 +65,7 @@ fun NotificationScreen(
         onRefresh = {
             isRefreshing = true
             scope.launch {
-                delay(900)
+                delay(600)
                 isRefreshing = false
             }
         },
@@ -86,35 +83,11 @@ fun NotificationScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Group by time bucket, preserving the data's order (Today, Yesterday, Earlier)
-        notifications
-            .groupBy { it.timeGroup }
-            .forEach { (group, items) ->
-                Text(
-                    text = group,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = TextSecondary,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                items.forEach { notification ->
-                    val icon = when (notification.type) {
-                        NotificationType.PM_REMINDER -> Icons.Default.Build
-                        NotificationType.VEHICLE_STATUS_UPDATE -> Icons.Default.CarRental
-                    }
-                    NotificationItem(
-                        title = notification.title,
-                        body = notification.body,
-                        time = notification.time,
-                        icon = icon,
-                        iconTint = notificationColor(notification.type, notification.status),
-                        isRead = notification.isRead,
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+        Text(
+            text = "No notifications yet.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextSecondary,
+        )
     }
     }
 }

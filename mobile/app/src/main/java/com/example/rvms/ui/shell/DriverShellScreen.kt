@@ -27,7 +27,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.rvms.data.Session
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.StatusNotOperational
@@ -49,13 +48,14 @@ fun DriverShellScreen(
     onNavigateToNewInspection: () -> Unit,
     onNavigateToNewDamageReport: () -> Unit,
     onNavigateToVehicleInfo: () -> Unit,
-    onNavigateToInspectionDetail: (Int) -> Unit,
+    onNavigateToInspectionDetail: (Long) -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    // Still mock SampleData — wired to the real GET /notifications feed in R7.
-    val unreadAlerts = Session.current.notifications.count { !it.isRead }
+    // The unread-alerts badge lights up when the notifications backend + FCM
+    // land in R7; until then there are no notifications, so no badge.
+    val unreadAlerts = 0
 
     val navItems = listOf(
         BottomNavItem("Home", Icons.Default.Home),

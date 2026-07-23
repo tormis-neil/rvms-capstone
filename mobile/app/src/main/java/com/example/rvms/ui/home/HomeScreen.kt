@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CarRental
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Warning
@@ -49,10 +48,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import com.example.rvms.data.ActivityKind
 import com.example.rvms.data.ServiceLocator
-import com.example.rvms.data.Session
 import com.example.rvms.data.VehicleStatus
+import com.example.rvms.data.remote.dto.InspectionDto
 import com.example.rvms.data.remote.dto.VehicleDto
 import com.example.rvms.ui.common.LicenseState
 import com.example.rvms.ui.common.formatIsoDate
@@ -85,21 +83,23 @@ fun HomeScreen(
     // prototype's mock Session/SampleData for identity and vehicle data.
     val currentUser by ServiceLocator.sessionManager.currentUser.collectAsState()
     var vehicles by remember { mutableStateOf<List<VehicleDto>>(emptyList()) }
+    var recentInspections by remember { mutableStateOf<List<InspectionDto>>(emptyList()) }
     var isRefreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    suspend fun refreshVehicles() {
+    suspend fun refresh() {
         vehicles = ServiceLocator.vehicleRepository.myVehicles()
+        recentInspections = ServiceLocator.inspectionRepository.history().take(3)
     }
 
-    LaunchedEffect(Unit) { refreshVehicles() }
+    LaunchedEffect(Unit) { refresh() }
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = {
             isRefreshing = true
             scope.launch {
-                refreshVehicles()
+                refresh()
                 isRefreshing = false
             }
         },
@@ -342,8 +342,8 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Recent Activity — still mock SampleData; wired to the real
-        // inspection/damage history once those endpoints land (R3/R4).
+        // Recent Activity — the driver's most recent inspection submissions
+        // (real data from GET /inspections). Empty for a fresh account.
         Text(
             text = "Recent Activity",
             style = MaterialTheme.typography.titleMedium,
@@ -353,20 +353,23 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        Session.current.recentActivity.forEach { activity ->
-            val (activityIcon, iconTint) = when (activity.kind) {
-                ActivityKind.INSPECTION_SUBMITTED -> Icons.Default.List to NavyBlue
-                ActivityKind.DAMAGE_SUBMITTED -> Icons.Default.Warning to StatusUnderPM
-                ActivityKind.STATUS_UPDATE -> Icons.Default.CarRental to NavyBlue
-                ActivityKind.PM_REMINDER -> Icons.Default.Info to StatusUnderPM
-            }
-            ActivityItem(
-                title = activity.title,
-                subtitle = activity.subtitle,
-                time = activity.time,
-                icon = activityIcon,
-                iconTint = iconTint,
+        if (recentInspections.isEmpty()) {
+            Text(
+                text = "No recent activity yet.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary,
             )
+        } else {
+            recentInspections.forEach { inspection ->
+                val issues = inspection.items.count { it.status == "Has Issue" }
+                ActivityItem(
+                    title = "Daily Inspection Submitted",
+                    subtitle = if (issues == 0) "All items OK" else "$issues issue(s) found",
+                    time = formatIsoDate(inspection.inspectionDate),
+                    icon = Icons.Default.List,
+                    iconTint = NavyBlue,
+                )
+            }
         }
     }
     }

@@ -1,15 +1,11 @@
 package com.example.rvms.data
 
-import com.example.rvms.data.remote.ApiClient
 import com.example.rvms.data.remote.ApiService
 import com.example.rvms.data.remote.dto.AgencyDto
 import com.example.rvms.data.remote.dto.LoginRequestDto
 import com.example.rvms.data.remote.dto.RegisterRequestDto
 import com.example.rvms.data.remote.dto.UserDto
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import retrofit2.Response
+import com.example.rvms.data.remote.laravelErrorMessage
 
 /** Outcome of a login attempt, mapped from the API's HTTP contract. */
 sealed interface LoginResult {
@@ -49,7 +45,7 @@ class AuthRepository(
             LoginResult.Success(body.user)
         } else {
             LoginResult.Error(
-                errorMessage(response, fallback = "Unable to sign in. Please try again."),
+                laravelErrorMessage(response, fallback = "Unable to sign in. Please try again."),
             )
         }
     } catch (e: Exception) {
@@ -80,7 +76,7 @@ class AuthRepository(
             RegisterResult.Success
         } else {
             RegisterResult.Error(
-                errorMessage(response, fallback = "Unable to register. Please try again."),
+                laravelErrorMessage(response, fallback = "Unable to register. Please try again."),
             )
         }
     } catch (e: Exception) {
@@ -97,28 +93,6 @@ class AuthRepository(
 
     /** Sign out: best-effort server revoke + clear the local token. */
     suspend fun logout() = session.signOut()
-
-    /**
-     * Pull a human message out of a Laravel error body. Validation errors (422)
-     * arrive as `{ "message": ..., "errors": { field: [msg, ...] } }`; other
-     * errors (e.g. 403 pending/rejected) as `{ "message": ... }`. We prefer the
-     * first field error, then the top-level message, then the fallback.
-     */
-    private fun errorMessage(response: Response<*>, fallback: String): String {
-        val raw = response.errorBody()?.string().orEmpty()
-        if (raw.isBlank()) return fallback
-        return try {
-            val obj = ApiClient.json.parseToJsonElement(raw).jsonObject
-            val firstFieldError = obj["errors"]?.jsonObject
-                ?.values?.firstOrNull()?.jsonArray
-                ?.firstOrNull()?.jsonPrimitive?.content
-            firstFieldError
-                ?: obj["message"]?.jsonPrimitive?.content
-                ?: fallback
-        } catch (e: Exception) {
-            fallback
-        }
-    }
 
     private companion object {
         const val NETWORK_ERROR = "Cannot reach the server. Check your connection and try again."

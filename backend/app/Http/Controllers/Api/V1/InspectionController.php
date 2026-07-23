@@ -8,8 +8,10 @@ use App\Http\Requests\StoreInspectionRequest;
 use App\Http\Resources\InspectionResource;
 use App\Models\Inspection;
 use App\Models\InspectionItem;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Inspections API (FR-09 submission, FR-10 monitoring/review). Agency scoping
@@ -49,16 +51,31 @@ class InspectionController extends Controller
     }
 
     /**
-     * GET /inspections (admin) — monitoring list with vehicle/driver/date filters (FR-10).
+     * GET /inspections — inspection history list.
+     *
+     * A driver sees only their OWN submissions (FR-09 history on the mobile
+     * app); an admin sees the whole agency's inspections with optional
+     * vehicle/driver/date/status filters (FR-10 monitoring). Agency scoping is
+     * automatic via the Inspection model's BelongsToAgency scope.
      */
     public function index(Request $request)
     {
-        $inspections = Inspection::query()
-            ->with(['vehicle', 'driver', 'items'])
-            ->when($request->filled('vehicle_id'), fn ($q) => $q->where('vehicle_id', $request->integer('vehicle_id')))
-            ->when($request->filled('driver_id'), fn ($q) => $q->where('driver_id', $request->integer('driver_id')))
-            ->when($request->filled('date'), fn ($q) => $q->whereDate('inspection_date', $request->date('date')))
-            ->when($request->filled('review_status'), fn ($q) => $q->where('review_status', $request->string('review_status')))
+        $user = $request->user();
+
+        $query = Inspection::query()
+            ->with(['vehicle', 'driver', 'items.checklistItem']);
+
+        if ($user->role === User::ROLE_DRIVER) {
+            $query->where('driver_id', $user->id);
+        } else {
+            $query
+                ->when($request->filled('vehicle_id'), fn ($q) => $q->where('vehicle_id', $request->integer('vehicle_id')))
+                ->when($request->filled('driver_id'), fn ($q) => $q->where('driver_id', $request->integer('driver_id')))
+                ->when($request->filled('date'), fn ($q) => $q->whereDate('inspection_date', $request->date('date')))
+                ->when($request->filled('review_status'), fn ($q) => $q->where('review_status', $request->string('review_status')));
+        }
+
+        $inspections = $query
             ->latest('inspection_date')
             ->latest('id')
             ->paginate(10);
@@ -67,10 +84,18 @@ class InspectionController extends Controller
     }
 
     /**
-     * GET /inspections/{id} (admin) — full checklist detail.
+     * GET /inspections/{id} — full checklist detail. A driver may only open
+     * their own inspection (404 otherwise); an admin may open any of their
+     * agency's (cross-agency already 404s via the model scope).
      */
-    public function show(Inspection $inspection)
+    public function show(Request $request, Inspection $inspection)
     {
+        $user = $request->user();
+
+        if ($user->role === User::ROLE_DRIVER && $inspection->driver_id !== $user->id) {
+            throw new NotFoundHttpException;
+        }
+
         return InspectionResource::make(
             $inspection->load(['items.checklistItem', 'vehicle', 'driver', 'reviewer'])
         );

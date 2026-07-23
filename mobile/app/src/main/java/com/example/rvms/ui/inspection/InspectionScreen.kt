@@ -29,7 +29,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,9 +41,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.rvms.data.InspectionRecord
-import com.example.rvms.data.Session
+import com.example.rvms.data.ServiceLocator
+import com.example.rvms.data.remote.dto.InspectionDto
 import com.example.rvms.ui.common.ScreenHeader
+import com.example.rvms.ui.common.formatIsoDate
+import com.example.rvms.ui.common.formatIsoTime
+import com.example.rvms.ui.common.todayIso
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.StatusNotOperational
@@ -51,16 +56,45 @@ import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
 
+/** Issue count from a real inspection's items. */
+private fun InspectionDto.issueCount(): Int = items.count { it.status == "Has Issue" }
+
+/** Names of flagged items. */
+private fun InspectionDto.flaggedNames(): List<String> =
+    items.filter { it.status == "Has Issue" }.mapNotNull { it.name }
+
+private fun InspectionDto.resultLabel(): String =
+    result ?: when (val n = issueCount()) {
+        0 -> "All OK"
+        1 -> "1 Issue"
+        else -> "$n Issues"
+    }
+
 @Composable
 fun InspectionScreen(
     onStartInspection: () -> Unit,
-    onOpenDetail: (Int) -> Unit,
+    onOpenDetail: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
-    val data = Session.current
-    val history = Session.inspectionHistory
-    val todaysInspection = Session.todaysInspection()
+
+    // The driver's OWN inspection history (FR-09), empty for a fresh account.
+    // Re-fetched whenever this tab is entered (Nav3 recomposes the shell on
+    // return from the New Inspection screen).
+    val history = remember { mutableStateListOf<InspectionDto>() }
+    var loaded by remember { mutableStateOf(false) }
+    var vehicleLabel by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        history.clear()
+        history.addAll(ServiceLocator.inspectionRepository.history())
+        val vehicle = ServiceLocator.vehicleRepository.myVehicles().firstOrNull()
+        vehicleLabel = vehicle?.let { "${it.type} — ${it.plateNumber}" }.orEmpty()
+        loaded = true
+    }
+
+    val today = todayIso()
+    val todaysInspection = history.firstOrNull { it.inspectionDate == today }
     var showResubmitWarning by remember { mutableStateOf(false) }
 
     Column(
@@ -101,7 +135,7 @@ fun InspectionScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Button(
-                onClick = { onOpenDetail(history.indexOf(todaysInspection)) },
+                onClick = { onOpenDetail(todaysInspection.id) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -137,23 +171,25 @@ fun InspectionScreen(
             color = TextPrimary,
             fontWeight = FontWeight.Bold,
         )
-        Text(
-            text = "${data.vehicle.type} — ${data.vehicle.plateNo}",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
-        )
+        if (vehicleLabel.isNotBlank()) {
+            Text(
+                text = vehicleLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+            )
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         if (history.isEmpty()) {
             Text(
-                text = "No inspections submitted yet.",
+                text = if (loaded) "No inspections submitted yet." else "Loading…",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
             )
         } else {
-            history.forEachIndexed { index, record ->
-                InspectionHistoryItem(record, onClick = { onOpenDetail(index) })
+            history.forEach { record ->
+                InspectionHistoryItem(record, onClick = { onOpenDetail(record.id) })
             }
         }
 
@@ -166,7 +202,8 @@ fun InspectionScreen(
             title = { Text("Inspection Already Submitted", fontWeight = FontWeight.Bold) },
             text = {
                 Text(
-                    "You already submitted today's inspection at ${todaysInspection.time}. " +
+                    "You already submitted today's inspection at " +
+                        "${formatIsoTime(todaysInspection.submittedAt)}. " +
                         "Are you sure you want to submit another one?"
                 )
             },
@@ -186,7 +223,7 @@ fun InspectionScreen(
 }
 
 @Composable
-private fun TodaysInspectionBanner(record: InspectionRecord) {
+private fun TodaysInspectionBanner(record: InspectionDto) {
     // Always green: the banner confirms the daily inspection is done.
     // Any flagged items still show through the result label below.
     Card(
@@ -213,7 +250,11 @@ private fun TodaysInspectionBanner(record: InspectionRecord) {
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = "${record.time} • ${record.itemsChecked} items checked • ${record.resultLabel}",
+                    text = listOfNotNull(
+                        formatIsoTime(record.submittedAt).takeIf { it.isNotBlank() },
+                        "${record.items.size} items checked",
+                        record.resultLabel(),
+                    ).joinToString(" • "),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                 )
@@ -223,10 +264,11 @@ private fun TodaysInspectionBanner(record: InspectionRecord) {
 }
 
 @Composable
-private fun InspectionHistoryItem(record: InspectionRecord, onClick: () -> Unit) {
-    val passed = record.issueCount == 0
+private fun InspectionHistoryItem(record: InspectionDto, onClick: () -> Unit) {
+    val passed = record.issueCount() == 0
     val statusColor = if (passed) StatusOperational else StatusNotOperational
     val icon = if (passed) Icons.Default.CheckCircle else Icons.Default.Warning
+    val flagged = record.flaggedNames()
 
     Card(
         modifier = Modifier
@@ -259,19 +301,22 @@ private fun InspectionHistoryItem(record: InspectionRecord, onClick: () -> Unit)
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = record.date,
+                    text = formatIsoDate(record.inspectionDate),
                     style = MaterialTheme.typography.bodyLarge,
                     color = TextPrimary,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = "${record.time} • ${record.itemsChecked} items checked",
+                    text = listOfNotNull(
+                        formatIsoTime(record.submittedAt).takeIf { it.isNotBlank() },
+                        "${record.items.size} items checked",
+                    ).joinToString(" • "),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                 )
-                if (record.flaggedItems.isNotEmpty()) {
+                if (flagged.isNotEmpty()) {
                     Text(
-                        text = "Flagged: ${record.flaggedItems.joinToString(", ")}",
+                        text = "Flagged: ${flagged.joinToString(", ")}",
                         style = MaterialTheme.typography.bodySmall,
                         color = statusColor,
                     )
@@ -285,7 +330,7 @@ private fun InspectionHistoryItem(record: InspectionRecord, onClick: () -> Unit)
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
                 Text(
-                    text = record.resultLabel,
+                    text = record.resultLabel(),
                     color = statusColor,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,

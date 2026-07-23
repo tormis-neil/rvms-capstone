@@ -18,6 +18,27 @@ import java.util.Locale
 private val isoDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 private val displayDateFormat = SimpleDateFormat("MMMM d, yyyy", Locale.US)
 
+/** Today as yyyy-MM-dd (device local date) — used to detect today's inspection. */
+fun todayIso(): String = isoDateFormat.format(java.util.Date())
+
+/**
+ * "2026-07-23T14:30:00.000000Z" -> "2:30 PM" in the device's local time.
+ * Returns "" when the timestamp is missing or unparseable (the UI then just
+ * omits the time).
+ */
+fun formatIsoTime(iso: String?): String {
+    if (iso.isNullOrBlank()) return ""
+    return try {
+        val trimmed = iso.substringBefore('.').substringBefore('Z')
+        val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply {
+            timeZone = java.util.TimeZone.getTimeZone("UTC")
+        }
+        SimpleDateFormat("h:mm a", Locale.US).format(parser.parse(trimmed)!!)
+    } catch (e: Exception) {
+        ""
+    }
+}
+
 /** "45230" -> "45,230 km" (grouped, matching the web/prototype mileage label). */
 fun formatMileage(km: Int): String =
     "${NumberFormat.getIntegerInstance(Locale.US).format(km)} km"
@@ -75,3 +96,17 @@ fun initialsFor(name: String): String =
 /** Agency logo drawable for a code like "BFP"; falls back to the app logo. */
 fun logoForAgencyCode(code: String?): Int =
     Agency.entries.firstOrNull { it.code == code }?.logo ?: R.drawable.rvms_logo
+
+/**
+ * BLOWBAGETS acronym letter for a checklist item name, mirroring the paper
+ * checklist drivers already know. Reference data (not account data): items
+ * outside the acronym (Horn/Siren, Directional Signals, BFP extras) have no
+ * letter and return null.
+ */
+private val blowbagetsLetters = mapOf(
+    "Battery" to "B", "Lights" to "L", "Oil" to "O", "Water" to "W",
+    "Brakes" to "B", "Air" to "A", "Gas" to "G", "Engine" to "E",
+    "Tires" to "T", "Power Steering" to "S",
+)
+
+fun blowbagetsLetter(itemName: String): String? = blowbagetsLetters[itemName]

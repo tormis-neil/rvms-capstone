@@ -161,11 +161,13 @@ class InspectionMonitoringTest extends TestCase
         $this->patchJson("/api/v1/inspections/{$foreign->id}/review", [])->assertNotFound();
     }
 
-    public function test_driver_cannot_access_admin_monitoring(): void
+    public function test_driver_cannot_access_admin_only_monitoring(): void
     {
         Sanctum::actingAs(User::factory()->driver()->create(['agency_id' => $this->agency->id]));
 
-        $this->getJson('/api/v1/inspections')->assertForbidden();
+        // GET /inspections is shared: a driver reaches it but sees only their
+        // own submissions (covered by InspectionDriverHistoryTest). The
+        // admin-only monitoring extras stay forbidden for drivers.
         $this->getJson('/api/v1/inspections/frequent-issues')->assertForbidden();
     }
 }

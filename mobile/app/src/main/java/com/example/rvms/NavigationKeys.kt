@@ -23,5 +23,5 @@ import kotlinx.serialization.Serializable
 @Serializable data object NewInspection : NavKey
 @Serializable data object NewDamageReport : NavKey
 
-/** Detail view of one record in [com.example.rvms.data.Session.inspectionHistory]. */
-@Serializable data class InspectionDetail(val historyIndex: Int) : NavKey
+/** Detail view of one submitted inspection, by its server id. */
+@Serializable data class InspectionDetail(val inspectionId: Long) : NavKey
