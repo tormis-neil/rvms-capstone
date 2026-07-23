@@ -36,10 +36,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,9 +51,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.rvms.data.InspectionRecord
-import com.example.rvms.data.SampleData
-import com.example.rvms.data.Session
+import com.example.rvms.data.ServiceLocator
+import com.example.rvms.data.SubmitInspectionResult
+import com.example.rvms.data.remote.dto.ChecklistItemDto
+import com.example.rvms.data.remote.dto.SubmitInspectionItemDto
+import com.example.rvms.data.remote.dto.VehicleDto
+import com.example.rvms.ui.common.blowbagetsLetter
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.Gold
@@ -58,11 +65,9 @@ import com.example.rvms.theme.StatusNotOperational
 import com.example.rvms.theme.StatusOperational
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
+import kotlinx.coroutines.launch
 import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
  * The daily BLOWBAGETS inspection form (Plan §6.4, driver side).
@@ -80,19 +85,35 @@ fun NewInspectionScreen(
     onSubmitted: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val data = Session.current
-    val driver = data.driver
-    val vehicle = data.vehicle
-    val items = remember { data.inspectionItems }
-    val standardItems = SampleData.standardInspectionItems
-    val extraItems = items.filter { it !in standardItems }
+    // Real driver session + assigned vehicle + agency-correct checklist (FR-09):
+    // BFP drivers get 14 items, everyone else 12 — sourced from the API, so a
+    // PNP/CDRRMO/CHO driver never sees BFP's extra items.
+    val currentUser by ServiceLocator.sessionManager.currentUser.collectAsState()
+    val checklist = remember { mutableStateListOf<ChecklistItemDto>() }
+    var vehicle by remember { mutableStateOf<VehicleDto?>(null) }
+    var loading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
 
-    // status: true = OK, false = Has Issue, absent = not yet marked
-    val statuses = remember { mutableStateMapOf<String, Boolean>() }
-    val remarks = remember { mutableStateMapOf<String, String>() }
+    LaunchedEffect(Unit) {
+        checklist.clear()
+        checklist.addAll(ServiceLocator.inspectionRepository.checklist())
+        vehicle = ServiceLocator.vehicleRepository.myVehicles().firstOrNull()
+        loading = false
+    }
+
+    val standardItems = checklist.filter { !it.isBfpOnly }.sortedBy { it.sortOrder }
+    val extraItems = checklist.filter { it.isBfpOnly }.sortedBy { it.sortOrder }
+
+    // status: true = OK, false = Has Issue, absent = not yet marked. Keyed by
+    // checklist_item_id (the id the API expects on submit).
+    val statuses = remember { mutableStateMapOf<Long, Boolean>() }
+    val remarks = remember { mutableStateMapOf<Long, String>() }
     var error by remember { mutableStateOf<String?>(null) }
-    var submittedRecord by remember { mutableStateOf<InspectionRecord?>(null) }
+    var submitting by remember { mutableStateOf(false) }
+    var submittedSummary by remember { mutableStateOf<SubmittedSummary?>(null) }
 
+    val agencyCode = currentUser?.agency?.code.orEmpty()
+    val driverName = currentUser?.name.orEmpty()
     val scrollState = rememberScrollState()
     val marked = statuses.size
 
@@ -119,16 +140,16 @@ fun NewInspectionScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Marked $marked of ${items.size} items",
+                        text = "Marked $marked of ${checklist.size} items",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (marked == items.size) StatusOperational else TextSecondary,
+                        color = if (checklist.isNotEmpty() && marked == checklist.size) StatusOperational else TextSecondary,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     LinearProgressIndicator(
-                        progress = { if (items.isEmpty()) 0f else marked / items.size.toFloat() },
+                        progress = { if (checklist.isEmpty()) 0f else marked / checklist.size.toFloat() },
                         modifier = Modifier.fillMaxWidth(),
-                        color = if (marked == items.size) StatusOperational else NavyBlue,
+                        color = if (checklist.isNotEmpty() && marked == checklist.size) StatusOperational else NavyBlue,
                         trackColor = Background,
                     )
                     if (error != null) {
@@ -143,32 +164,50 @@ fun NewInspectionScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     Button(
                         onClick = {
-                            val unmarked = items.count { statuses[it] == null }
+                            val assignedVehicle = vehicle
+                            val unmarked = checklist.count { statuses[it.id] == null }
                             val missingRemarks =
-                                items.any { statuses[it] == false && remarks[it].isNullOrBlank() }
+                                checklist.any { statuses[it.id] == false && remarks[it.id].isNullOrBlank() }
                             when {
+                                assignedVehicle == null ->
+                                    error = "No vehicle is assigned to your account yet. Contact your agency administrator."
+                                checklist.isEmpty() ->
+                                    error = "Checklist unavailable. Pull to refresh or check your connection."
                                 unmarked > 0 ->
                                     error = "Please mark all items — $unmarked remaining."
                                 missingRemarks ->
                                     error = "Remarks are required for every item marked Has Issue."
                                 else -> {
                                     error = null
-                                    val flagged = items.filter { statuses[it] == false }
-                                    val record = InspectionRecord(
-                                        date = SampleData.todayLabel,
-                                        time = SimpleDateFormat("h:mm a", Locale.US).format(Date()),
-                                        itemsChecked = items.size,
-                                        issueCount = flagged.size,
-                                        flaggedItems = flagged,
-                                        flaggedRemarks = flagged.associateWith {
-                                            remarks[it].orEmpty()
-                                        },
-                                    )
-                                    Session.submitInspection(record)
-                                    submittedRecord = record
+                                    submitting = true
+                                    val flagged = checklist.filter { statuses[it.id] == false }
+                                    val payload = checklist.map { item ->
+                                        val ok = statuses[item.id] == true
+                                        SubmitInspectionItemDto(
+                                            checklistItemId = item.id,
+                                            status = if (ok) "OK" else "Has Issue",
+                                            remarks = if (ok) null else remarks[item.id],
+                                        )
+                                    }
+                                    scope.launch {
+                                        val result = ServiceLocator.inspectionRepository
+                                            .submit(assignedVehicle.id, payload)
+                                        submitting = false
+                                        when (result) {
+                                            is SubmitInspectionResult.Success ->
+                                                submittedSummary = SubmittedSummary(
+                                                    itemsChecked = checklist.size,
+                                                    flaggedNames = flagged.map { it.name },
+                                                    plate = assignedVehicle.plateNumber,
+                                                )
+                                            is SubmitInspectionResult.Error ->
+                                                error = result.message
+                                        }
+                                    }
                                 }
                             }
                         },
+                        enabled = !submitting,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
@@ -176,7 +215,7 @@ fun NewInspectionScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = NavyBlue),
                     ) {
                         Text(
-                            text = "Submit Inspection",
+                            text = if (submitting) "Submitting…" else "Submit Inspection",
                             color = White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -207,13 +246,17 @@ fun NewInspectionScreen(
                         color = TextSecondary,
                     )
                     Text(
-                        text = "${vehicle.type} • ${vehicle.plateNo}",
+                        text = vehicle?.let { "${it.type} • ${it.plateNumber}" }
+                            ?: if (loading) "Loading…" else "No vehicle assigned",
                         style = MaterialTheme.typography.titleMedium,
                         color = TextPrimary,
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = "${driver.agency.fullName} — ${driver.name}",
+                        text = listOfNotNull(
+                            currentUser?.agency?.name,
+                            driverName.takeIf { it.isNotBlank() },
+                        ).joinToString(" — "),
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary,
                     )
@@ -232,23 +275,23 @@ fun NewInspectionScreen(
 
             standardItems.forEach { item ->
                 InspectionItemRow(
-                    name = item,
-                    letter = SampleData.blowbagetsLetters[item],
-                    status = statuses[item],
-                    remark = remarks[item].orEmpty(),
+                    name = item.name,
+                    letter = blowbagetsLetter(item.name),
+                    status = statuses[item.id],
+                    remark = remarks[item.id].orEmpty(),
                     onStatusChange = { ok ->
-                        statuses[item] = ok
-                        if (ok) remarks.remove(item)
+                        statuses[item.id] = ok
+                        if (ok) remarks.remove(item.id)
                         error = null
                     },
-                    onRemarkChange = { remarks[item] = it },
+                    onRemarkChange = { remarks[item.id] = it },
                 )
             }
 
             if (extraItems.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "${driver.agency.code} Additional Items",
+                    text = "$agencyCode Additional Items",
                     style = MaterialTheme.typography.titleSmall,
                     color = Gold,
                     fontWeight = FontWeight.Bold,
@@ -256,16 +299,16 @@ fun NewInspectionScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 extraItems.forEach { item ->
                     InspectionItemRow(
-                        name = item,
+                        name = item.name,
                         letter = null,
-                        status = statuses[item],
-                        remark = remarks[item].orEmpty(),
+                        status = statuses[item.id],
+                        remark = remarks[item.id].orEmpty(),
                         onStatusChange = { ok ->
-                            statuses[item] = ok
-                            if (ok) remarks.remove(item)
+                            statuses[item.id] = ok
+                            if (ok) remarks.remove(item.id)
                             error = null
                         },
-                        onRemarkChange = { remarks[item] = it },
+                        onRemarkChange = { remarks[item.id] = it },
                     )
                 }
             }
@@ -274,30 +317,37 @@ fun NewInspectionScreen(
         }
     }
 
-    submittedRecord?.let { record ->
+    submittedSummary?.let { summary ->
         AlertDialog(
             onDismissRequest = { /* require explicit action */ },
             confirmButton = {
                 TextButton(onClick = {
-                    submittedRecord = null
+                    submittedSummary = null
                     onSubmitted()
                 }) { Text("Done", color = NavyBlue, fontWeight = FontWeight.Bold) }
             },
             title = { Text("Inspection Submitted", fontWeight = FontWeight.Bold) },
             text = {
                 Text(
-                    if (record.issueCount == 0)
-                        "All ${record.itemsChecked} items passed. The inspection for " +
-                            "${vehicle.plateNo} has been submitted for admin review."
+                    if (summary.flaggedNames.isEmpty())
+                        "All ${summary.itemsChecked} items passed. The inspection for " +
+                            "${summary.plate} has been submitted for admin review."
                     else
-                        "${record.issueCount} item(s) flagged. The inspection for " +
-                            "${vehicle.plateNo} has been submitted for admin review.\n\n" +
-                            "Flagged items: ${record.flaggedItems.joinToString(", ")}"
+                        "${summary.flaggedNames.size} item(s) flagged. The inspection for " +
+                            "${summary.plate} has been submitted for admin review.\n\n" +
+                            "Flagged items: ${summary.flaggedNames.joinToString(", ")}"
                 )
             },
         )
     }
 }
+
+/** Result summary shown in the post-submit confirmation dialog. */
+private data class SubmittedSummary(
+    val itemsChecked: Int,
+    val flaggedNames: List<String>,
+    val plate: String,
+)
 
 @Composable
 private fun InspectionItemRow(

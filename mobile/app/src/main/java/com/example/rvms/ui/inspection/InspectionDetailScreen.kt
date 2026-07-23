@@ -26,14 +26,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.rvms.data.SampleData
-import com.example.rvms.data.Session
+import com.example.rvms.data.ServiceLocator
+import com.example.rvms.data.remote.dto.InspectionDto
+import com.example.rvms.ui.common.formatIsoDate
+import com.example.rvms.ui.common.formatIsoTime
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.StatusNotOperational
 import com.example.rvms.theme.StatusOperational
@@ -43,19 +50,24 @@ import com.example.rvms.theme.TextSecondary
 
 /**
  * Full detail of one submitted inspection: every checklist item with its
- * OK / Has Issue result and the remarks entered for flagged items.
+ * OK / Has Issue result and the remarks entered for flagged items. Fetched
+ * from the API by id (the driver can only open their own — FR-09).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InspectionDetailScreen(
-    historyIndex: Int,
+    inspectionId: Long,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val driver = Session.current.driver
-    val vehicle = Session.current.vehicle
-    val record = Session.inspectionHistory.getOrNull(historyIndex)
+    var record by remember { mutableStateOf<InspectionDto?>(null) }
+    var loaded by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
+
+    LaunchedEffect(inspectionId) {
+        record = ServiceLocator.inspectionRepository.detail(inspectionId)
+        loaded = true
+    }
 
     Scaffold(
         modifier = modifier,
@@ -79,17 +91,24 @@ fun InspectionDetailScreen(
                 .padding(innerPadding)
                 .padding(16.dp),
         ) {
-            if (record == null) {
+            val current = record
+            if (current == null) {
                 Text(
-                    text = "Inspection record not found.",
+                    text = if (loaded) "Inspection record not found." else "Loading…",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary,
                 )
                 return@Column
             }
 
-            val passed = record.issueCount == 0
+            val issueCount = current.items.count { it.status == "Has Issue" }
+            val passed = issueCount == 0
             val resultColor = if (passed) StatusOperational else StatusNotOperational
+            val resultLabel = current.result ?: when (issueCount) {
+                0 -> "All OK"
+                1 -> "1 Issue"
+                else -> "$issueCount Issues"
+            }
 
             // Summary header
             Card(
@@ -104,13 +123,16 @@ fun InspectionDetailScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = record.date,
+                                text = formatIsoDate(current.inspectionDate),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = TextPrimary,
                                 fontWeight = FontWeight.Bold,
                             )
                             Text(
-                                text = "${record.time} • ${record.itemsChecked} items checked",
+                                text = listOfNotNull(
+                                    formatIsoTime(current.submittedAt).takeIf { it.isNotBlank() },
+                                    "${current.items.size} items checked",
+                                ).joinToString(" • "),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextSecondary,
                             )
@@ -122,7 +144,7 @@ fun InspectionDetailScreen(
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                         ) {
                             Text(
-                                text = record.resultLabel,
+                                text = resultLabel,
                                 color = resultColor,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
@@ -133,13 +155,13 @@ fun InspectionDetailScreen(
                     HorizontalDivider(thickness = 0.5.dp, color = TextSecondary.copy(alpha = 0.2f))
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "${vehicle.type} • ${vehicle.plateNo}",
+                        text = current.vehicle?.let { "${it.type} • ${it.plateNumber}" }.orEmpty(),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextPrimary,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "${driver.agency.fullName} — ${driver.name}",
+                        text = "Review status: ${current.reviewStatus}",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary,
                     )
@@ -157,13 +179,11 @@ fun InspectionDetailScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            val items = SampleData.inspectionItemsFor(driver.agency)
-            items.forEach { item ->
-                val flagged = item in record.flaggedItems
+            current.items.forEach { item ->
                 ItemResultRow(
-                    name = item,
-                    flagged = flagged,
-                    remark = record.flaggedRemarks[item],
+                    name = item.name ?: "Item #${item.checklistItemId}",
+                    flagged = item.status == "Has Issue",
+                    remark = item.remarks,
                 )
             }
 

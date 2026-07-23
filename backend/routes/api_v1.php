@@ -23,6 +23,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::patch('/me/profile', [ProfileController::class, 'update']);
 
+    // Inspection history/detail — both roles. The controller scopes a driver to
+    // their OWN inspections (FR-09 history) and an admin to their agency's
+    // (FR-10 monitoring). {inspection} is numeric-only so the text paths
+    // /inspections/checklist and /inspections/frequent-issues below still resolve.
+    Route::get('/inspections', [InspectionController::class, 'index']);
+    Route::get('/inspections/{inspection}', [InspectionController::class, 'show'])->whereNumber('inspection');
+
     // Admin — vehicle records (FR-05, FR-18)
     Route::middleware('role:admin')->group(function () {
         Route::get('/vehicles', [VehicleController::class, 'index']);
@@ -41,12 +48,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/drivers/{driver}/license', [DriverController::class, 'updateLicense']);
         Route::get('/licenses/monitoring', LicenseMonitoringController::class);
 
-        // Admin — inspection monitoring & review (FR-10).
-        // {inspection} is numeric-only so text paths like /inspections/checklist
-        // (a driver route below) are never captured as a wildcard id.
-        Route::get('/inspections', [InspectionController::class, 'index']);
+        // Admin — inspection monitoring & review (FR-10). index/show live in the
+        // shared group above (role-branched); these two stay admin-only.
         Route::get('/inspections/frequent-issues', [InspectionController::class, 'frequentIssues']);
-        Route::get('/inspections/{inspection}', [InspectionController::class, 'show'])->whereNumber('inspection');
         Route::patch('/inspections/{inspection}/review', [InspectionController::class, 'review'])->whereNumber('inspection');
     });
 

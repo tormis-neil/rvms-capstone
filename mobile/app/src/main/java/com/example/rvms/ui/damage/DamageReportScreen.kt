@@ -34,6 +34,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,7 +46,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.rvms.data.Session
+import com.example.rvms.data.ServiceLocator
+import com.example.rvms.data.remote.dto.VehicleDto
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.NavyBlue
@@ -71,8 +74,16 @@ fun NewDamageReportScreen(
     onSubmitted: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val vehicle = Session.current.vehicle
-    val driver = Session.current.driver
+    // Real assigned vehicle + driver identity (FR-07/FR-01). The submission
+    // itself is wired to the damage-reports backend in R4; this screen shows
+    // the correct vehicle/driver now so the form is never pre-filled with
+    // another agency's sample data.
+    val currentUser by ServiceLocator.sessionManager.currentUser.collectAsState()
+    var vehicle by remember { mutableStateOf<VehicleDto?>(null) }
+    LaunchedEffect(Unit) {
+        vehicle = ServiceLocator.vehicleRepository.myVehicles().firstOrNull()
+    }
+    val driverName = currentUser?.name.orEmpty()
 
     var natureOfDamage by remember { mutableStateOf("") }
     var suspectedParts by remember { mutableStateOf("") }
@@ -122,12 +133,12 @@ fun NewDamageReportScreen(
                         fontWeight = FontWeight.Bold,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    ReadOnlyField("Vehicle Type", vehicle.type)
-                    ReadOnlyField("Plate No.", vehicle.plateNo)
-                    ReadOnlyField("Make / Model", "${vehicle.make} ${vehicle.model}")
-                    ReadOnlyField("Engine No.", vehicle.engineNo)
-                    ReadOnlyField("Chassis No.", vehicle.chassisNo)
-                    ReadOnlyField("Assigned Driver", driver.name)
+                    ReadOnlyField("Vehicle Type", vehicle?.type ?: "—")
+                    ReadOnlyField("Plate No.", vehicle?.plateNumber ?: "—")
+                    ReadOnlyField("Make / Model", vehicle?.let { "${it.make} ${it.model}" } ?: "—")
+                    ReadOnlyField("Engine No.", vehicle?.engineNumber ?: "—")
+                    ReadOnlyField("Chassis No.", vehicle?.chassisNumber ?: "—")
+                    ReadOnlyField("Assigned Driver", driverName.ifBlank { "—" })
                     ReadOnlyField("Date Reported", dateReported)
                 }
             }
@@ -259,8 +270,8 @@ fun NewDamageReportScreen(
             title = { Text("Report Submitted", fontWeight = FontWeight.Bold) },
             text = {
                 Text(
-                    "Your damage report for ${vehicle.plateNo} has been submitted with status Pending. " +
-                        "The agency administrator has been notified for review."
+                    "Your damage report for ${vehicle?.plateNumber ?: "your vehicle"} has been submitted " +
+                        "with status Pending. The agency administrator has been notified for review."
                 )
             },
         )

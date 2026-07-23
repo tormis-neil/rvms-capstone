@@ -74,8 +74,8 @@ fun MainNavigation() {
                         onNavigateToVehicleInfo = {
                             backStack.add(VehicleInfo)
                         },
-                        onNavigateToInspectionDetail = { index ->
-                            backStack.add(InspectionDetail(index))
+                        onNavigateToInspectionDetail = { inspectionId ->
+                            backStack.add(InspectionDetail(inspectionId))
                         },
                         onSignOut = {
                             // Best-effort server token revoke + clear the local token.
@@ -111,7 +111,7 @@ fun MainNavigation() {
 
                 entry<InspectionDetail> { key ->
                     InspectionDetailScreen(
-                        historyIndex = key.historyIndex,
+                        inspectionId = key.inspectionId,
                         onBack = { backStack.removeLastOrNull() },
                         modifier = Modifier.safeDrawingPadding(),
                     )

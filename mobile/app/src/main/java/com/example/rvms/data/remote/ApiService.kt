@@ -1,16 +1,21 @@
 package com.example.rvms.data.remote
 
 import com.example.rvms.data.remote.dto.AgencyListDto
+import com.example.rvms.data.remote.dto.ChecklistDto
+import com.example.rvms.data.remote.dto.InspectionEnvelopeDto
+import com.example.rvms.data.remote.dto.InspectionListDto
 import com.example.rvms.data.remote.dto.LoginRequestDto
 import com.example.rvms.data.remote.dto.LoginResponseDto
 import com.example.rvms.data.remote.dto.MessageDto
 import com.example.rvms.data.remote.dto.RegisterRequestDto
+import com.example.rvms.data.remote.dto.SubmitInspectionDto
 import com.example.rvms.data.remote.dto.UserEnvelopeDto
 import com.example.rvms.data.remote.dto.VehicleListDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 
 /**
  * The RVMS REST API (all endpoints under /api/v1, base URL set in ApiClient).
@@ -45,4 +50,22 @@ interface ApiService {
     /** The driver's assigned vehicle(s) (FR-07) — a driver may hold several. */
     @GET("my-vehicle")
     suspend fun myVehicle(): Response<VehicleListDto>
+
+    // --- Inspections (FR-09) ---
+
+    /** The checklist to fill — 14 items for a BFP driver, 12 for others. */
+    @GET("inspections/checklist")
+    suspend fun inspectionChecklist(): Response<ChecklistDto>
+
+    /** Submit a daily BLOWBAGETS inspection. */
+    @POST("inspections")
+    suspend fun submitInspection(@Body body: SubmitInspectionDto): Response<InspectionEnvelopeDto>
+
+    /** The driver's own inspection history. */
+    @GET("inspections")
+    suspend fun myInspections(): Response<InspectionListDto>
+
+    /** Full detail of one of the driver's own inspections. */
+    @GET("inspections/{id}")
+    suspend fun inspectionDetail(@Path("id") id: Long): Response<InspectionEnvelopeDto>
 }
