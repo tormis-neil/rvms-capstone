@@ -120,6 +120,74 @@
                     </div>
                 </div>
 
+                <!-- Damage Reports Section -->
+                <div class="d-flex align-items-center gap-2 mb-3 mt-5">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Damage Reports</h5>
+                    <span class="badge badge-pending rounded-pill px-3 py-2 js-damage-pending">{{ $damagePendingCount }} Pending Review</span>
+                </div>
+                <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="py-3 text-secondary fw-semibold small">DATE REPORTED</th>
+                                    <th class="py-3 text-secondary fw-semibold small">VEHICLE & DRIVER</th>
+                                    <th class="py-3 text-secondary fw-semibold small w-25">NATURE OF DAMAGE</th>
+                                    <th class="py-3 text-secondary fw-semibold small">SUSPECTED PARTS</th>
+                                    <th class="py-3 text-secondary fw-semibold small">ATTACHMENT</th>
+                                    <th class="py-3 text-secondary fw-semibold small">REVIEW STATUS</th>
+                                    <th class="py-3 text-secondary fw-semibold small text-end">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rows-damage">
+                                @forelse ($damageReports as $report)
+                                <tr
+                                    data-id="{{ $report->id }}"
+                                    data-plate="{{ $report->vehicle->plate_number ?? '—' }}"
+                                    data-type="{{ $report->vehicle->type ?? '' }}"
+                                    data-driver="{{ $report->driver->name ?? '—' }}"
+                                    data-when="{{ $report->dateLabel() }}, {{ $report->timeLabel() }}"
+                                    data-nature="{{ $report->nature_of_damage }}"
+                                    data-parts="{{ $report->suspected_parts ?? 'None' }}"
+                                    data-photo="{{ $report->photo_path ? \Illuminate\Support\Facades\Storage::url($report->photo_path) : '' }}">
+                                    <td>
+                                        <div class="fw-bold text-dark">{{ $report->dateLabel() }}</div>
+                                        <div class="small text-secondary">{{ $report->timeLabel() }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-dark">{{ $report->vehicle->plate_number ?? '—' }}</div>
+                                        <div class="small text-secondary">{{ $report->driver->name ?? '—' }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-medium text-dark text-truncate" style="max-width: 250px;">{{ $report->nature_of_damage }}</div>
+                                    </td>
+                                    <td class="text-secondary">{{ $report->suspected_parts ?? '—' }}</td>
+                                    <td>
+                                        @if ($report->photo_path)
+                                        <a href="{{ \Illuminate\Support\Facades\Storage::url($report->photo_path) }}" target="_blank" class="btn btn-sm btn-light border"><i class="bi bi-image text-primary me-1"></i> View</a>
+                                        @else
+                                        <em class="text-secondary small">None</em>
+                                        @endif
+                                    </td>
+                                    <td><span class="badge {{ $report->statusBadgeClass() }} px-3 py-2 rounded-pill">{{ $report->status }}</span></td>
+                                    <td class="text-end">
+                                        @if ($report->status === \App\Models\DamageReport::STATUS_PENDING)
+                                        <button class="btn btn-sm btn-danger fw-medium" data-bs-toggle="modal" data-bs-target="#reviewDamageModal">Review & Assess</button>
+                                        @else
+                                        <em class="text-secondary small">Reviewed</em>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="7" class="text-center text-secondary py-4">No damage reports submitted yet.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
 @endsection
 
 @section('modals')
@@ -206,6 +274,55 @@
             </div>
         </div>
     </div>
+
+    <!-- Review & Assess Damage Modal (danger flow) -->
+    <div class="modal fade" id="reviewDamageModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold">Review & Assess Damage</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                {{-- Live form wraps body + footer (action set per-row by the page script) --}}
+                <form method="POST" id="reviewDamageForm" action="#">
+                @csrf
+                @method('PATCH')
+                <div class="modal-body p-4">
+                    <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-3">
+                        <div>
+                            <div class="fw-bold" id="rdVehicle">—</div>
+                            <div class="small text-secondary"><span id="rdDriver">—</span> &middot; <span id="rdWhen">—</span></div>
+                        </div>
+                        <span class="badge badge-pending px-3 py-2 rounded-pill">Pending</span>
+                    </div>
+                    <ul class="list-group list-group-flush border rounded-3 mb-4">
+                        <li class="list-group-item d-flex justify-content-between"><span class="text-secondary small fw-semibold">Nature of Damage</span><span class="fw-medium text-end ms-3" id="rdNature">—</span></li>
+                        <li class="list-group-item d-flex justify-content-between"><span class="text-secondary small fw-semibold">Suspected Parts</span><span class="fw-medium" id="rdParts">—</span></li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center"><span class="text-secondary small fw-semibold">Photo Attachment</span><span id="rdAttachment">—</span></li>
+                    </ul>
+                    <p class="text-secondary small mb-4">Assess severity, update the vehicle's operational status, and mark the report as Reviewed.</p>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Update Vehicle Status To</label>
+                            {{-- First option = no status change; the other two write the vehicle status
+                                 (FR-12 + FR-18). Dispatched is set by the Dispatch module alone. --}}
+                            <select class="form-select" name="vehicle_status">
+                                <option value="">Leave as Operational (no serious issue / repair done)</option>
+                                <option value="Not Operational">Not Operational (unsafe for deployment / under repair)</option>
+                                <option value="Under Preventive Maintenance">Under Preventive Maintenance (maintenance required)</option>
+                            </select>
+                        </div>
+                        {{-- The prototype's "Admin Remarks" textarea is omitted: the approved schema
+                             deliberately excludes admin-remarks columns on damage reviews
+                             (design decision 7 — documented omission). --}}
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Mark Reviewed & Update Status</button>
+                </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('scripts')
@@ -271,6 +388,27 @@
                 : 'No issues reported — all BLOWBAGETS items OK.';
 
             document.querySelector('#reviewInspectionForm select[name=vehicle_status]').value = '';
+        });
+
+        // Review & Assess Damage modal — populated from the clicked damage row.
+        const damageReviewTemplate = @json(route('damage.review', ['damageReport' => '__ID__']));
+
+        document.getElementById('reviewDamageModal').addEventListener('show.bs.modal', event => {
+            const d = rowData(event);
+            if (!d) return;
+            document.getElementById('reviewDamageForm').action = damageReviewTemplate.replace('__ID__', d.id);
+            document.getElementById('rdVehicle').textContent = d.plate + (d.type ? ' (' + d.type + ')' : '');
+            document.getElementById('rdDriver').textContent = d.driver;
+            document.getElementById('rdWhen').textContent = d.when;
+            document.getElementById('rdNature').textContent = d.nature;
+            document.getElementById('rdParts').textContent = (d.parts && d.parts !== 'None') ? d.parts : 'None';
+
+            const att = document.getElementById('rdAttachment');
+            att.innerHTML = d.photo
+                ? '<a href="' + d.photo + '" target="_blank" class="btn btn-sm btn-light border"><i class="bi bi-image text-primary me-1"></i> View</a>'
+                : '<em class="text-secondary small">None</em>';
+
+            document.querySelector('#reviewDamageForm select[name=vehicle_status]').value = '';
         });
     </script>
 @endsection

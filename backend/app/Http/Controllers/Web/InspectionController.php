@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\DamageReport;
 use App\Models\Inspection;
 use App\Models\InspectionItem;
 use App\Models\Vehicle;
@@ -32,7 +33,18 @@ class InspectionController extends Controller
 
         $frequentIssues = $this->frequentIssues($request->user()->agency_id);
 
-        return view('inspections', compact('inspections', 'pendingCount', 'frequentIssues'));
+        // Damage reports share this page (R4) — agency-scoped, newest first.
+        $damageReports = DamageReport::query()
+            ->with(['vehicle', 'driver'])
+            ->latest('date_reported')
+            ->latest('id')
+            ->get();
+
+        $damagePendingCount = $damageReports->where('status', DamageReport::STATUS_PENDING)->count();
+
+        return view('inspections', compact(
+            'inspections', 'pendingCount', 'frequentIssues', 'damageReports', 'damagePendingCount'
+        ));
     }
 
     public function review(Request $request, Inspection $inspection): RedirectResponse
