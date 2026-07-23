@@ -36,7 +36,7 @@
                 <a href="#" class="nav-item" title="Available in a later phase (R5)">
                     <i class="bi bi-wrench-adjustable-circle"></i> PM Schedules
                 </a>
-                <a href="#" class="nav-item" title="Available in a later phase (R4)">
+                <a href="{{ route('repairs') }}" class="nav-item {{ request()->routeIs('repairs') ? 'active' : '' }}">
                     <i class="bi bi-tools"></i> Repair Logs
                 </a>
 

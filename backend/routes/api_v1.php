@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\InspectionController;
 use App\Http\Controllers\Api\V1\LicenseMonitoringController;
 use App\Http\Controllers\Api\V1\MyVehicleController;
 use App\Http\Controllers\Api\V1\ProfileController;
+use App\Http\Controllers\Api\V1\RepairLogController;
 use App\Http\Controllers\Api\V1\VehicleController;
 use Illuminate\Support\Facades\Route;
 
@@ -60,6 +61,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Admin — damage report review (FR-12). index/show are shared above.
         Route::patch('/damage-reports/{damageReport}/review', [DamageReportController::class, 'review'])->whereNumber('damageReport');
+
+        // Admin — repair logs (FR-13)
+        Route::get('/repairs', [RepairLogController::class, 'index']);
+        Route::post('/repairs', [RepairLogController::class, 'store']);
+        Route::get('/repairs/{repair}', [RepairLogController::class, 'show'])->whereNumber('repair');
+        Route::put('/repairs/{repair}', [RepairLogController::class, 'update'])->whereNumber('repair');
     });
 
     // Driver — assigned vehicle(s) (FR-07), checklist + inspection submission (FR-09),

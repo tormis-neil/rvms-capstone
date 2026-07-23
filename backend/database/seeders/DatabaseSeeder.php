@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             InspectionChecklistSeeder::class,
             InspectionSeeder::class,
             DamageReportSeeder::class,
+            RepairLogSeeder::class,
         ]);
     }
 }
