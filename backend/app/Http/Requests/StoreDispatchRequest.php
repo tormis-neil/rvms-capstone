@@ -39,6 +39,7 @@ class StoreDispatchRequest extends FormRequest
             'location' => ['required', 'string', 'max:255'],
             'time_out' => ['required', 'date'],
             'odometer_out' => ['nullable', 'integer', 'min:0'],
+            'remarks' => ['nullable', 'string'],
         ];
     }
 

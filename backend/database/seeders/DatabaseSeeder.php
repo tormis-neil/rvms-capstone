@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             DamageReportSeeder::class,
             RepairLogSeeder::class,
             PmScheduleSeeder::class,
+            DispatchSeeder::class,
         ]);
     }
 }

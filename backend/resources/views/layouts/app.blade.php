@@ -41,7 +41,7 @@
                 </a>
 
                 <div class="px-4 pt-3 pb-2 small text-white-50 text-uppercase fw-semibold">Operations</div>
-                <a href="#" class="nav-item" title="Available in a later phase (R6)">
+                <a href="{{ route('dispatch') }}" class="nav-item {{ request()->routeIs('dispatch') ? 'active' : '' }}">
                     <i class="bi bi-send-check"></i> Dispatch Logs
                 </a>
                 <a href="#" class="nav-item" title="Available in a later phase (R8)">
