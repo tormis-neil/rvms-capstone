@@ -100,12 +100,43 @@ class WebInspectionPageTest extends TestCase
         $inspection = $this->makeInspection($this->agency);
         $originalStatus = $inspection->vehicle->status;
 
+        // The API keeps vehicle_status optional for non-form consumers; omitting
+        // it reviews the inspection without touching the vehicle.
         $this->actingAs($this->admin)
             ->patch("/inspections/{$inspection->id}/review", ['vehicle_status' => ''])
             ->assertRedirect(route('inspections'));
 
         $this->assertSame(Inspection::STATUS_REVIEWED, $inspection->fresh()->review_status);
         $this->assertSame($originalStatus, $inspection->vehicle->fresh()->status);
+    }
+
+    /**
+     * Regression: the review form's first option used to submit an empty value
+     * labelled "Leave as Operational", so choosing it on a Not Operational
+     * vehicle silently changed nothing. It now writes Operational explicitly.
+     */
+    public function test_reviewing_with_operational_returns_the_vehicle_to_operational(): void
+    {
+        $inspection = $this->makeInspection($this->agency);
+        $inspection->vehicle->update(['status' => Vehicle::STATUS_NOT_OPERATIONAL]);
+
+        $this->actingAs($this->admin)
+            ->from('/inspections')
+            ->patch("/inspections/{$inspection->id}/review", ['vehicle_status' => Vehicle::STATUS_OPERATIONAL])
+            ->assertRedirect(route('inspections'));
+
+        $this->assertSame(Vehicle::STATUS_OPERATIONAL, $inspection->vehicle->fresh()->status);
+    }
+
+    public function test_the_review_form_offers_operational_as_a_real_value(): void
+    {
+        $this->makeInspection($this->agency);
+
+        $this->actingAs($this->admin)
+            ->get('/inspections')
+            ->assertOk()
+            ->assertSee('<option value="Operational">Operational (no action needed)</option>', false)
+            ->assertDontSee('Leave as Operational');
     }
 
     public function test_review_rejects_dispatched_status(): void

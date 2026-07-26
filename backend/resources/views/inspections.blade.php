@@ -51,6 +51,7 @@
                                     data-result="{{ $inspection->resultLabel() }}"
                                     data-result-badge="{{ $inspection->resultBadgeClass() }}"
                                     data-remarks="{{ $inspection->remarksSummary() }}"
+                                    data-vehicle-status="{{ $inspection->vehicle->status ?? '' }}"
                                     data-is-bfp="{{ $inspection->items->contains(fn ($i) => $i->checklistItem?->is_bfp_only) ? '1' : '0' }}"
                                     data-items="{{ json_encode($inspection->items->map(fn ($i) => ['name' => $i->checklistItem->name ?? '', 'is_bfp_only' => (bool) ($i->checklistItem->is_bfp_only ?? false), 'status' => $i->status, 'remarks' => $i->remarks])->values()) }}">
                                     <td>
@@ -149,7 +150,8 @@
                                     data-when="{{ $report->dateLabel() }}, {{ $report->timeLabel() }}"
                                     data-nature="{{ $report->nature_of_damage }}"
                                     data-parts="{{ $report->suspected_parts ?? 'None' }}"
-                                    data-photo="{{ $report->photo_path ? \Illuminate\Support\Facades\Storage::url($report->photo_path) : '' }}">
+                                    data-photo="{{ $report->photo_path ? \Illuminate\Support\Facades\Storage::url($report->photo_path) : '' }}"
+                                    data-vehicle-status="{{ $report->vehicle->status ?? '' }}">
                                     <td>
                                         <div class="fw-bold text-dark">{{ $report->dateLabel() }}</div>
                                         <div class="small text-secondary">{{ $report->timeLabel() }}</div>
@@ -254,10 +256,13 @@
                     <p class="text-secondary small mb-4">Evaluate the findings, update the vehicle's operational status if action is required, and mark the inspection as Reviewed.</p>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Vehicle Status</label>
-                            {{-- First option = no status change; the other two write the vehicle status
-                                 (FR-10 + FR-18). Dispatched is set by the Dispatch module alone. --}}
+                            {{-- Every option writes the vehicle status (FR-10 + FR-18): reviewing an
+                                 inspection is an explicit decision about the vehicle's fitness, so
+                                 "Operational" actively sets Operational rather than leaving the
+                                 previous status untouched. Dispatched is set by the Dispatch module
+                                 alone and is therefore not offered here. --}}
                             <select class="form-select" name="vehicle_status">
-                                <option value="">Leave as Operational (no action needed)</option>
+                                <option value="Operational">Operational (no action needed)</option>
                                 <option value="Not Operational">Not Operational (unsafe for deployment)</option>
                                 <option value="Under Preventive Maintenance">Under Preventive Maintenance (maintenance required)</option>
                             </select>
@@ -303,10 +308,13 @@
                     <p class="text-secondary small mb-4">Assess severity, update the vehicle's operational status, and mark the report as Reviewed.</p>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Update Vehicle Status To</label>
-                            {{-- First option = no status change; the other two write the vehicle status
-                                 (FR-12 + FR-18). Dispatched is set by the Dispatch module alone. --}}
+                            {{-- Every option writes the vehicle status (FR-12 + FR-18), matching the
+                                 prototype's wording: assessing a damage report is an explicit
+                                 decision, so "Operational" actively sets Operational rather than
+                                 leaving the previous status untouched. Dispatched is set by the
+                                 Dispatch module alone and is therefore not offered here. --}}
                             <select class="form-select" name="vehicle_status">
-                                <option value="">Leave as Operational (no serious issue / repair done)</option>
+                                <option value="Operational">Operational (no serious issue / repair done)</option>
                                 <option value="Not Operational">Not Operational (unsafe for deployment / under repair)</option>
                                 <option value="Under Preventive Maintenance">Under Preventive Maintenance (maintenance required)</option>
                             </select>
@@ -387,8 +395,18 @@
                 ? d.remarks
                 : 'No issues reported — all BLOWBAGETS items OK.';
 
-            document.querySelector('#reviewInspectionForm select[name=vehicle_status]').value = '';
+            // Default to the vehicle's CURRENT status so reviewing never changes it
+            // by accident — moving it is a deliberate choice (Dispatched is not an
+            // option here, so it falls back to Operational and the server guard
+            // blocks the write while a dispatch is open).
+            setStatusSelect('#reviewInspectionForm', d.vehicleStatus);
         });
+
+        function setStatusSelect(formSelector, currentStatus) {
+            const select = document.querySelector(formSelector + ' select[name=vehicle_status]');
+            const selectable = [...select.options].some(o => o.value === currentStatus);
+            select.value = selectable ? currentStatus : 'Operational';
+        }
 
         // Review & Assess Damage modal — populated from the clicked damage row.
         const damageReviewTemplate = @json(route('damage.review', ['damageReport' => '__ID__']));
@@ -408,7 +426,7 @@
                 ? '<a href="' + d.photo + '" target="_blank" class="btn btn-sm btn-light border"><i class="bi bi-image text-primary me-1"></i> View</a>'
                 : '<em class="text-secondary small">None</em>';
 
-            document.querySelector('#reviewDamageForm select[name=vehicle_status]').value = '';
+            setStatusSelect('#reviewDamageForm', d.vehicleStatus);
         });
     </script>
 @endsection

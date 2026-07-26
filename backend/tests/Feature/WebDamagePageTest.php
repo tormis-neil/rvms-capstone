@@ -69,6 +69,34 @@ class WebDamagePageTest extends TestCase
         $this->assertSame(Vehicle::STATUS_NOT_OPERATIONAL, $report->vehicle->fresh()->status);
     }
 
+    /**
+     * Regression: "Leave as Operational" submitted an empty value and changed
+     * nothing. Assessing a damage report now writes Operational explicitly.
+     */
+    public function test_assessing_with_operational_returns_the_vehicle_to_operational(): void
+    {
+        $report = $this->makeReport($this->agency);
+        $report->vehicle->update(['status' => Vehicle::STATUS_UNDER_PM]);
+
+        $this->actingAs($this->admin)
+            ->from('/inspections')
+            ->patch("/damage-reports/{$report->id}/review", ['vehicle_status' => Vehicle::STATUS_OPERATIONAL])
+            ->assertRedirect(route('inspections'));
+
+        $this->assertSame(Vehicle::STATUS_OPERATIONAL, $report->vehicle->fresh()->status);
+    }
+
+    public function test_the_assess_form_offers_operational_as_a_real_value(): void
+    {
+        $this->makeReport($this->agency);
+
+        $this->actingAs($this->admin)
+            ->get('/inspections')
+            ->assertOk()
+            ->assertSee('<option value="Operational">Operational (no serious issue / repair done)</option>', false)
+            ->assertDontSee('Leave as Operational');
+    }
+
     public function test_review_rejects_dispatched_status(): void
     {
         $report = $this->makeReport($this->agency);
