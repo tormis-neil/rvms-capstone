@@ -19,6 +19,9 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!-- The agencies operate in Philippine time; pinned here so date/label
+             assertions are deterministic and never depend on a local .env. -->
+        <env name="APP_TIMEZONE" value="Asia/Manila"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
