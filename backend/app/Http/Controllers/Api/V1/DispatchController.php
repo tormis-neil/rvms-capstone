@@ -9,6 +9,7 @@ use App\Http\Resources\DispatchResource;
 use App\Http\Resources\VehicleResource;
 use App\Models\Dispatch;
 use App\Models\Vehicle;
+use App\Services\VehicleStatusWriter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -46,7 +47,11 @@ class DispatchController extends Controller
             // agency_id is auto-stamped from the authenticated admin (BelongsToAgency).
             $dispatch = Dispatch::create($data);
 
-            $dispatch->vehicle()->update(['status' => Vehicle::STATUS_DISPATCHED]);
+            app(VehicleStatusWriter::class)->writeFromDispatch(
+                $dispatch->vehicle,
+                Vehicle::STATUS_DISPATCHED,
+                VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+            );
 
             return $dispatch;
         });
@@ -95,13 +100,20 @@ class DispatchController extends Controller
             ]);
 
             $vehicle = $dispatch->vehicle;
-            $attributes = ['status' => $request->validated('return_status')];
+            $extra = [];
 
             if ($odometerIn !== null && $odometerIn > (int) $vehicle->current_mileage) {
-                $attributes['current_mileage'] = $odometerIn;
+                $extra['current_mileage'] = $odometerIn;
             }
 
-            $vehicle->update($attributes);
+            // The dispatch is now closed, so this write is the one that releases
+            // the vehicle from its Dispatched state (FR-16).
+            app(VehicleStatusWriter::class)->writeFromDispatch(
+                $vehicle,
+                $request->validated('return_status'),
+                VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                $extra,
+            );
         });
 
         return DispatchResource::make($dispatch->fresh()->load(['vehicle', 'driver']));

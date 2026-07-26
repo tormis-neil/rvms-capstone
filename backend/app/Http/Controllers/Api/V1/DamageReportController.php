@@ -8,6 +8,7 @@ use App\Http\Requests\StoreDamageReportRequest;
 use App\Http\Resources\DamageReportResource;
 use App\Models\DamageReport;
 use App\Models\User;
+use App\Services\VehicleStatusWriter;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -92,7 +93,11 @@ class DamageReportController extends Controller
         ]);
 
         if ($status = $request->validated('vehicle_status')) {
-            $damageReport->vehicle()->update(['status' => $status]);
+            app(VehicleStatusWriter::class)->write(
+                $damageReport->vehicle,
+                $status,
+                VehicleStatusWriter::SOURCE_DAMAGE,
+            );
         }
 
         return DamageReportResource::make(

@@ -9,7 +9,9 @@ use App\Http\Resources\InspectionResource;
 use App\Models\Inspection;
 use App\Models\InspectionItem;
 use App\Models\User;
+use App\Services\VehicleStatusWriter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -127,7 +129,7 @@ class InspectionController extends Controller
                 'issue' => $row->name,
                 'count' => (int) $row->count,
                 'last_reported' => $row->last_reported
-                    ? \Illuminate\Support\Carbon::parse($row->last_reported)->toDateString()
+                    ? Carbon::parse($row->last_reported)->toDateString()
                     : null,
             ]);
 
@@ -147,7 +149,11 @@ class InspectionController extends Controller
         ]);
 
         if ($status = $request->validated('vehicle_status')) {
-            $inspection->vehicle()->update(['status' => $status]);
+            app(VehicleStatusWriter::class)->write(
+                $inspection->vehicle,
+                $status,
+                VehicleStatusWriter::SOURCE_INSPECTION,
+            );
         }
 
         return InspectionResource::make(

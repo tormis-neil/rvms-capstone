@@ -90,7 +90,8 @@
                                     data-source="{{ $repair->repair_source }}"
                                     data-shop="{{ $repair->external_shop_name }}"
                                     data-remarks="{{ $repair->remarks }}"
-                                    data-vehicle-status="{{ $repair->vehicle->status ?? '' }}">
+                                    data-vehicle-status="{{ $repair->vehicle->status ?? '' }}"
+                                    data-status-origin="{{ $repair->vehicle?->statusOriginLabel() }}">
                                     <td class="fw-medium">{{ $repair->dateLabel() }}</td>
                                     <td>
                                         <div class="fw-bold">{{ $repair->vehicle->plate_number ?? '—' }}</div>
@@ -294,54 +295,13 @@
         </div>
     </div>
 
-    <!-- Update Vehicle Status Modal (reuses the Vehicles module route, FR-18) -->
-    <div class="modal fade" id="updateStatusModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-navy text-white">
-                    <h5 class="modal-title fw-bold">Update Vehicle Status</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="POST" id="updateStatusForm" action="#">
-                @csrf
-                @method('PATCH')
-                <div class="modal-body p-4">
-                    <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-4">
-                        <div>
-                            <div class="fw-bold" id="usVehicle">—</div>
-                            <div class="small text-secondary" id="usMeta">—</div>
-                        </div>
-                        <span class="badge px-3 py-2 rounded-pill" id="usBadge">—</span>
-                    </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">New Operational Status</label>
-                            {{-- Only the three manual statuses; Dispatched is set by the Dispatch module (FR-18). --}}
-                            <select class="form-select" name="status">
-                                <option value="Operational">Operational (repair completed)</option>
-                                <option value="Not Operational">Not Operational (repair still ongoing)</option>
-                                <option value="Under Preventive Maintenance">Under Preventive Maintenance (follow-up maintenance needed)</option>
-                            </select>
-                            <div class="form-text">Dispatched status is set automatically by the Dispatch module and cannot be assigned here.</div>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label fw-semibold">Remarks (Optional)</label>
-                            <textarea class="form-control" name="remarks" rows="2" placeholder="Reason for the status change..."></textarea>
-                        </div>
-                </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn bg-navy text-white">Update Status</button>
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    @include('partials.status-confirm')
+    @include('partials.update-status-modal')
 @endsection
 
 @section('scripts')
     <script>
         const editRepairTemplate = @json(route('repairs.update', ['repair' => '__ID__']));
-        const statusTemplate = @json(route('vehicles.status', ['vehicle' => '__ID__']));
 
         // Toggle the External Shop Name field within a given modal root.
         function bindShopToggle(root) {
@@ -386,18 +346,5 @@
             editModal.querySelector('.js-shop-wrap').style.display = d.source === 'External Repair Shop' ? '' : 'none';
         });
 
-        // Update Vehicle Status modal — reuses the Vehicles module route.
-        const statusModal = document.getElementById('updateStatusModal');
-        statusModal.addEventListener('show.bs.modal', event => {
-            const row = event.relatedTarget && event.relatedTarget.closest('tr');
-            if (!row) return;
-            const d = row.dataset;
-            document.getElementById('updateStatusForm').action = statusTemplate.replace('__ID__', d.vehicleId);
-            document.getElementById('usVehicle').textContent = d.plate + (d.type ? ' (' + d.type + ')' : '');
-            document.getElementById('usMeta').textContent = d.driver;
-            const badge = document.getElementById('usBadge');
-            badge.textContent = d.vehicleStatus;
-            document.querySelector('#updateStatusForm select[name=status]').value = d.vehicleStatus || 'Operational';
-        });
     </script>
 @endsection

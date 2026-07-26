@@ -75,6 +75,10 @@
                                         <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>
                                         @if ($inspection->review_status === \App\Models\Inspection::STATUS_PENDING)
                                         <button class="btn btn-sm bg-navy text-white fw-medium" data-bs-toggle="modal" data-bs-target="#reviewInspectionModal">Review</button>
+                                        @else
+                                        {{-- Reviewed rows previously had no action at all; FR-18 lets any
+                                             module that shows the status also change it (design decision 9). --}}
+                                        <button class="btn btn-sm btn-light border js-status" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
                                         @endif
                                     </td>
                                 </tr>
@@ -151,7 +155,11 @@
                                     data-nature="{{ $report->nature_of_damage }}"
                                     data-parts="{{ $report->suspected_parts ?? 'None' }}"
                                     data-photo="{{ $report->photo_path ? \Illuminate\Support\Facades\Storage::url($report->photo_path) : '' }}"
-                                    data-vehicle-status="{{ $report->vehicle->status ?? '' }}">
+                                    data-vehicle-status="{{ $report->vehicle->status ?? '' }}"
+                                    data-status-origin="{{ $report->vehicle?->statusOriginLabel() }}"
+                                    data-status="{{ $report->status }}"
+                                    data-reviewer="{{ $report->reviewer->name ?? '—' }}"
+                                    data-reviewed-at="{{ $report->reviewed_at?->format('M j, Y g:i A') }}">
                                     <td>
                                         <div class="fw-bold text-dark">{{ $report->dateLabel() }}</div>
                                         <div class="small text-secondary">{{ $report->timeLabel() }}</div>
@@ -176,7 +184,11 @@
                                         @if ($report->status === \App\Models\DamageReport::STATUS_PENDING)
                                         <button class="btn btn-sm btn-danger fw-medium" data-bs-toggle="modal" data-bs-target="#reviewDamageModal">Review & Assess</button>
                                         @else
-                                        <em class="text-secondary small">Reviewed</em>
+                                        {{-- Reviewed rows previously showed static text with no action.
+                                             They now get the read-only detail view plus the shared status
+                                             control, matching the other screens (design decision 9). --}}
+                                        <button class="btn btn-sm btn-light border js-view" title="View Damage Report" data-bs-toggle="modal" data-bs-target="#viewDamageModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border js-status" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
                                         @endif
                                     </td>
                                 </tr>
@@ -331,6 +343,58 @@
             </div>
         </div>
     </div>
+
+    <!-- Damage Report Details (read-only, reviewed rows) -->
+    <div class="modal fade" id="viewDamageModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold">Damage Report Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <span class="badge badge-reviewed px-3 py-2 rounded-pill mb-2">Reviewed</span>
+                        <h5 class="fw-bold" id="vdNature">—</h5>
+                        <p class="text-secondary mb-0" id="vdWhen">—</p>
+                    </div>
+                    <hr>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <p class="mb-1 text-secondary small">Vehicle</p>
+                            <h6 class="fw-bold" id="vdVehicle">—</h6>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1 text-secondary small">Reported By</p>
+                            <h6 class="fw-bold" id="vdDriver">—</h6>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1 text-secondary small">Suspected Parts</p>
+                            <h6 class="fw-bold" id="vdParts">—</h6>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1 text-secondary small">Photo Attachment</p>
+                            <span id="vdPhoto">—</span>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1 text-secondary small">Reviewed By</p>
+                            <h6 class="fw-bold" id="vdReviewer">—</h6>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1 text-secondary small">Reviewed On</p>
+                            <h6 class="fw-bold" id="vdReviewedAt">—</h6>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @include('partials.status-confirm')
+    @include('partials.update-status-modal')
 @endsection
 
 @section('scripts')
@@ -427,6 +491,22 @@
                 : '<em class="text-secondary small">None</em>';
 
             setStatusSelect('#reviewDamageForm', d.vehicleStatus);
+        });
+
+        // Read-only detail view for an already-reviewed damage report.
+        document.getElementById('viewDamageModal').addEventListener('show.bs.modal', event => {
+            const d = rowData(event);
+            if (!d) return;
+            document.getElementById('vdNature').textContent = d.nature;
+            document.getElementById('vdWhen').textContent = 'Reported ' + d.when;
+            document.getElementById('vdVehicle').textContent = d.plate + (d.type ? ' (' + d.type + ')' : '');
+            document.getElementById('vdDriver').textContent = d.driver;
+            document.getElementById('vdParts').textContent = (d.parts && d.parts !== 'None') ? d.parts : 'None';
+            document.getElementById('vdReviewer').textContent = d.reviewer || '—';
+            document.getElementById('vdReviewedAt').textContent = d.reviewedAt || '—';
+            document.getElementById('vdPhoto').innerHTML = d.photo
+                ? '<a href="' + d.photo + '" target="_blank" class="btn btn-sm btn-light border"><i class="bi bi-image text-primary me-1"></i> View</a>'
+                : '<em class="text-secondary small">None</em>';
         });
     </script>
 @endsection

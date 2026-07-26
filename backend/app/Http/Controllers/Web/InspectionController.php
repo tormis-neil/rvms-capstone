@@ -7,6 +7,7 @@ use App\Models\DamageReport;
 use App\Models\Inspection;
 use App\Models\InspectionItem;
 use App\Models\Vehicle;
+use App\Services\VehicleStatusWriter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -35,7 +36,7 @@ class InspectionController extends Controller
 
         // Damage reports share this page (R4) — agency-scoped, newest first.
         $damageReports = DamageReport::query()
-            ->with(['vehicle', 'driver'])
+            ->with(['vehicle', 'driver', 'reviewer'])
             ->latest('date_reported')
             ->latest('id')
             ->get();
@@ -62,7 +63,11 @@ class InspectionController extends Controller
         ]);
 
         if (! empty($validated['vehicle_status'])) {
-            $inspection->vehicle()->update(['status' => $validated['vehicle_status']]);
+            app(VehicleStatusWriter::class)->write(
+                $inspection->vehicle,
+                $validated['vehicle_status'],
+                VehicleStatusWriter::SOURCE_INSPECTION,
+            );
         }
 
         return redirect()->route('inspections')->with('status', 'Inspection reviewed.');

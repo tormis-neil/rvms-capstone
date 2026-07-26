@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreVehicleRequest;
-use App\Http\Requests\UpdateVehicleStatusRequest;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\VehicleStatusWriter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -76,7 +76,15 @@ class VehicleController extends Controller
             'remarks' => ['nullable', 'string'],
         ]);
 
-        $vehicle->update($validated);
+        // Refused (422) when the vehicle is on an active dispatch — design decision 9.
+        app(VehicleStatusWriter::class)->write(
+            $vehicle,
+            $validated['status'],
+            VehicleStatusWriter::SOURCE_VEHICLES,
+            // Only touch remarks when the form carried the field; an empty value
+            // clears the note (documented behaviour, like current_mileage).
+            $request->has('remarks') ? ['remarks' => $validated['remarks'] ?? null] : [],
+        );
 
         return redirect()->route('vehicles')
             ->with('status', 'Vehicle status updated.');

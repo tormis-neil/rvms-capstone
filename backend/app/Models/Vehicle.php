@@ -17,8 +17,11 @@ class Vehicle extends Model
     use HasFactory;
 
     public const STATUS_OPERATIONAL = 'Operational';
+
     public const STATUS_DISPATCHED = 'Dispatched';
+
     public const STATUS_NOT_OPERATIONAL = 'Not Operational';
+
     public const STATUS_UNDER_PM = 'Under Preventive Maintenance';
 
     public const STATUSES = [
@@ -57,6 +60,8 @@ class Vehicle extends Model
         'chassis_number',
         'current_mileage',
         'status',
+        'status_source',
+        'status_changed_at',
         'remarks',
     ];
 
@@ -64,7 +69,24 @@ class Vehicle extends Model
     {
         return [
             'current_mileage' => 'integer',
+            'status_changed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Provenance line for the status-change confirmation, e.g.
+     * "set Jul 24, 2026 · PM Schedules". Empty when the status predates
+     * tracking (seeded or migrated rows).
+     */
+    public function statusOriginLabel(): string
+    {
+        if (! $this->status_source) {
+            return '';
+        }
+
+        return $this->status_changed_at
+            ? 'set '.$this->status_changed_at->format('M j, Y g:i A').' · '.$this->status_source
+            : 'set from '.$this->status_source;
     }
 
     public function assignedDriver(): BelongsTo

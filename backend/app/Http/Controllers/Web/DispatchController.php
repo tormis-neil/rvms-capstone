@@ -8,6 +8,7 @@ use App\Http\Requests\StoreDispatchRequest;
 use App\Models\Dispatch;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\VehicleStatusWriter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -55,7 +56,12 @@ class DispatchController extends Controller
             }
 
             $dispatch = Dispatch::create($data);
-            $dispatch->vehicle()->update(['status' => Vehicle::STATUS_DISPATCHED]);
+
+            app(VehicleStatusWriter::class)->writeFromDispatch(
+                $dispatch->vehicle,
+                Vehicle::STATUS_DISPATCHED,
+                VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+            );
         });
 
         return redirect()->route('dispatch')->with('status', 'Vehicle dispatched.');
@@ -86,14 +92,21 @@ class DispatchController extends Controller
             ]);
 
             $vehicle = $dispatch->vehicle;
-            $attributes = ['status' => $request->validated('return_status')];
+            $extra = [];
 
             // Mileage-on-arrival (FR-16 → FR-14): only ever increases mileage.
             if ($odometerIn !== null && $odometerIn > (int) $vehicle->current_mileage) {
-                $attributes['current_mileage'] = $odometerIn;
+                $extra['current_mileage'] = $odometerIn;
             }
 
-            $vehicle->update($attributes);
+            // The dispatch is now closed, so this write releases the vehicle
+            // from its Dispatched state (FR-16).
+            app(VehicleStatusWriter::class)->writeFromDispatch(
+                $vehicle,
+                $request->validated('return_status'),
+                VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                $extra,
+            );
         });
 
         return redirect()->route('dispatch')->with('status', 'Dispatch closed.');
