@@ -113,10 +113,23 @@
                                         <em>—</em>
                                         @endif
                                     </td>
+                                    {{-- VEHICLE STATUS and ACTIONS are two separate cells.
+                                         Documented deviation: the prototype's repairs table declares
+                                         9 headers but its body rows only have 8 cells (the badge and
+                                         the buttons share one), which shifts every cell after REMARKS
+                                         one column left and misplaces the buttons when the table is
+                                         scrolled horizontally. The prototype's own header row is the
+                                         authority, so the cell is split here. --}}
+                                    <td>
+                                        @if ($repair->vehicle)
+                                        <span class="badge {{ $repair->vehicle->badgeClass() }} px-3 py-2 rounded-pill">{{ $repair->vehicle->status }}</span>
+                                        @else
+                                        <em class="text-secondary small">—</em>
+                                        @endif
+                                    </td>
                                     <td class="text-end">
                                         <div class="d-flex align-items-center justify-content-end gap-2">
                                             @if ($repair->vehicle)
-                                            <span class="badge {{ $repair->vehicle->badgeClass() }} px-3 py-2 rounded-pill">{{ $repair->vehicle->status }}</span>
                                             <button class="btn btn-sm btn-light border js-edit" title="Edit Repair Log" data-bs-toggle="modal" data-bs-target="#editRepairModal"><i class="bi bi-pencil"></i></button>
                                             <button class="btn btn-sm btn-light border js-status" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
                                             @endif
