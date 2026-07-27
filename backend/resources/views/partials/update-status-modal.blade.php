@@ -60,7 +60,7 @@
 </div>
 
 <script>
-    (function () {
+    document.addEventListener('DOMContentLoaded', function () {
         const template = @json(route('vehicles.status', ['vehicle' => '__ID__']));
         const el = document.getElementById('updateStatusModal');
         const form = document.getElementById('sharedStatusForm');
@@ -111,5 +111,5 @@
                 onConfirm: () => { form.dataset.confirmed = 'yes'; form.submit(); },
             });
         });
-    })();
+    });
 </script>

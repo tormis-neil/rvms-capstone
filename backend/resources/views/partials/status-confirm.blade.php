@@ -51,7 +51,7 @@
      * confirm button, and the admin is pointed at Dispatch Logs. Otherwise it is
      * a normal confirm that runs onConfirm().
      */
-    (function () {
+    document.addEventListener('DOMContentLoaded', function () {
         const el = document.getElementById('statusConfirmModal');
         const modal = new bootstrap.Modal(el);
         const confirmBtn = document.getElementById('scConfirm');
@@ -102,5 +102,5 @@
 
             modal.show();
         };
-    })();
+    });
 </script>

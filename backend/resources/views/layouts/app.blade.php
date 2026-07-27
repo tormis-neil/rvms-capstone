@@ -115,8 +115,12 @@
         </main>
     </div>
 
-@yield('modals')
+    {{-- Bootstrap loads BEFORE the modal markup so that any inline script a modal
+         partial carries can already reference `bootstrap`. Bootstrap 5 wires
+         data-bs-toggle through delegation on `document`, so modals declared after
+         this tag still open normally. Guarded by DashboardScriptOrderTest. --}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+@yield('modals')
 @yield('scripts')
     {{-- The prototype's agency.js demo-data layer is omitted: the chrome above renders
          the logged-in admin's real agency from the database (documented omission). --}}

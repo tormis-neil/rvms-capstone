@@ -44,6 +44,7 @@
                                 @forelse ($inspections as $inspection)
                                 <tr
                                     data-id="{{ $inspection->id }}"
+                                    data-vehicle-id="{{ $inspection->vehicle_id }}"
                                     data-plate="{{ $inspection->vehicle->plate_number ?? '—' }}"
                                     data-type="{{ $inspection->vehicle->type ?? '' }}"
                                     data-driver="{{ $inspection->driver->name ?? '—' }}"
@@ -52,6 +53,7 @@
                                     data-result-badge="{{ $inspection->resultBadgeClass() }}"
                                     data-remarks="{{ $inspection->remarksSummary() }}"
                                     data-vehicle-status="{{ $inspection->vehicle->status ?? '' }}"
+                                    data-status-origin="{{ $inspection->vehicle?->statusOriginLabel() }}"
                                     data-is-bfp="{{ $inspection->items->contains(fn ($i) => $i->checklistItem?->is_bfp_only) ? '1' : '0' }}"
                                     data-items="{{ json_encode($inspection->items->map(fn ($i) => ['name' => $i->checklistItem->name ?? '', 'is_bfp_only' => (bool) ($i->checklistItem->is_bfp_only ?? false), 'status' => $i->status, 'remarks' => $i->remarks])->values()) }}">
                                     <td>
@@ -148,6 +150,7 @@
                                 @forelse ($damageReports as $report)
                                 <tr
                                     data-id="{{ $report->id }}"
+                                    data-vehicle-id="{{ $report->vehicle_id }}"
                                     data-plate="{{ $report->vehicle->plate_number ?? '—' }}"
                                     data-type="{{ $report->vehicle->type ?? '' }}"
                                     data-driver="{{ $report->driver->name ?? '—' }}"

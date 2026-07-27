@@ -109,6 +109,72 @@ class WebDispatchPageTest extends TestCase
             ->assertSessionHasErrors('mission_other');
     }
 
+    /**
+     * The New Dispatch selects must offer exactly the dispatchable vehicles and
+     * the agency's own active drivers, and each vehicle option must carry its
+     * primary driver so the Driver select can preselect it (FR-05 → FR-15).
+     */
+    public function test_new_dispatch_selects_offer_the_right_vehicles_and_drivers(): void
+    {
+        $assignable = Vehicle::factory()->create([
+            'agency_id' => $this->agency->id,
+            'plate_number' => 'BFP-0001',
+            'status' => Vehicle::STATUS_OPERATIONAL,
+            'assigned_driver_id' => $this->driver->id,
+        ]);
+        $unassigned = Vehicle::factory()->create([
+            'agency_id' => $this->agency->id,
+            'plate_number' => 'BFP-0002',
+            'status' => Vehicle::STATUS_OPERATIONAL,
+            'assigned_driver_id' => null,
+        ]);
+
+        // Not dispatchable: already out, off the road, or in maintenance.
+        foreach ([Vehicle::STATUS_DISPATCHED, Vehicle::STATUS_NOT_OPERATIONAL, Vehicle::STATUS_UNDER_PM] as $i => $status) {
+            Vehicle::factory()->create([
+                'agency_id' => $this->agency->id,
+                'plate_number' => 'BFP-90'.$i,
+                'status' => $status,
+            ]);
+        }
+
+        // Must never be offered: another agency's vehicle, and a pending driver.
+        $other = Agency::factory()->create(['code' => 'PNP']);
+        Vehicle::factory()->create([
+            'agency_id' => $other->id, 'plate_number' => 'PNP-7777', 'status' => Vehicle::STATUS_OPERATIONAL,
+        ]);
+        $pending = User::factory()->driver()->create([
+            'agency_id' => $this->agency->id, 'name' => 'Pending Applicant', 'status' => User::STATUS_PENDING,
+        ]);
+
+        $html = $this->actingAs($this->admin)->get('/dispatch')->assertOk()->getContent();
+
+        preg_match('#<select[^>]*js-nd-vehicle.*?</select>#s', $html, $vehicleSelect);
+        $this->assertNotEmpty($vehicleSelect, 'The New Dispatch vehicle select is missing.');
+
+        $this->assertStringContainsString('BFP-0001', $vehicleSelect[0]);
+        $this->assertStringContainsString('BFP-0002', $vehicleSelect[0]);
+        $this->assertStringNotContainsString('BFP-900', $vehicleSelect[0]);
+        $this->assertStringNotContainsString('BFP-901', $vehicleSelect[0]);
+        $this->assertStringNotContainsString('BFP-902', $vehicleSelect[0]);
+        $this->assertStringNotContainsString('PNP-7777', $vehicleSelect[0]);
+
+        // Each option carries its primary driver (empty when there is none).
+        $this->assertStringContainsString(
+            'value="'.$assignable->id.'" data-driver-id="'.$this->driver->id.'"',
+            $vehicleSelect[0]
+        );
+        $this->assertStringContainsString(
+            'value="'.$unassigned->id.'" data-driver-id=""',
+            $vehicleSelect[0]
+        );
+
+        preg_match('#<select[^>]*js-nd-driver.*?</select>#s', $html, $driverSelect);
+        $this->assertNotEmpty($driverSelect, 'The New Dispatch driver select is missing.');
+        $this->assertStringContainsString($this->driver->name, $driverSelect[0]);
+        $this->assertStringNotContainsString($pending->name, $driverSelect[0]);
+    }
+
     public function test_guest_is_redirected_to_login(): void
     {
         $this->get('/dispatch')->assertRedirect(route('login'));

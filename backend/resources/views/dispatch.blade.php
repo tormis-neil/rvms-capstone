@@ -120,22 +120,25 @@
                 <div class="modal-body p-4">
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Vehicle</label>
-                            <select class="form-select" name="vehicle_id" required>
+                            <select class="form-select js-nd-vehicle" name="vehicle_id" required>
                                 @forelse ($vehicles as $v)
-                                <option value="{{ $v->id }}">{{ $v->plate_number }} ({{ $v->type }}) - {{ $v->status }}</option>
+                                {{-- data-driver-id lets the Driver select below preselect this
+                                     vehicle's primary driver; the admin can still override it. --}}
+                                <option value="{{ $v->id }}" data-driver-id="{{ $v->assigned_driver_id }}">{{ $v->plate_number }} ({{ $v->type }}) - {{ $v->status }}</option>
                                 @empty
                                 <option value="" disabled>No Operational vehicles available</option>
                                 @endforelse
                             </select>
-                            <div class="form-text">Only Operational vehicles can be dispatched. Opening a dispatch sets the vehicle status to Dispatched.</div>
+                            <div class="form-text">Only Operational vehicles can be dispatched. Vehicles that are already dispatched, not operational, or under preventive maintenance are not listed. Opening a dispatch sets the vehicle status to Dispatched.</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Driver</label>
-                            <select class="form-select" name="driver_id" required>
+                            <select class="form-select js-nd-driver" name="driver_id" required>
                                 @foreach ($drivers as $driver)
                                 <option value="{{ $driver->id }}">{{ $driver->name }}</option>
                                 @endforeach
                             </select>
+                            <div class="form-text js-nd-driver-hint"></div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Mission Type</label>
@@ -346,7 +349,34 @@
             select.addEventListener('change', sync);
             sync();
         }
-        bindMissionToggle(document.getElementById('newDispatchModal'));
+        const newDispatchModal = document.getElementById('newDispatchModal');
+        bindMissionToggle(newDispatchModal);
+
+        // Picking a vehicle preselects its primary assigned driver (FR-05), so the
+        // admin is not left hunting through the whole roster. It is only a default —
+        // any active driver of the agency may be dispatched with any vehicle.
+        (function () {
+            const vehicleSelect = newDispatchModal.querySelector('.js-nd-vehicle');
+            const driverSelect = newDispatchModal.querySelector('.js-nd-driver');
+            const hint = newDispatchModal.querySelector('.js-nd-driver-hint');
+            if (!vehicleSelect || !driverSelect) return;
+
+            const syncDriver = () => {
+                const option = vehicleSelect.selectedOptions[0];
+                const driverId = option ? option.dataset.driverId : '';
+                const assigned = driverId && [...driverSelect.options].some(o => o.value === driverId);
+
+                if (assigned) {
+                    driverSelect.value = driverId;
+                    hint.textContent = 'Primary driver assigned to this vehicle. You may choose another.';
+                } else {
+                    hint.textContent = 'This vehicle has no primary driver assigned.';
+                }
+            };
+
+            vehicleSelect.addEventListener('change', syncDriver);
+            newDispatchModal.addEventListener('show.bs.modal', syncDriver);
+        })();
         const editModal = document.getElementById('editDispatchModal');
         bindMissionToggle(editModal);
 

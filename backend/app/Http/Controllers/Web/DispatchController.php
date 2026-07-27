@@ -31,11 +31,12 @@ class DispatchController extends Controller
         $activeCount = $dispatches->whereNull('time_in')->count();
 
         // New-dispatch selects: Operational vehicles (only these may be dispatched)
-        // and the agency's drivers.
+        // and the agency's drivers. assigned_driver_id rides along so the modal can
+        // preselect each vehicle's primary driver (FR-05 → FR-15).
         $vehicles = Vehicle::query()
             ->where('status', Vehicle::STATUS_OPERATIONAL)
             ->orderBy('plate_number')
-            ->get(['id', 'plate_number', 'type', 'status']);
+            ->get(['id', 'plate_number', 'type', 'status', 'assigned_driver_id']);
 
         $drivers = User::query()
             ->drivers()

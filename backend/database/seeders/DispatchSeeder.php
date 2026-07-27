@@ -6,6 +6,7 @@ use App\Models\Agency;
 use App\Models\Dispatch;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\VehicleStatusWriter;
 use Illuminate\Database\Seeder;
 
 /**
@@ -47,7 +48,13 @@ class DispatchSeeder extends Seeder
                 'time_out' => now()->subHours(2),
                 'odometer_out' => $activeVehicle->current_mileage,
             ]);
-            $activeVehicle->update(['status' => Vehicle::STATUS_DISPATCHED]);
+            // Through the writer so the seeded vehicle carries status_source /
+            // status_changed_at like a real dispatch would (design decision 9).
+            app(VehicleStatusWriter::class)->writeFromDispatch(
+                $activeVehicle,
+                Vehicle::STATUS_DISPATCHED,
+                VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+            );
 
             // Completed record.
             Dispatch::create([

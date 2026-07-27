@@ -28,7 +28,8 @@ Calbayog City agencies. Capstone, Northwest Samar State University.
 ## Key Development Commands
 
 ```bash
-php artisan migrate:fresh --seed     # rebuild schema + seed agencies/admins/drivers/checklist + sample vehicles/inspections
+php artisan migrate                  # apply new migrations only — KEEPS all existing data (the routine command)
+php artisan migrate:fresh --seed     # DESTRUCTIVE: drops every table, rebuilds, reseeds. Erases hand-registered accounts
 php artisan test                     # run PHPUnit feature + unit tests
 php artisan route:list --path=api/v1 # verify registered API routes/middleware
 php artisan tinker                   # inspect Eloquent records/scopes
@@ -381,9 +382,20 @@ in PowerShell (or your terminal).
 
 **B. Start-of-testing setup (every time you sit down to test a phase):**
 1. Make sure MySQL is running.
-2. `php artisan migrate:fresh --seed` — wipes and rebuilds all tables with fresh sample data.
-   *This is itself a test:* it must finish with green `DONE` lines and no red errors. If it
-   errors, stop and report it — nothing else will work until the tables build.
+2. `php artisan migrate` — applies any new migrations and **keeps everything already in the
+   database**. This is the normal command after every code update. *It is itself a test:* it must
+   finish with green `DONE` lines and no red errors. If it errors, stop and report it — nothing
+   else will work until the tables build. (If it prints `Nothing to migrate.`, that is a pass —
+   it means the schema was already current.)
+
+   > **Do NOT routinely run `php artisan migrate:fresh --seed`.** `fresh` **DROPS EVERY TABLE**,
+   > so it permanently erases every account you registered by hand during manual testing, along
+   > with every inspection, damage report, repair, PM schedule and dispatch you created while
+   > testing. The seeders then repopulate only the four agencies and their seeded users, which is
+   > why your own accounts appear to have been "deleted" after an update. Reach for
+   > `migrate:fresh --seed` **only** when you deliberately want a clean slate — e.g. before a
+   > fresh end-to-end run of a phase's checklist, or when a migration was edited in place rather
+   > than added. Treat it as "wipe and start over", never as "update".
 3. `php artisan serve` — starts the app at **http://127.0.0.1:8000**. Leave this window open.
 4. Open a **second** terminal (also in `backend`) for the `tinker` / `route:list` commands,
    because the first window is busy running the app.
@@ -524,7 +536,9 @@ Testing task:
     You are checking that the wiring is safe: accounts exist, passwords are protected, and the
     "each agency sees only its own data" rule is active from day one.
       [ ] `php artisan migrate:fresh --seed`  → ends with green DONE lines, no red.
-          Why: the database tables build correctly on your MySQL.
+          Why: the database tables build correctly on your MySQL. (This is the one place the
+          DESTRUCTIVE `fresh` is the right command — the database is empty and being built for
+          the first time. From R1 onward use plain `php artisan migrate`; see setup section B.)
       [ ] `php artisan test`  → all green.  Why: one command proves every login rule — right
           password gets in, wrong password doesn't, a pending driver is politely refused, a
           logged-out token stops working, and one agency can never query another's records.
@@ -1255,3 +1269,15 @@ Coverage: FR-01–FR-04 (R0/R1/R9; approval flow in R2), FR-05–FR-08 (R2), FR-
    left and misplaces the action buttons when the table is scrolled sideways — the cell is split
    in `repairs.blade.php`, since the prototype's own header row is the authority.
    `TableColumnAlignmentTest` guards every table page against this class of bug.
+10. **`layouts/app.blade.php` loads the Bootstrap bundle BEFORE `@yield('modals')`.** A modal
+    partial may carry its own inline `<script>`, and that script must be able to reference
+    `bootstrap` (Bootstrap 5 wires `data-bs-toggle` by delegation on `document`, so modal markup
+    declared after the tag still opens normally). Partials that define page-level functions also
+    wrap their body in `DOMContentLoaded` so they are safe wherever they are included. This is
+    not cosmetic: with the tag below the modals, `partials/status-confirm`'s
+    `new bootstrap.Modal(el)` threw at parse time, `window.confirmStatusChange` was never
+    defined, and EVERY vehicle-status change on Vehicles, Repair Logs, PM Schedules, Inspections
+    and Damage failed silently with no message. `DashboardScriptOrderTest` guards the script
+    order, the presence of the confirmation definition, and the `data-vehicle-id` every row with
+    a status button must carry — none of which the HTTP-level tests can see, because they never
+    run browser JavaScript.
