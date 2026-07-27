@@ -90,7 +90,13 @@ class VehicleController extends Controller
             $request->has('remarks') ? ['remarks' => $validated['remarks'] ?? null] : [],
         );
 
-        return redirect()->route('vehicles')
+        // Back to the screen the admin pressed the button on, not always Vehicles.
+        // Every screen that shows a status can now write one (design decision 9), so
+        // a hardcoded destination dumped the admin on a different page and put the
+        // confirmation message where they were not looking. `store`/`update` keep
+        // their fixed route: those are only ever used from the Vehicles page.
+        // Vehicles is the fallback for a request that carries no originating page.
+        return back(fallback: route('vehicles'))
             ->with('status', 'Vehicle status updated.');
     }
 }
