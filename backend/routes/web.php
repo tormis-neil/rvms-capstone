@@ -15,7 +15,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
 });
 
-Route::middleware(['auth', 'role:admin'])->group(function () {
+// no-store keeps signed-in pages out of the browser's back/forward cache, so the
+// Back button re-fetches instead of replaying a snapshot with a stale vehicle
+// status — and so the pages are not recoverable after sign-out (NFR-02).
+Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::class])->group(function () {
     Route::view('/dashboard', 'dashboard')->name('dashboard');
 
     // Vehicles (FR-05, FR-18)

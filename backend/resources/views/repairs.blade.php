@@ -13,12 +13,8 @@
                     </button>
                 </div>
 
-                @if (session('status'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('status') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                @endif
+                {{-- Success/error feedback — documented addition (the prototype has no alert state) --}}
+                @include('partials.alerts')
 
                 <!-- Status note (Plan §6.6: status is updated separately) -->
                 <div class="alert alert-light border shadow-sm d-flex align-items-center mb-4" role="alert">

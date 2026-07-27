@@ -13,12 +13,8 @@
                     </button>
                 </div>
 
-                @if (session('status'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('status') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                @endif
+                {{-- Success/error feedback — documented addition (the prototype has no alert state) --}}
+                @include('partials.alerts')
 
                 <!-- Tabs -->
                 <ul class="nav nav-tabs mb-4" role="tablist">

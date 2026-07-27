@@ -13,23 +13,8 @@
                     </button>
                 </div>
 
-                {{-- Success/error feedback banners — documented addition (the prototype has no alert state) --}}
-                @if (session('status'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('status') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                @endif
-                @if ($errors->any())
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <ul class="mb-0 small">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                @endif
+                {{-- Success/error feedback — documented addition (the prototype has no alert state) --}}
+                @include('partials.alerts')
 
                 <!-- License Status Summary -->
                 <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
