@@ -28,7 +28,8 @@ Calbayog City agencies. Capstone, Northwest Samar State University.
 ## Key Development Commands
 
 ```bash
-php artisan migrate:fresh --seed     # rebuild schema + seed agencies/admins/drivers/checklist + sample vehicles/inspections
+php artisan migrate                  # apply new migrations only — KEEPS all existing data (the routine command)
+php artisan migrate:fresh --seed     # DESTRUCTIVE: drops every table, rebuilds, reseeds. Erases hand-registered accounts
 php artisan test                     # run PHPUnit feature + unit tests
 php artisan route:list --path=api/v1 # verify registered API routes/middleware
 php artisan tinker                   # inspect Eloquent records/scopes
@@ -108,6 +109,27 @@ A few deliberate modeling decisions:
    dispatch open/close modals. Unlike `vehicles.remarks`, this IS mirrored into the manuscript
    (FR-15/FR-16 wording + the `dispatches` data-dictionary rows); the ERD diagram is unchanged
    (two new attributes on the existing Dispatch entity — no new entity or relationship).
+9. **Vehicle status change governance (2026-07, lead-reported issue — repo-only).**
+   FR-18 already states the shared status may be "updated from any applicable module", so
+   **every screen that DISPLAYS a vehicle status may also change it** — Vehicle Management,
+   Repair Logs, PM Schedules, and reviewed Inspection/Damage rows. (PM and reviewed rows
+   previously had no control at all, stranding a vehicle on a screen that could not release it.)
+   Three rules make that safe:
+   - **Dispatched is owned exclusively by the Dispatch module.** A vehicle on an ACTIVE dispatch
+     (`time_in IS NULL`) keeps that status until the dispatch is closed, where the return status
+     is set (FR-15 → FR-16). Any other module's write is refused (422) with a message naming the
+     mission, location and time out, so the admin is directed to Dispatch Logs. Enforced
+     server-side in `App\Services\VehicleStatusWriter` — the single gate every status write
+     passes through — so it holds regardless of the UI or the caller (web or API).
+   - **Every status change is confirmed** through one uniform dialog
+     (`partials/status-confirm`) showing the current status, WHERE it came from, and the new
+     status. Status selects default to the vehicle's current status, so a change is always a
+     deliberate act rather than an accident.
+   - **Two columns record the origin**: `vehicles.status_source` and `vehicles.status_changed_at`,
+     stamped by every write. Like `vehicles.remarks` (decision 7 amendment) and UNLIKE the
+     odometer columns (decision 8), no FR requires recording where a status came from, so these
+     are **repo/code only — deliberately NOT mirrored into the manuscript's Chapter 4 data
+     dictionary**. The ERD diagram is unchanged (two attributes on the existing Vehicle entity).
 
 ## ERD PLAN
 
@@ -202,7 +224,9 @@ standard and not detailed below.
 | engine_number | VARCHAR(50) | Yes | NULL | Engine number (FR-05). |
 | chassis_number | VARCHAR(50) | Yes | NULL | Chassis number (FR-05). |
 | current_mileage | INT UNSIGNED | No | 0 | Current odometer (km); drives mileage-based PM (FR-14). Updated manually on the vehicle, or automatically from the time-in odometer reading when a dispatch is closed (`dispatches.odometer_in`, FR-16). |
-| status | ENUM('Operational','Dispatched','Not Operational','Under Preventive Maintenance') | No | 'Operational' | **Single shared operational status** (FR-18), written from every module. |
+| status | ENUM('Operational','Dispatched','Not Operational','Under Preventive Maintenance') | No | 'Operational' | **Single shared operational status** (FR-18), written from every module through `VehicleStatusWriter` (design decision 9). |
+| status_source | VARCHAR(100) | Yes | NULL | **Implementation-level addition, not in the manuscript's data dictionary** (design decision 9, 2026-07). Which module last set `status` (e.g. "PM Schedules", "Damage Review", "Dispatch Closed"); powers the status-change confirmation. Overwritten on each write, no history kept. No FR backs it. |
+| status_changed_at | DATETIME | Yes | NULL | **Implementation-level addition, not in the manuscript's data dictionary** (design decision 9, 2026-07). When `status` was last written. Paired with `status_source`. |
 | remarks | TEXT | Yes | NULL | **Implementation-level addition, not in the manuscript's data dictionary** (design decision 7 amendment, 2026-07). Optional note on the most recent manual status change via the Update Status modal; overwritten on each update, no history kept. No FR backs it. |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
 
@@ -349,13 +373,29 @@ in PowerShell (or your terminal).
 2. In MySQL, run `CREATE DATABASE rvms;` (leave it empty).
 3. Open `backend\.env` and set `DB_USERNAME` and `DB_PASSWORD` to your MySQL login (for XAMPP
    this is usually username `root` with a blank password). Save.
-4. `php artisan key:generate` — sets the app's security key.
+4. In the same `backend\.env`, confirm **`APP_TIMEZONE=Asia/Manila`**. The agencies operate in
+   Philippine time; under the old UTC default anything recorded before 8:00 AM Manila was filed
+   on the PREVIOUS day, so a 7:30 AM inspection read "Yesterday" and damage reports carried the
+   wrong date. `.env.example` already ships with Manila — this step is only for an `.env` copied
+   before that change. Run `php artisan config:clear` afterwards.
+5. `php artisan key:generate` — sets the app's security key.
 
 **B. Start-of-testing setup (every time you sit down to test a phase):**
 1. Make sure MySQL is running.
-2. `php artisan migrate:fresh --seed` — wipes and rebuilds all tables with fresh sample data.
-   *This is itself a test:* it must finish with green `DONE` lines and no red errors. If it
-   errors, stop and report it — nothing else will work until the tables build.
+2. `php artisan migrate` — applies any new migrations and **keeps everything already in the
+   database**. This is the normal command after every code update. *It is itself a test:* it must
+   finish with green `DONE` lines and no red errors. If it errors, stop and report it — nothing
+   else will work until the tables build. (If it prints `Nothing to migrate.`, that is a pass —
+   it means the schema was already current.)
+
+   > **Do NOT routinely run `php artisan migrate:fresh --seed`.** `fresh` **DROPS EVERY TABLE**,
+   > so it permanently erases every account you registered by hand during manual testing, along
+   > with every inspection, damage report, repair, PM schedule and dispatch you created while
+   > testing. The seeders then repopulate only the four agencies and their seeded users, which is
+   > why your own accounts appear to have been "deleted" after an update. Reach for
+   > `migrate:fresh --seed` **only** when you deliberately want a clean slate — e.g. before a
+   > fresh end-to-end run of a phase's checklist, or when a migration was edited in place rather
+   > than added. Treat it as "wipe and start over", never as "update".
 3. `php artisan serve` — starts the app at **http://127.0.0.1:8000**. Leave this window open.
 4. Open a **second** terminal (also in `backend`) for the `tinker` / `route:list` commands,
    because the first window is busy running the app.
@@ -496,7 +536,9 @@ Testing task:
     You are checking that the wiring is safe: accounts exist, passwords are protected, and the
     "each agency sees only its own data" rule is active from day one.
       [ ] `php artisan migrate:fresh --seed`  → ends with green DONE lines, no red.
-          Why: the database tables build correctly on your MySQL.
+          Why: the database tables build correctly on your MySQL. (This is the one place the
+          DESTRUCTIVE `fresh` is the right command — the database is empty and being built for
+          the first time. From R1 onward use plain `php artisan migrate`; see setup section B.)
       [ ] `php artisan test`  → all green.  Why: one command proves every login rule — right
           password gets in, wrong password doesn't, a pending driver is politely refused, a
           logged-out token stops working, and one agency can never query another's records.
@@ -1177,6 +1219,12 @@ Testing task:
       [ ] Change one vehicle's status once  → the SAME status shows on the vehicle row, the
           availability list, the dashboard card, and the vehicle-status report.
           Why: one truth, never conflicting copies (FR-18 / NFR-04).
+      [ ] Open a dispatch, then try to change that vehicle's status from Vehicles, Repair Logs,
+          PM Schedules, and an inspection/damage review  → every one is refused with a message
+          naming the mission and pointing to Dispatch Logs; closing the dispatch releases it.
+          Why: a vehicle out on a mission can never be silently re-statused (design decision 9).
+      [ ] Change a status from any screen  → the confirmation names the current status, where it
+          was set from, and the new status before it commits.
       [ ] Long lists arrive in pages, and pages load fast.  Why: it stays quick when real data grows.
       [ ] Open the dashboard in Chrome, Firefox, and Edge  → same look, same behavior (NFR-05).
       [ ] `php artisan test`  → the entire suite green, one last time.
@@ -1195,7 +1243,10 @@ Coverage: FR-01–FR-04 (R0/R1/R9; approval flow in R2), FR-05–FR-08 (R2), FR-
 4. **One task at a time** — complete and test a single task before moving on.
 5. **Never invent features** — build only what the source of truth/approved plan defines.
 6. **Vehicle statuses are exactly the four values**; PM/mission/repair-source/notification
-   enums are exactly as documented above.
+   enums are exactly as documented above. **Every vehicle status write goes through
+   `App\Services\VehicleStatusWriter`** — never `$vehicle->update(['status' => ...])` directly —
+   so the active-dispatch guard and the `status_source`/`status_changed_at` stamp always apply
+   (design decision 9).
 7. **Agency-scope every query**; **store thresholds as columns**; **all API routes use
    `/api/v1/`**; **Sanctum bearer auth**; **FCM server-side via HTTP v1**.
 8. **Every phase ends with its testing task** (automated + manual) before the next begins.
@@ -1211,3 +1262,22 @@ Coverage: FR-01–FR-04 (R0/R1/R9; approval flow in R2), FR-05–FR-08 (R2), FR-
    (`partials/table-footer` + the published Bootstrap 5 pager). Before building a page,
    read the prototype page and reuse its markup patterns. Only omit prototype elements
    that belong to a later phase or have no schema backing — and say so explicitly.
+   **Prototype defects are the one exception to copying verbatim.** Where the prototype
+   contradicts itself, the fix is made and documented inline as a deviation. Recorded so far:
+   `repairs.html` declares 9 table headers but its body rows carry only 8 cells (the vehicle
+   status badge and the row buttons share one), which shifts every cell after REMARKS a column
+   left and misplaces the action buttons when the table is scrolled sideways — the cell is split
+   in `repairs.blade.php`, since the prototype's own header row is the authority.
+   `TableColumnAlignmentTest` guards every table page against this class of bug.
+10. **`layouts/app.blade.php` loads the Bootstrap bundle BEFORE `@yield('modals')`.** A modal
+    partial may carry its own inline `<script>`, and that script must be able to reference
+    `bootstrap` (Bootstrap 5 wires `data-bs-toggle` by delegation on `document`, so modal markup
+    declared after the tag still opens normally). Partials that define page-level functions also
+    wrap their body in `DOMContentLoaded` so they are safe wherever they are included. This is
+    not cosmetic: with the tag below the modals, `partials/status-confirm`'s
+    `new bootstrap.Modal(el)` threw at parse time, `window.confirmStatusChange` was never
+    defined, and EVERY vehicle-status change on Vehicles, Repair Logs, PM Schedules, Inspections
+    and Damage failed silently with no message. `DashboardScriptOrderTest` guards the script
+    order, the presence of the confirmation definition, and the `data-vehicle-id` every row with
+    a status button must carry — none of which the HTTP-level tests can see, because they never
+    run browser JavaScript.

@@ -44,6 +44,7 @@
                                 @forelse ($inspections as $inspection)
                                 <tr
                                     data-id="{{ $inspection->id }}"
+                                    data-vehicle-id="{{ $inspection->vehicle_id }}"
                                     data-plate="{{ $inspection->vehicle->plate_number ?? '—' }}"
                                     data-type="{{ $inspection->vehicle->type ?? '' }}"
                                     data-driver="{{ $inspection->driver->name ?? '—' }}"
@@ -51,6 +52,8 @@
                                     data-result="{{ $inspection->resultLabel() }}"
                                     data-result-badge="{{ $inspection->resultBadgeClass() }}"
                                     data-remarks="{{ $inspection->remarksSummary() }}"
+                                    data-vehicle-status="{{ $inspection->vehicle->status ?? '' }}"
+                                    data-status-origin="{{ $inspection->vehicle?->statusOriginLabel() }}"
                                     data-is-bfp="{{ $inspection->items->contains(fn ($i) => $i->checklistItem?->is_bfp_only) ? '1' : '0' }}"
                                     data-items="{{ json_encode($inspection->items->map(fn ($i) => ['name' => $i->checklistItem->name ?? '', 'is_bfp_only' => (bool) ($i->checklistItem->is_bfp_only ?? false), 'status' => $i->status, 'remarks' => $i->remarks])->values()) }}">
                                     <td>
@@ -74,6 +77,10 @@
                                         <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>
                                         @if ($inspection->review_status === \App\Models\Inspection::STATUS_PENDING)
                                         <button class="btn btn-sm bg-navy text-white fw-medium" data-bs-toggle="modal" data-bs-target="#reviewInspectionModal">Review</button>
+                                        @else
+                                        {{-- Reviewed rows previously had no action at all; FR-18 lets any
+                                             module that shows the status also change it (design decision 9). --}}
+                                        <button class="btn btn-sm btn-light border js-status" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
                                         @endif
                                     </td>
                                 </tr>
@@ -143,13 +150,19 @@
                                 @forelse ($damageReports as $report)
                                 <tr
                                     data-id="{{ $report->id }}"
+                                    data-vehicle-id="{{ $report->vehicle_id }}"
                                     data-plate="{{ $report->vehicle->plate_number ?? '—' }}"
                                     data-type="{{ $report->vehicle->type ?? '' }}"
                                     data-driver="{{ $report->driver->name ?? '—' }}"
                                     data-when="{{ $report->dateLabel() }}, {{ $report->timeLabel() }}"
                                     data-nature="{{ $report->nature_of_damage }}"
                                     data-parts="{{ $report->suspected_parts ?? 'None' }}"
-                                    data-photo="{{ $report->photo_path ? \Illuminate\Support\Facades\Storage::url($report->photo_path) : '' }}">
+                                    data-photo="{{ $report->photo_path ? \Illuminate\Support\Facades\Storage::url($report->photo_path) : '' }}"
+                                    data-vehicle-status="{{ $report->vehicle->status ?? '' }}"
+                                    data-status-origin="{{ $report->vehicle?->statusOriginLabel() }}"
+                                    data-status="{{ $report->status }}"
+                                    data-reviewer="{{ $report->reviewer->name ?? '—' }}"
+                                    data-reviewed-at="{{ $report->reviewed_at?->format('M j, Y g:i A') }}">
                                     <td>
                                         <div class="fw-bold text-dark">{{ $report->dateLabel() }}</div>
                                         <div class="small text-secondary">{{ $report->timeLabel() }}</div>
@@ -174,7 +187,11 @@
                                         @if ($report->status === \App\Models\DamageReport::STATUS_PENDING)
                                         <button class="btn btn-sm btn-danger fw-medium" data-bs-toggle="modal" data-bs-target="#reviewDamageModal">Review & Assess</button>
                                         @else
-                                        <em class="text-secondary small">Reviewed</em>
+                                        {{-- Reviewed rows previously showed static text with no action.
+                                             They now get the read-only detail view plus the shared status
+                                             control, matching the other screens (design decision 9). --}}
+                                        <button class="btn btn-sm btn-light border js-view" title="View Damage Report" data-bs-toggle="modal" data-bs-target="#viewDamageModal"><i class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-light border js-status" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
                                         @endif
                                     </td>
                                 </tr>
@@ -254,10 +271,13 @@
                     <p class="text-secondary small mb-4">Evaluate the findings, update the vehicle's operational status if action is required, and mark the inspection as Reviewed.</p>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Vehicle Status</label>
-                            {{-- First option = no status change; the other two write the vehicle status
-                                 (FR-10 + FR-18). Dispatched is set by the Dispatch module alone. --}}
+                            {{-- Every option writes the vehicle status (FR-10 + FR-18): reviewing an
+                                 inspection is an explicit decision about the vehicle's fitness, so
+                                 "Operational" actively sets Operational rather than leaving the
+                                 previous status untouched. Dispatched is set by the Dispatch module
+                                 alone and is therefore not offered here. --}}
                             <select class="form-select" name="vehicle_status">
-                                <option value="">Leave as Operational (no action needed)</option>
+                                <option value="Operational">Operational (no action needed)</option>
                                 <option value="Not Operational">Not Operational (unsafe for deployment)</option>
                                 <option value="Under Preventive Maintenance">Under Preventive Maintenance (maintenance required)</option>
                             </select>
@@ -303,10 +323,13 @@
                     <p class="text-secondary small mb-4">Assess severity, update the vehicle's operational status, and mark the report as Reviewed.</p>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Update Vehicle Status To</label>
-                            {{-- First option = no status change; the other two write the vehicle status
-                                 (FR-12 + FR-18). Dispatched is set by the Dispatch module alone. --}}
+                            {{-- Every option writes the vehicle status (FR-12 + FR-18), matching the
+                                 prototype's wording: assessing a damage report is an explicit
+                                 decision, so "Operational" actively sets Operational rather than
+                                 leaving the previous status untouched. Dispatched is set by the
+                                 Dispatch module alone and is therefore not offered here. --}}
                             <select class="form-select" name="vehicle_status">
-                                <option value="">Leave as Operational (no serious issue / repair done)</option>
+                                <option value="Operational">Operational (no serious issue / repair done)</option>
                                 <option value="Not Operational">Not Operational (unsafe for deployment / under repair)</option>
                                 <option value="Under Preventive Maintenance">Under Preventive Maintenance (maintenance required)</option>
                             </select>
@@ -323,6 +346,58 @@
             </div>
         </div>
     </div>
+
+    <!-- Damage Report Details (read-only, reviewed rows) -->
+    <div class="modal fade" id="viewDamageModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold">Damage Report Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <span class="badge badge-reviewed px-3 py-2 rounded-pill mb-2">Reviewed</span>
+                        <h5 class="fw-bold" id="vdNature">—</h5>
+                        <p class="text-secondary mb-0" id="vdWhen">—</p>
+                    </div>
+                    <hr>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <p class="mb-1 text-secondary small">Vehicle</p>
+                            <h6 class="fw-bold" id="vdVehicle">—</h6>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1 text-secondary small">Reported By</p>
+                            <h6 class="fw-bold" id="vdDriver">—</h6>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1 text-secondary small">Suspected Parts</p>
+                            <h6 class="fw-bold" id="vdParts">—</h6>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1 text-secondary small">Photo Attachment</p>
+                            <span id="vdPhoto">—</span>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1 text-secondary small">Reviewed By</p>
+                            <h6 class="fw-bold" id="vdReviewer">—</h6>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1 text-secondary small">Reviewed On</p>
+                            <h6 class="fw-bold" id="vdReviewedAt">—</h6>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @include('partials.status-confirm')
+    @include('partials.update-status-modal')
 @endsection
 
 @section('scripts')
@@ -387,8 +462,18 @@
                 ? d.remarks
                 : 'No issues reported — all BLOWBAGETS items OK.';
 
-            document.querySelector('#reviewInspectionForm select[name=vehicle_status]').value = '';
+            // Default to the vehicle's CURRENT status so reviewing never changes it
+            // by accident — moving it is a deliberate choice (Dispatched is not an
+            // option here, so it falls back to Operational and the server guard
+            // blocks the write while a dispatch is open).
+            setStatusSelect('#reviewInspectionForm', d.vehicleStatus);
         });
+
+        function setStatusSelect(formSelector, currentStatus) {
+            const select = document.querySelector(formSelector + ' select[name=vehicle_status]');
+            const selectable = [...select.options].some(o => o.value === currentStatus);
+            select.value = selectable ? currentStatus : 'Operational';
+        }
 
         // Review & Assess Damage modal — populated from the clicked damage row.
         const damageReviewTemplate = @json(route('damage.review', ['damageReport' => '__ID__']));
@@ -408,7 +493,23 @@
                 ? '<a href="' + d.photo + '" target="_blank" class="btn btn-sm btn-light border"><i class="bi bi-image text-primary me-1"></i> View</a>'
                 : '<em class="text-secondary small">None</em>';
 
-            document.querySelector('#reviewDamageForm select[name=vehicle_status]').value = '';
+            setStatusSelect('#reviewDamageForm', d.vehicleStatus);
+        });
+
+        // Read-only detail view for an already-reviewed damage report.
+        document.getElementById('viewDamageModal').addEventListener('show.bs.modal', event => {
+            const d = rowData(event);
+            if (!d) return;
+            document.getElementById('vdNature').textContent = d.nature;
+            document.getElementById('vdWhen').textContent = 'Reported ' + d.when;
+            document.getElementById('vdVehicle').textContent = d.plate + (d.type ? ' (' + d.type + ')' : '');
+            document.getElementById('vdDriver').textContent = d.driver;
+            document.getElementById('vdParts').textContent = (d.parts && d.parts !== 'None') ? d.parts : 'None';
+            document.getElementById('vdReviewer').textContent = d.reviewer || '—';
+            document.getElementById('vdReviewedAt').textContent = d.reviewedAt || '—';
+            document.getElementById('vdPhoto').innerHTML = d.photo
+                ? '<a href="' + d.photo + '" target="_blank" class="btn btn-sm btn-light border"><i class="bi bi-image text-primary me-1"></i> View</a>'
+                : '<em class="text-secondary small">None</em>';
         });
     </script>
 @endsection

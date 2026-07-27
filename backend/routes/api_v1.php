@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AgencyController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DamageReportController;
+use App\Http\Controllers\Api\V1\DispatchController;
 use App\Http\Controllers\Api\V1\DriverController;
 use App\Http\Controllers\Api\V1\InspectionChecklistController;
 use App\Http\Controllers\Api\V1\InspectionController;
@@ -41,9 +42,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::get('/vehicles', [VehicleController::class, 'index']);
         Route::post('/vehicles', [VehicleController::class, 'store']);
-        Route::get('/vehicles/{vehicle}', [VehicleController::class, 'show']);
-        Route::put('/vehicles/{vehicle}', [VehicleController::class, 'update']);
-        Route::patch('/vehicles/{vehicle}/status', [VehicleController::class, 'updateStatus']);
+        // Numeric-only so the text path /vehicles/availability (below) resolves.
+        Route::get('/vehicles/{vehicle}', [VehicleController::class, 'show'])->whereNumber('vehicle');
+        Route::put('/vehicles/{vehicle}', [VehicleController::class, 'update'])->whereNumber('vehicle');
+        Route::patch('/vehicles/{vehicle}/status', [VehicleController::class, 'updateStatus'])->whereNumber('vehicle');
 
         // Admin — driver records (FR-03, FR-06, FR-08)
         Route::get('/drivers', [DriverController::class, 'index']);
@@ -75,6 +77,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/pm-schedules/{pmSchedule}', [PmScheduleController::class, 'show'])->whereNumber('pmSchedule');
         Route::put('/pm-schedules/{pmSchedule}', [PmScheduleController::class, 'update'])->whereNumber('pmSchedule');
         Route::patch('/pm-schedules/{pmSchedule}/complete', [PmScheduleController::class, 'complete'])->whereNumber('pmSchedule');
+
+        // Admin — dispatch + availability (FR-15, FR-16, FR-17)
+        Route::get('/vehicles/availability', [DispatchController::class, 'availability']);
+        Route::get('/dispatches', [DispatchController::class, 'index']);
+        Route::post('/dispatches', [DispatchController::class, 'store']);
+        Route::get('/dispatches/{dispatch}', [DispatchController::class, 'show'])->whereNumber('dispatch');
+        Route::put('/dispatches/{dispatch}', [DispatchController::class, 'update'])->whereNumber('dispatch');
+        Route::patch('/dispatches/{dispatch}/close', [DispatchController::class, 'close'])->whereNumber('dispatch');
     });
 
     // Driver — assigned vehicle(s) (FR-07), checklist + inspection submission (FR-09),

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\DamageReport;
 use App\Models\Vehicle;
+use App\Services\VehicleStatusWriter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -31,7 +32,11 @@ class DamageReportController extends Controller
         ]);
 
         if (! empty($validated['vehicle_status'])) {
-            $damageReport->vehicle()->update(['status' => $validated['vehicle_status']]);
+            app(VehicleStatusWriter::class)->write(
+                $damageReport->vehicle,
+                $validated['vehicle_status'],
+                VehicleStatusWriter::SOURCE_DAMAGE,
+            );
         }
 
         return redirect()->route('inspections')->with('status', 'Damage report reviewed.');

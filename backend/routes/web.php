@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\DamageReportController;
+use App\Http\Controllers\Web\DispatchController;
 use App\Http\Controllers\Web\DriverController;
 use App\Http\Controllers\Web\InspectionController;
 use App\Http\Controllers\Web\PmController;
@@ -46,6 +47,12 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/pm', [PmController::class, 'store'])->name('pm.store');
     Route::put('/pm/{pmSchedule}', [PmController::class, 'update'])->name('pm.update');
     Route::patch('/pm/{pmSchedule}/complete', [PmController::class, 'complete'])->name('pm.complete');
+
+    // Dispatch + availability (FR-15, FR-16, FR-17)
+    Route::get('/dispatch', [DispatchController::class, 'index'])->name('dispatch');
+    Route::post('/dispatch', [DispatchController::class, 'store'])->name('dispatch.store');
+    Route::put('/dispatch/{dispatch}', [DispatchController::class, 'update'])->name('dispatch.update');
+    Route::patch('/dispatch/{dispatch}/close', [DispatchController::class, 'close'])->name('dispatch.close');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });

@@ -95,7 +95,8 @@
                                     data-badge="{{ $vehicle->badgeClass() }}"
                                     data-engine="{{ $vehicle->engine_number }}"
                                     data-chassis="{{ $vehicle->chassis_number }}"
-                                    data-remarks="{{ $vehicle->remarks }}">
+                                    data-remarks="{{ $vehicle->remarks }}"
+                                    data-status-origin="{{ $vehicle->statusOriginLabel() }}">
                                     <td class="fw-bold">{{ $vehicle->plate_number }}</td>
                                     <td>
                                         <div class="fw-semibold">{{ $vehicle->type }}</div>
@@ -367,6 +368,7 @@
             </div>
         </div>
     </div>
+    @include('partials.status-confirm')
 @endsection
 
 @section('scripts')
@@ -416,9 +418,13 @@
             document.getElementById('evDriver').value = d.driverId || '';
         });
 
+        // Row context for the shared confirmation (design decision 9).
+        let statusRow = {};
+
         document.getElementById('updateStatusModal').addEventListener('show.bs.modal', event => {
             const d = rowData(event);
             if (!d) return;
+            statusRow = d;
             document.getElementById('updateStatusForm').action = statusActionTemplate.replace('__ID__', d.id);
             document.getElementById('usVehicle').textContent = d.plate + ' (' + d.type + ')';
             document.getElementById('usDriver').textContent = d.driver;
@@ -432,5 +438,35 @@
             badge.classList.add('status-badge', d.badge);
             badge.textContent = showStatus(d.status);
         });
+
+        // Every status write goes through the shared confirmation, which also
+        // blocks the change outright while the vehicle is on an active dispatch.
+        // The server enforces the same rule regardless of this UI.
+        (function () {
+            const form = document.getElementById('updateStatusForm');
+            const modalEl = document.getElementById('updateStatusModal');
+
+            form.addEventListener('submit', event => {
+                if (form.dataset.confirmed === 'yes') return;
+                event.preventDefault();
+
+                const next = form.querySelector('select[name=status]').value;
+                if (next === statusRow.status && statusRow.status !== 'Dispatched') {
+                    form.dataset.confirmed = 'yes';
+                    form.submit();
+                    return;
+                }
+
+                bootstrap.Modal.getInstance(modalEl).hide();
+                window.confirmStatusChange({
+                    plate: statusRow.plate,
+                    type: statusRow.type,
+                    current: statusRow.status,
+                    origin: statusRow.statusOrigin,
+                    next: next,
+                    onConfirm: () => { form.dataset.confirmed = 'yes'; form.submit(); },
+                });
+            });
+        })();
     </script>
 @endsection

@@ -59,7 +59,9 @@
                                             data-last-pm-mileage="{{ $pm->last_pm_mileage }}"
                                             data-due-soon-km="{{ $pm->due_soon_threshold_km }}"
                                             data-due-date="{{ $pm->due_date?->toDateString() }}"
-                                            data-due-soon-days="{{ $pm->due_soon_threshold_days }}">
+                                            data-due-soon-days="{{ $pm->due_soon_threshold_days }}"
+                                            data-vehicle-status="{{ $pm->vehicle->status ?? '' }}"
+                                            data-status-origin="{{ $pm->vehicle?->statusOriginLabel() }}">
                                             <td>
                                                 <div class="fw-bold">{{ $pm->vehicle->plate_number ?? '—' }}</div>
                                                 <div class="small text-secondary">{{ $pm->vehicle->type ?? '' }}</div>
@@ -77,6 +79,10 @@
                                                 <div class="d-flex align-items-center justify-content-end gap-2">
                                                     <button class="btn btn-sm btn-success fw-medium js-complete" data-bs-toggle="modal" data-bs-target="#markCompletedModal">Mark Completed</button>
                                                     <button class="btn btn-sm btn-light border js-edit" title="Edit PM Schedule" data-bs-toggle="modal" data-bs-target="#editPmModal"><i class="bi bi-pencil"></i></button>
+                                                    {{-- FR-18: the PM screen can release the vehicle it put Under
+                                                         Preventive Maintenance, instead of sending the admin to
+                                                         another page (design decision 9). --}}
+                                                    <button class="btn btn-sm btn-light border js-status" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -308,6 +314,9 @@
             </div>
         </div>
     </div>
+
+    @include('partials.status-confirm')
+    @include('partials.update-status-modal')
 @endsection
 
 @section('scripts')
