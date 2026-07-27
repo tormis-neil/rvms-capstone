@@ -467,6 +467,7 @@
             // option here, so it falls back to Operational and the server guard
             // blocks the write while a dispatch is open).
             setStatusSelect('#reviewInspectionForm', d.vehicleStatus);
+            reviewRows.reviewInspectionForm = d;
         });
 
         function setStatusSelect(formSelector, currentStatus) {
@@ -474,6 +475,44 @@
             const selectable = [...select.options].some(o => o.value === currentStatus);
             select.value = selectable ? currentStatus : 'Operational';
         }
+
+        // Row context captured when each review modal opens, keyed by form id.
+        const reviewRows = {};
+
+        /*
+         * Reviewing writes the shared vehicle status just like the circular-arrows
+         * button does, so it goes through the SAME confirmation (design decision 9).
+         * Reviewing without moving the status submits straight through — the dialog
+         * marks a CHANGE, not the act of reviewing.
+         */
+        function bindReviewConfirmation(formId, modalId) {
+            const form = document.getElementById(formId);
+            const modalEl = document.getElementById(modalId);
+
+            form.addEventListener('submit', event => {
+                if (form.dataset.confirmed === 'yes') return;
+
+                const row = reviewRows[formId] || {};
+                const next = form.querySelector('select[name=vehicle_status]').value;
+
+                // Status unchanged — the review itself needs no confirmation.
+                if (next === row.vehicleStatus) return;
+
+                event.preventDefault();
+                bootstrap.Modal.getInstance(modalEl).hide();
+                window.confirmStatusChange({
+                    plate: row.plate,
+                    type: row.type,
+                    current: row.vehicleStatus,
+                    origin: row.statusOrigin,
+                    next: next,
+                    onConfirm: () => { form.dataset.confirmed = 'yes'; form.submit(); },
+                });
+            });
+        }
+
+        bindReviewConfirmation('reviewInspectionForm', 'reviewInspectionModal');
+        bindReviewConfirmation('reviewDamageForm', 'reviewDamageModal');
 
         // Review & Assess Damage modal — populated from the clicked damage row.
         const damageReviewTemplate = @json(route('damage.review', ['damageReport' => '__ID__']));
@@ -494,6 +533,7 @@
                 : '<em class="text-secondary small">None</em>';
 
             setStatusSelect('#reviewDamageForm', d.vehicleStatus);
+            reviewRows.reviewDamageForm = d;
         });
 
         // Read-only detail view for an already-reviewed damage report.

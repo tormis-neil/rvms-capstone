@@ -143,6 +143,49 @@ class DashboardScriptOrderTest extends TestCase
     }
 
     /**
+     * Reviewing writes the shared vehicle status, so it must pass through the same
+     * confirmation as the circular-arrows button (design decision 9). The review
+     * modals originally submitted straight to the server, so setting a vehicle
+     * Not Operational from a review happened with no dialog while changing it
+     * afterwards asked — the same write, confirmed inconsistently.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('pages')]
+    public function test_every_form_writing_a_vehicle_status_is_bound_to_the_confirmation(string $url): void
+    {
+        $html = $this->actingAs($this->admin)->get($url)->assertOk()->getContent();
+
+        $document = new \DOMDocument;
+        libxml_use_internal_errors(true);
+        $document->loadHTML($html);
+        libxml_clear_errors();
+
+        $selects = (new \DOMXPath($document))->query('//select[@name="vehicle_status"]');
+
+        if ($selects->length === 0) {
+            $this->markTestSkipped("{$url} has no review form that writes a vehicle status.");
+        }
+
+        foreach ($selects as $select) {
+            $form = $select;
+            while ($form !== null && $form->nodeName !== 'form') {
+                $form = $form->parentNode;
+            }
+
+            $this->assertNotNull($form, "A vehicle_status select on {$url} is not inside a form.");
+
+            $id = $form->getAttribute('id');
+            $this->assertNotSame('', $id, "A status-writing form on {$url} has no id to bind to.");
+
+            $this->assertStringContainsString(
+                "bindReviewConfirmation('{$id}'",
+                $html,
+                "Form #{$id} on {$url} writes the vehicle status but is not bound to the "
+                .'shared confirmation, so that change would commit with no dialog.'
+            );
+        }
+    }
+
+    /**
      * The shared modal builds its action from the row's data-vehicle-id.
      */
     #[\PHPUnit\Framework\Attributes\DataProvider('pages')]

@@ -35,8 +35,12 @@ class VehicleController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        // Own agency only (FR-02). `users` carries no global agency scope — unlike
+        // vehicles/inspections/etc., which use BelongsToAgency — so every User query
+        // must filter by hand. Guarded by AgencySelectScopeTest.
         $drivers = User::query()
             ->drivers()
+            ->where('agency_id', $request->user()->agency_id)
             ->where('status', User::STATUS_ACTIVE)
             ->orderBy('name')
             ->get(['id', 'name']);
