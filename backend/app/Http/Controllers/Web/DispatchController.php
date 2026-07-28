@@ -8,6 +8,7 @@ use App\Http\Requests\StoreDispatchRequest;
 use App\Models\Dispatch;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\DispatchGuard;
 use App\Services\VehicleStatusWriter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,6 +56,10 @@ class DispatchController extends Controller
             if ($data['mission_type'] !== Dispatch::MISSION_OTHERS) {
                 $data['mission_other'] = null;
             }
+
+            // Re-check with the rows locked: two admins submitting in the same
+            // instant can both clear validation before either has inserted.
+            app(DispatchGuard::class)->assertFree((int) $data['vehicle_id'], (int) $data['driver_id']);
 
             $dispatch = Dispatch::create($data);
 

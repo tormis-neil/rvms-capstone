@@ -27,7 +27,14 @@ class UpdateDriverRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($driverId)],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
-            'license_number' => ['nullable', 'string', 'max:50'],
+            // Per agency and nullable; ignores this driver so an edit that leaves
+            // the licence untouched does not collide with itself.
+            'license_number' => [
+                'nullable', 'string', 'max:50',
+                Rule::unique('users', 'license_number')
+                    ->where('agency_id', $agencyId)
+                    ->ignore($driverId),
+            ],
             'license_expiry_date' => ['nullable', 'date'],
             'assigned_vehicle_id' => [
                 'nullable',
@@ -45,6 +52,7 @@ class UpdateDriverRequest extends FormRequest
     {
         return [
             'email.unique' => 'An account with this email address already exists.',
+            'license_number.unique' => 'A driver with this license number already exists in your agency.',
             'password.confirmed' => 'The password confirmation does not match.',
             'assigned_vehicle_id.exists' => 'That vehicle is not available to assign (it may already have a different driver).',
         ];
