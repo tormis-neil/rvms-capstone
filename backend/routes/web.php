@@ -57,6 +57,11 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     Route::put('/dispatch/{dispatch}', [DispatchController::class, 'update'])->name('dispatch.update');
     Route::patch('/dispatch/{dispatch}/close', [DispatchController::class, 'close'])->name('dispatch.close');
 
+    // Notifications page (FR-21). Reached from the bell's "View All Notifications"
+    // link — the prototype has no sidebar item for it either.
+    // BLOCK A: static verbatim copy; wired to live data in Block B.
+    Route::view('/notifications', 'notifications')->name('notifications');
+
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
