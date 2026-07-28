@@ -130,6 +130,48 @@ A few deliberate modeling decisions:
      odometer columns (decision 8), no FR requires recording where a status came from, so these
      are **repo/code only — deliberately NOT mirrored into the manuscript's Chapter 4 data
      dictionary**. The ERD diagram is unchanged (two attributes on the existing Vehicle entity).
+10. **Duplicate-record rules (2026-07, lead-reported — repo-only, no manuscript change).**
+    Every module validated its own fields but none checked the state of the vehicle it was
+    writing to, so the same thing could be recorded twice. What is now REFUSED, and what is
+    deliberately still ALLOWED:
+    - **One open dispatch per vehicle, and per driver.** Two dispatches could be open on one
+      vehicle at once — easy to hit because an agency may have several administrators and each
+      dropdown still showed the vehicle as Operational until one of them submitted. Closing
+      either one then wrote a return status while the other was still running, leaving the
+      vehicle reading Operational while it was still in the field (breaks FR-18). The rule lives
+      in `App\Services\DispatchGuard`, used twice: `StoreDispatchRequest` produces the friendly
+      422 naming the mission, and both controllers call `assertFree()` again inside their
+      transaction with the vehicle and driver rows locked, because two admins submitting in the
+      same instant can both clear validation before either inserts. Editing an open dispatch
+      ignores itself. `DispatchUniquenessTest` also asserts both layers word the refusal
+      identically, so they cannot drift apart.
+    - **One ACTIVE PM schedule per vehicle per service target.** A vehicle legitimately has
+      several schedules (oil change, brake service, tyres) so the target is what distinguishes
+      them; two active ones for the SAME target made `rvms:recalculate-pm` flip both, producing
+      two Due Soon rows and two reminders for one job. Re-creating the target once the previous
+      one is Completed is the next cycle and stays allowed.
+    - **Engine number, chassis number and licence number are unique per agency**, matching the
+      plate rule that already existed. These name one physical thing (the chassis number is the
+      VIN; a licence number is one person), so a duplicate means the same vehicle or person was
+      entered twice — and a duplicated licence double-counts one physical licence in the FR-08
+      expiring figures, from two rows that can hold different expiry dates. Enforced in BOTH
+      layers: form-request rules for the message, and unique indexes
+      (`2026_07_28_000001_add_identifier_uniqueness_indexes`) for the same-instant race. All
+      three columns are nullable and SQL treats NULLs as distinct, so any number of records may
+      leave them blank. `RegisterRequest` carries the licence rule too — without it a
+      self-registering driver hit the raw index and got a 500 instead of a message.
+    - **Scoped per agency on purpose.** A global index would make a rejection reveal that a
+      DIFFERENT agency holds that plate/chassis/licence — an FR-02 leak through a validation
+      error. Email is the one exception and stays globally unique: it is the login identifier.
+    - **Deliberately NOT constrained** (verified against the source of truth, do not "fix"):
+      *multiple damage reports per vehicle* — FR-11 gives each report its own nature, parts and
+      photo, so a truck with two distinct faults legitimately has two open reports, and blocking
+      a second would make a real fault unreportable; *multiple repair logs per vehicle* — FR-13
+      is a log, and many repairs over time is the whole point; *duplicate driver names* —
+      namesakes are real people, which is exactly why the licence number is the identifier.
+    - **No manuscript change.** These are integrity constraints on fields FR-05, FR-06, FR-14
+      and FR-15 already define — no new columns, no ERD change, no FR wording change. The
+      Chapter 4 data dictionary describes what each column holds, not its indexes.
 
 ## ERD PLAN
 

@@ -32,8 +32,23 @@ class StoreVehicleRequest extends FormRequest
             ],
             'make' => ['required', 'string', 'max:100'],
             'model' => ['required', 'string', 'max:100'],
-            'engine_number' => ['nullable', 'string', 'max:50'],
-            'chassis_number' => ['nullable', 'string', 'max:50'],
+            // The engine and chassis numbers identify the physical unit (the
+            // chassis number is the VIN), so two rows sharing one means the same
+            // vehicle was entered twice — usually with a mistyped plate. Scoped
+            // per agency like the plate, and nullable: many vehicles have no
+            // number recorded, and blanks must not collide with each other.
+            'engine_number' => [
+                'nullable', 'string', 'max:50',
+                Rule::unique('vehicles', 'engine_number')
+                    ->where('agency_id', $agencyId)
+                    ->ignore($vehicleId),
+            ],
+            'chassis_number' => [
+                'nullable', 'string', 'max:50',
+                Rule::unique('vehicles', 'chassis_number')
+                    ->where('agency_id', $agencyId)
+                    ->ignore($vehicleId),
+            ],
             'current_mileage' => ['required', 'integer', 'min:0'],
             'assigned_driver_id' => [
                 'nullable',
@@ -48,6 +63,8 @@ class StoreVehicleRequest extends FormRequest
     {
         return [
             'plate_number.unique' => 'A vehicle with this plate number already exists in your agency.',
+            'engine_number.unique' => 'A vehicle with this engine number already exists in your agency.',
+            'chassis_number.unique' => 'A vehicle with this chassis number already exists in your agency.',
             'assigned_driver_id.exists' => 'The assigned driver must be an authorized driver of your agency.',
         ];
     }

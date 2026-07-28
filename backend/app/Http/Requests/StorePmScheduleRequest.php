@@ -30,7 +30,20 @@ class StorePmScheduleRequest extends FormRequest
                 'required',
                 Rule::exists('vehicles', 'id')->where('agency_id', $agencyId),
             ],
-            'service_target' => ['required', 'string', 'max:255'],
+            // A vehicle legitimately has several PM schedules (oil change, brake
+            // service, tyres), so the target is what distinguishes them — but two
+            // ACTIVE schedules for the SAME target on the same vehicle is a
+            // duplicate: the recalculation job flips both, giving two Due Soon rows
+            // and two reminders for one job (FR-14, FR-21). Creating it again once
+            // the previous one is Completed is the next cycle and stays allowed.
+            'service_target' => [
+                'required', 'string', 'max:255',
+                Rule::unique('pm_schedules', 'service_target')
+                    ->where('agency_id', $agencyId)
+                    ->where('vehicle_id', $this->input('vehicle_id'))
+                    ->whereNot('status', PmSchedule::STATUS_COMPLETED)
+                    ->ignore($this->route('pmSchedule')?->id),
+            ],
             'pm_type' => ['required', Rule::in([PmSchedule::TYPE_MILEAGE, PmSchedule::TYPE_TIME])],
 
             // Mileage-based
@@ -47,6 +60,8 @@ class StorePmScheduleRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'service_target.unique' => 'This vehicle already has an active schedule for that service. '
+                .'Complete it first, or edit the existing one.',
             'interval_km.required' => 'A mileage interval is required for a mileage-based schedule.',
             'last_pm_mileage.required' => 'The last-service mileage is required for a mileage-based schedule.',
             'due_soon_threshold_km.required' => 'A Due-Soon km threshold is required for a mileage-based schedule.',
