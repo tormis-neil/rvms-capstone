@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
+use App\Models\Notification;
 use App\Models\User;
+use App\Services\NotificationDispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -60,6 +62,18 @@ class AuthController extends Controller
             'license_number' => $request->input('license_number'),
             'license_expiry_date' => $request->input('license_expiry_date'),
         ]);
+
+        // Every administrator of the chosen agency is told there is someone
+        // waiting for approval (FR-03 → FR-21). Notifying only one would leave
+        // the applicant stuck if that admin happens to be away.
+        $dispatcher = app(NotificationDispatcher::class);
+        $dispatcher->sendToMany(
+            $dispatcher->adminsOf($driver->agency_id),
+            Notification::TYPE_NEW_ACCESS_REQUEST,
+            'New Driver Access Request',
+            sprintf('%s has requested a driver account.', $driver->name),
+            ['driver_id' => $driver->id, 'driver' => $driver->name],
+        );
 
         return response()->json([
             'message' => 'Registration submitted. Your account is pending approval by your agency administrator.',
