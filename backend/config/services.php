@@ -28,6 +28,22 @@ return [
         'key' => env('RESEND_KEY'),
     ],
 
+    /*
+     |--------------------------------------------------------------------------
+     | Firebase Cloud Messaging (FR-21)
+     |--------------------------------------------------------------------------
+     | Server-side push via Google's HTTP v1 API. When either value is missing
+     | the app falls back to the log transport, so every notification trigger
+     | still works locally without Firebase credentials.
+     |
+     | FIREBASE_CREDENTIALS is a path to the service-account JSON. Keep it in
+     | storage/app (already gitignored) — it is a private key.
+     */
+    'fcm' => [
+        'project_id' => env('FIREBASE_PROJECT_ID'),
+        'credentials' => env('FIREBASE_CREDENTIALS'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

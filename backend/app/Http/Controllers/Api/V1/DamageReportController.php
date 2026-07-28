@@ -7,9 +7,12 @@ use App\Http\Requests\ReviewDamageReportRequest;
 use App\Http\Requests\StoreDamageReportRequest;
 use App\Http\Resources\DamageReportResource;
 use App\Models\DamageReport;
+use App\Models\Notification;
 use App\Models\User;
+use App\Services\NotificationDispatcher;
 use App\Services\VehicleStatusWriter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -39,6 +42,25 @@ class DamageReportController extends Controller
             'date_reported' => now()->toDateString(),
             'status' => DamageReport::STATUS_PENDING,
         ]);
+
+        // Every administrator of the agency is told, not just one: an agency may
+        // have several, and FR-21 addresses them all (BFP has two by design).
+        $dispatcher = app(NotificationDispatcher::class);
+        $dispatcher->sendToMany(
+            $dispatcher->adminsOf($report->agency_id),
+            Notification::TYPE_NEW_DAMAGE_REPORT,
+            'New Damage Report Submitted',
+            sprintf(
+                '%s — %s',
+                $report->vehicle?->plate_number ?? 'A vehicle',
+                Str::limit($report->nature_of_damage, 80),
+            ),
+            [
+                'plate' => $report->vehicle?->plate_number,
+                'damage_report_id' => $report->id,
+                'driver' => $request->user()->name,
+            ],
+        );
 
         return DamageReportResource::make($report->load(['vehicle', 'driver']))
             ->response()

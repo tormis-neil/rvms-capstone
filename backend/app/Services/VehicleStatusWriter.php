@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Dispatch;
+use App\Models\Notification;
+use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Validation\ValidationException;
 
@@ -56,11 +58,7 @@ class VehicleStatusWriter
     {
         $this->assertNotOnActiveDispatch($vehicle);
 
-        $vehicle->update(array_merge($extra, [
-            'status' => $status,
-            'status_source' => $source,
-            'status_changed_at' => now(),
-        ]));
+        $this->commit($vehicle, $status, $source, $extra);
     }
 
     /**
@@ -72,11 +70,58 @@ class VehicleStatusWriter
      */
     public function writeFromDispatch(Vehicle $vehicle, string $status, string $source, array $extra = []): void
     {
+        $this->commit($vehicle, $status, $source, $extra);
+    }
+
+    /**
+     * The actual write, shared by both entry points so the notification can
+     * never be attached to only one of them (FR-21).
+     *
+     * @param  array<string, mixed>  $extra
+     */
+    private function commit(Vehicle $vehicle, string $status, string $source, array $extra): void
+    {
+        $previous = $vehicle->status;
+
         $vehicle->update(array_merge($extra, [
             'status' => $status,
             'status_source' => $source,
             'status_changed_at' => now(),
         ]));
+
+        // Only a real CHANGE is news. Status writes are idempotent by design —
+        // reviewing an inspection without moving the status re-writes the same
+        // value — and notifying on those would ring the driver for nothing.
+        if ($previous !== $status) {
+            $this->notifyAssignedDriver($vehicle, $previous, $status, $source);
+        }
+    }
+
+    /**
+     * The assigned driver is told their vehicle's status moved (FR-21), since
+     * it decides whether they can take it out.
+     */
+    private function notifyAssignedDriver(Vehicle $vehicle, ?string $previous, string $status, string $source): void
+    {
+        $driver = $vehicle->assignedDriver;
+
+        if ($driver === null || $driver->status !== User::STATUS_ACTIVE) {
+            return;
+        }
+
+        app(NotificationDispatcher::class)->send(
+            $driver,
+            Notification::TYPE_VEHICLE_STATUS_UPDATE,
+            'Vehicle Status Updated',
+            sprintf('%s is now %s.', $vehicle->plate_number, $status),
+            [
+                'plate' => $vehicle->plate_number,
+                'vehicle_id' => $vehicle->id,
+                'from' => $previous,
+                'to' => $status,
+                'source' => $source,
+            ],
+        );
     }
 
     /** The open dispatch holding this vehicle, if any. */
