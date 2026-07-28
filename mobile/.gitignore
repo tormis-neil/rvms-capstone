@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Firebase client config — per-developer, keep out of the repo (R7)
+/app/google-services.json
