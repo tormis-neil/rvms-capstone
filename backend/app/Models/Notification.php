@@ -27,8 +27,15 @@ class Notification extends Model
 
     public const TYPE_VEHICLE_STATUS_UPDATE = 'Vehicle_Status_Update';
 
-    /** Admin-facing (FR-21, FR-03). */
+    /** Admin-facing (FR-21, FR-03, FR-09). */
     public const TYPE_NEW_DAMAGE_REPORT = 'New_Damage_Report';
+
+    /**
+     * Raised only when a submitted inspection reports one or more items as Has
+     * Issue — never on an all-OK submission. A driver submits daily per vehicle,
+     * so alerting on every submission would bury the urgent notifications.
+     */
+    public const TYPE_INSPECTION_FLAGGED = 'Inspection_Flagged';
 
     public const TYPE_LICENSE_EXPIRING = 'License_Expiring';
 
@@ -44,6 +51,7 @@ class Notification extends Model
         self::TYPE_PM_REMINDER,
         self::TYPE_VEHICLE_STATUS_UPDATE,
         self::TYPE_NEW_DAMAGE_REPORT,
+        self::TYPE_INSPECTION_FLAGGED,
         self::TYPE_LICENSE_EXPIRING,
         self::TYPE_LICENSE_EXPIRED,
         self::TYPE_PM_DUE_SOON,
@@ -58,6 +66,9 @@ class Notification extends Model
      */
     public const PRESENTATION = [
         self::TYPE_NEW_DAMAGE_REPORT => ['icon' => 'bi-exclamation-triangle', 'tone' => 'danger', 'route' => 'inspections'],
+        // The prototype's inspection icon, but `warning` rather than its
+        // `primary`: unlike a routine submission, a flagged one is actionable.
+        self::TYPE_INSPECTION_FLAGGED => ['icon' => 'bi-clipboard-check', 'tone' => 'warning', 'route' => 'inspections'],
         self::TYPE_LICENSE_EXPIRING => ['icon' => 'bi-person-badge', 'tone' => 'warning', 'route' => 'drivers'],
         self::TYPE_LICENSE_EXPIRED => ['icon' => 'bi-person-badge', 'tone' => 'danger', 'route' => 'drivers'],
         self::TYPE_PM_DUE_SOON => ['icon' => 'bi-wrench-adjustable', 'tone' => 'warning', 'route' => 'pm'],

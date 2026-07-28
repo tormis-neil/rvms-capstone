@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             RepairLogSeeder::class,
             PmScheduleSeeder::class,
             DispatchSeeder::class,
+            NotificationSeeder::class,
         ]);
     }
 }

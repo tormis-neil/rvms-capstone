@@ -113,6 +113,80 @@ class NotificationTriggerTest extends TestCase
         $this->assertSame('BFP-0001', $notification->data['plate']);
     }
 
+    /* ------------------------ flagged inspections ------------------------ */
+
+    private function submitInspection(array $flag = []): \Illuminate\Testing\TestResponse
+    {
+        $this->seed(\Database\Seeders\InspectionChecklistSeeder::class);
+
+        $items = \App\Models\InspectionChecklistItem::forAgencyCode('BFP')->get()
+            ->map(fn ($item) => in_array($item->name, $flag, true)
+                ? ['checklist_item_id' => $item->id, 'status' => 'Has Issue', 'remarks' => 'unusual noise']
+                : ['checklist_item_id' => $item->id, 'status' => 'OK'])
+            ->all();
+
+        return $this->actingAs($this->driver, 'sanctum')->postJson('/api/v1/inspections', [
+            'vehicle_id' => $this->vehicle->id,
+            'items' => $items,
+        ]);
+    }
+
+    public function test_a_flagged_inspection_notifies_every_admin(): void
+    {
+        $this->submitInspection(['Brakes', 'Tires'])->assertCreated();
+
+        $this->assertDatabaseCount('notifications', 2);
+
+        foreach ([$this->admin, $this->secondAdmin] as $recipient) {
+            $this->assertDatabaseHas('notifications', [
+                'user_id' => $recipient->id,
+                'type' => Notification::TYPE_INSPECTION_FLAGGED,
+                'title' => 'Inspection Reported an Issue',
+            ]);
+        }
+    }
+
+    /** The whole reason for choosing "flagged only": routine submissions stay quiet. */
+    public function test_an_all_ok_inspection_notifies_nobody(): void
+    {
+        $this->submitInspection()->assertCreated();
+
+        $this->assertDatabaseCount('notifications', 0);
+    }
+
+    public function test_the_flagged_message_names_the_vehicle_and_the_items(): void
+    {
+        $this->submitInspection(['Brakes', 'Tires'])->assertCreated();
+
+        $notification = Notification::withoutGlobalScopes()
+            ->where('user_id', $this->admin->id)->firstOrFail();
+
+        $this->assertSame('BFP-0001 — 2 items flagged: Brakes, Tires.', $notification->message);
+        $this->assertSame(2, $notification->data['flagged_count']);
+        $this->assertSame(['Brakes', 'Tires'], $notification->data['flagged_items']);
+    }
+
+    /** One flagged item reads "1 item", not "1 items". */
+    public function test_a_single_flagged_item_is_worded_in_the_singular(): void
+    {
+        $this->submitInspection(['Brakes'])->assertCreated();
+
+        $notification = Notification::withoutGlobalScopes()
+            ->where('user_id', $this->admin->id)->firstOrFail();
+
+        $this->assertSame('BFP-0001 — 1 item flagged: Brakes.', $notification->message);
+    }
+
+    public function test_a_flagged_inspection_never_reaches_another_agency(): void
+    {
+        $other = Agency::factory()->create(['code' => 'PNP']);
+        $otherAdmin = User::factory()->admin()->create(['agency_id' => $other->id]);
+
+        $this->submitInspection(['Brakes'])->assertCreated();
+
+        $this->assertDatabaseMissing('notifications', ['user_id' => $otherAdmin->id]);
+    }
+
     /* ---------------------- vehicle status change ------------------------ */
 
     public function test_a_status_change_notifies_the_assigned_driver(): void

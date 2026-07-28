@@ -8,8 +8,10 @@ use App\Http\Requests\StoreInspectionRequest;
 use App\Http\Resources\InspectionResource;
 use App\Models\Inspection;
 use App\Models\InspectionItem;
+use App\Models\Notification;
 use App\Models\User;
 use App\Services\VehicleStatusWriter;
+use App\Services\NotificationDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -47,9 +49,55 @@ class InspectionController extends Controller
             return $inspection;
         });
 
+        $this->notifyIfFlagged($inspection);
+
         return InspectionResource::make($inspection->load(['items.checklistItem', 'vehicle', 'driver']))
             ->response()
             ->setStatusCode(201);
+    }
+
+
+    /**
+     * Alerts every administrator of the agency when a submitted inspection
+     * reports one or more items as Has Issue (FR-09 → FR-21).
+     *
+     * An ALL-OK submission notifies nobody, which is the whole point: a driver
+     * submits daily per vehicle, so alerting on every submission would bury the
+     * genuinely urgent notifications under routine traffic. The Inspections page
+     * already carries a live "N Pending Review" pill for the routine volume.
+     */
+    private function notifyIfFlagged(Inspection $inspection): void
+    {
+        $flagged = $inspection->items()
+            ->where('status', InspectionItem::STATUS_HAS_ISSUE)
+            ->with('checklistItem')
+            ->get();
+
+        if ($flagged->isEmpty()) {
+            return;
+        }
+
+        $names = $flagged->map(fn ($item) => $item->checklistItem?->name)->filter()->values();
+
+        $dispatcher = app(NotificationDispatcher::class);
+        $dispatcher->sendToMany(
+            $dispatcher->adminsOf($inspection->agency_id),
+            Notification::TYPE_INSPECTION_FLAGGED,
+            'Inspection Reported an Issue',
+            sprintf(
+                '%s — %d %s flagged: %s.',
+                $inspection->vehicle?->plate_number ?? 'A vehicle',
+                $names->count(),
+                $names->count() === 1 ? 'item' : 'items',
+                $names->implode(', '),
+            ),
+            [
+                'plate' => $inspection->vehicle?->plate_number,
+                'inspection_id' => $inspection->id,
+                'flagged_count' => $names->count(),
+                'flagged_items' => $names->all(),
+            ],
+        );
     }
 
     /**

@@ -5,6 +5,7 @@ use App\Http\Controllers\Web\DamageReportController;
 use App\Http\Controllers\Web\DispatchController;
 use App\Http\Controllers\Web\DriverController;
 use App\Http\Controllers\Web\InspectionController;
+use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\PmController;
 use App\Http\Controllers\Web\RepairController;
 use App\Http\Controllers\Web\VehicleController;
@@ -57,10 +58,13 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     Route::put('/dispatch/{dispatch}', [DispatchController::class, 'update'])->name('dispatch.update');
     Route::patch('/dispatch/{dispatch}/close', [DispatchController::class, 'close'])->name('dispatch.close');
 
-    // Notifications page (FR-21). Reached from the bell's "View All Notifications"
+    // Notifications (FR-21). Reached from the bell's "View All Notifications"
     // link — the prototype has no sidebar item for it either.
-    // BLOCK A: static verbatim copy; wired to live data in Block B.
-    Route::view('/notifications', 'notifications')->name('notifications');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
+    Route::patch('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    // Opening one marks it read and forwards to the module it concerns.
+    Route::post('/notifications/{notification}', [NotificationController::class, 'open'])
+        ->whereNumber('notification')->name('notifications.open');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
