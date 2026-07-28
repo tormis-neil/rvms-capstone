@@ -5,10 +5,12 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DamageReportController;
 use App\Http\Controllers\Api\V1\DispatchController;
 use App\Http\Controllers\Api\V1\DriverController;
+use App\Http\Controllers\Api\V1\FcmTokenController;
 use App\Http\Controllers\Api\V1\InspectionChecklistController;
 use App\Http\Controllers\Api\V1\InspectionController;
 use App\Http\Controllers\Api\V1\LicenseMonitoringController;
 use App\Http\Controllers\Api\V1\MyVehicleController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PmScheduleController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\RepairLogController;
@@ -37,6 +39,18 @@ Route::middleware('auth:sanctum')->group(function () {
     // Damage reports history/detail — both roles (driver=own FR-11, admin=agency FR-12).
     Route::get('/damage-reports', [DamageReportController::class, 'index']);
     Route::get('/damage-reports/{damageReport}', [DamageReportController::class, 'show'])->whereNumber('damageReport');
+
+    // Notifications (FR-21) — both roles. A notification is addressed to ONE
+    // user, so the controller filters by the caller's id, not just by agency.
+    // read-all is declared before {notification} so the text path resolves.
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/read-all', [NotificationController::class, 'readAll']);
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'read'])->whereNumber('notification');
+
+    // Device token for push delivery (FR-21) — registered after sign-in,
+    // cleared on sign-out so a shared handset stops receiving this user's pushes.
+    Route::post('/fcm-token', [FcmTokenController::class, 'store']);
+    Route::delete('/fcm-token', [FcmTokenController::class, 'destroy']);
 
     // Admin — vehicle records (FR-05, FR-18)
     Route::middleware('role:admin')->group(function () {
