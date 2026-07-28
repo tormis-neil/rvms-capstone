@@ -8,7 +8,12 @@ import com.example.rvms.data.remote.dto.InspectionEnvelopeDto
 import com.example.rvms.data.remote.dto.InspectionListDto
 import com.example.rvms.data.remote.dto.LoginRequestDto
 import com.example.rvms.data.remote.dto.LoginResponseDto
+import com.example.rvms.data.remote.dto.FcmTokenRequestDto
+import com.example.rvms.data.remote.dto.FcmTokenResponseDto
 import com.example.rvms.data.remote.dto.MessageDto
+import com.example.rvms.data.remote.dto.NotificationEnvelopeDto
+import com.example.rvms.data.remote.dto.NotificationListDto
+import com.example.rvms.data.remote.dto.ReadAllResponseDto
 import com.example.rvms.data.remote.dto.RegisterRequestDto
 import com.example.rvms.data.remote.dto.SubmitInspectionDto
 import com.example.rvms.data.remote.dto.UserEnvelopeDto
@@ -17,7 +22,9 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
@@ -90,4 +97,27 @@ interface ApiService {
         @Part("suspected_parts") suspectedParts: RequestBody?,
         @Part photo: MultipartBody.Part?,
     ): Response<DamageEnvelopeDto>
+
+    // --- Notifications (FR-21) ---
+
+    /**
+     * The driver's own inbox. A notification is addressed to ONE user, so this
+     * returns only the caller's; `meta.unread_count` drives the tab badge.
+     */
+    @GET("notifications")
+    suspend fun notifications(): Response<NotificationListDto>
+
+    @PATCH("notifications/{id}/read")
+    suspend fun markNotificationRead(@Path("id") id: Long): Response<NotificationEnvelopeDto>
+
+    @PATCH("notifications/read-all")
+    suspend fun markAllNotificationsRead(): Response<ReadAllResponseDto>
+
+    /** Register this device for push after sign-in, and whenever FCM rotates it. */
+    @POST("fcm-token")
+    suspend fun registerFcmToken(@Body body: FcmTokenRequestDto): Response<FcmTokenResponseDto>
+
+    /** Clear it on sign-out, so a shared handset stops receiving this driver's pushes. */
+    @DELETE("fcm-token")
+    suspend fun clearFcmToken(): Response<FcmTokenResponseDto>
 }

@@ -4,6 +4,14 @@
     <!-- Talk to the REST API (R0 networking foundation). -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!--
+        Push notifications (R7, FR-21). Android 13 (API 33) and above require the
+        user to grant this at runtime; without it every push is dropped silently,
+        which looks exactly like a broken backend. The in-app notification list
+        works regardless.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".RvmsApp"
         android:allowBackup="true"
@@ -22,6 +30,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            Handles pushes that arrive while the app is in the FOREGROUND (Android
+            does not draw those itself) and token rotation on reinstall or restore.
+        -->
+        <service
+            android:name=".push.RvmsMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

@@ -38,6 +38,9 @@ object ServiceLocator {
     lateinit var damageRepository: DamageRepository
         private set
 
+    lateinit var notificationRepository: NotificationRepository
+        private set
+
     fun init(context: Context) {
         tokenStore = TokenStore(context.applicationContext)
         api = ApiClient.create { tokenStore.cachedToken }
@@ -46,5 +49,6 @@ object ServiceLocator {
         vehicleRepository = VehicleRepository(api)
         inspectionRepository = InspectionRepository(api)
         damageRepository = DamageRepository(api)
+        notificationRepository = NotificationRepository(api)
     }
 }

@@ -5,12 +5,34 @@ plugins {
   alias(libs.plugins.kotlin.serialization)
 }
 
+/*
+ * Firebase Cloud Messaging (R7, FR-21).
+ *
+ * The google-services plugin FAILS THE BUILD when google-services.json is
+ * missing, and that file is per-developer (gitignored, downloaded from the
+ * Firebase console). Applying it conditionally means a fresh clone still builds
+ * and every screen still works — only the push itself is inert until the file
+ * is dropped into app/. The same shape as the backend, where a missing
+ * service-account key degrades to a logged push rather than an exception.
+ */
+val googleServicesJson = file("google-services.json")
+if (googleServicesJson.exists()) {
+    apply(plugin = libs.plugins.google.services.get().pluginId)
+} else {
+    logger.lifecycle(
+        "RVMS: app/google-services.json not found — building without Firebase. " +
+            "Push notifications will be inert; the in-app notification list still works."
+    )
+}
+
 android {
     namespace = "com.example.rvms"
     compileSdk = 36
     defaultConfig {
         applicationId = "com.example.rvms"
-        minSdk = 24
+        // Android 8.0 (Oreo). NFR-05 and Chapter 3 Tables 1 and 2 all state 8.0,
+        // so the build must not install on anything older than the manuscript promises.
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -91,6 +113,13 @@ dependencies {
   implementation(libs.okhttp.logging.interceptor)
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.androidx.datastore.preferences)
+
+  // Push notifications (R7, FR-21). The library is always on the classpath so
+  // the messaging service compiles; without google-services.json Firebase never
+  // initialises and PushTokenRegistrar simply reports no token.
+  implementation(platform(libs.firebase.bom))
+  implementation(libs.firebase.messaging)
+  implementation(libs.kotlinx.coroutines.play.services)
 
   // Local tests for the network layer (DTO (de)serialization + interceptor)
   testImplementation(libs.okhttp.mockwebserver)

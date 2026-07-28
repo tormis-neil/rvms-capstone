@@ -2,6 +2,7 @@ package com.example.rvms
 
 import android.app.Application
 import com.example.rvms.data.ServiceLocator
+import com.example.rvms.push.RvmsMessagingService
 
 /**
  * Application entry point. Initialises the service locator (HTTP layer, token
@@ -13,5 +14,10 @@ class RvmsApp : Application() {
     override fun onCreate() {
         super.onCreate()
         ServiceLocator.init(this)
+
+        // Android 8.0+ silently drops any notification posted to a channel that
+        // does not exist, so the channel is created before the first push can
+        // arrive (FR-21).
+        RvmsMessagingService.ensureChannel(this)
     }
 }
