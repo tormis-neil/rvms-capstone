@@ -6,6 +6,7 @@ import com.example.rvms.data.remote.dto.LoginRequestDto
 import com.example.rvms.data.remote.dto.RegisterRequestDto
 import com.example.rvms.data.remote.dto.UserDto
 import com.example.rvms.data.remote.laravelErrorMessage
+import com.example.rvms.push.PushTokenRegistrar
 
 /** Outcome of a login attempt, mapped from the API's HTTP contract. */
 sealed interface LoginResult {
@@ -42,6 +43,11 @@ class AuthRepository(
         if (response.isSuccessful) {
             val body = response.body()!!
             session.onLoggedIn(body.token, body.user)
+            // Register this handset for push now that requests are authenticated
+            // (FR-21). Best-effort: a device with no Firebase, no Play Services
+            // or no permission simply never registers, and the driver still
+            // reads every notification in the app's inbox.
+            PushTokenRegistrar.register()
             LoginResult.Success(body.user)
         } else {
             LoginResult.Error(
@@ -91,8 +97,19 @@ class AuthRepository(
         emptyList()
     }
 
-    /** Sign out: best-effort server revoke + clear the local token. */
-    suspend fun logout() = session.signOut()
+    /**
+     * Sign out: release this handset from push, then revoke server-side and
+     * clear the local token.
+     *
+     * Order matters — clearing the device token is an authenticated request, so
+     * it has to happen while the bearer token is still valid. Otherwise a phone
+     * handed to another driver would keep receiving the previous driver's
+     * notifications until they signed in somewhere else.
+     */
+    suspend fun logout() {
+        PushTokenRegistrar.unregister()
+        session.signOut()
+    }
 
     private companion object {
         const val NETWORK_ERROR = "Cannot reach the server. Check your connection and try again."

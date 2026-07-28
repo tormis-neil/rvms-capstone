@@ -15,6 +15,11 @@ nav3Core = "1.0.1"
 lifecycleViewmodelNav3 = "2.10.0"
 # Networking foundation (R0 mobile catch-up): Retrofit over OkHttp, JSON via
 # kotlinx.serialization, token persistence via DataStore.
+# Push notifications (R7): Firebase Cloud Messaging. The google-services
+# plugin is applied only when google-services.json is present, so the app still
+# builds for anyone who has not set up Firebase yet.
+firebaseBom = "34.4.0"
+googleServices = "4.4.3"
 retrofit = "2.11.0"
 okhttp = "4.12.0"
 kotlinxSerializationJson = "1.8.1"
@@ -40,6 +45,8 @@ androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core",
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 junit = { module = "junit:junit", version.ref = "junit" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+# Lets the Firebase Task<String> token call be awaited from a coroutine (R7).
+kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutines" }
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3Core" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3Core" }
 androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleViewmodelNav3" }
@@ -52,8 +59,12 @@ okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
