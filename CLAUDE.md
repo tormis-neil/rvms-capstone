@@ -381,7 +381,7 @@ standard and not detailed below.
 | id | BIGINT UNSIGNED | No | auto | PK. |
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies (scoping). |
 | user_id | BIGINT UNSIGNED | No | — | FK → users (recipient). |
-| type | ENUM('PM_Reminder','Vehicle_Status_Update','New_Damage_Report','License_Expiring','License_Expired','PM_Due_Soon','PM_Due','New_Access_Request') | No | — | Notification category (FR-21; `New_Access_Request` → admins on driver self-registration, FR-03). |
+| type | ENUM('PM_Reminder','Vehicle_Status_Update','New_Damage_Report','Inspection_Flagged','License_Expiring','License_Expired','PM_Due_Soon','PM_Due','New_Access_Request') | No | — | Notification category (FR-21; `New_Access_Request` → admins on driver self-registration, FR-03; `Inspection_Flagged` → admins when a submitted inspection reports one or more items as Has Issue, FR-09 → FR-21 — never on an all-OK submission). |
 | title | VARCHAR(255) | No | — | Short headline. |
 | message | TEXT | No | — | Body text. |
 | data | JSON | Yes | NULL | Reference payload (e.g., vehicle plate, link target). |
@@ -1132,8 +1132,12 @@ Sub-tasks — Day 12 (storage + delivery — no screen wiring yet, so no checkpo
   5. Automated tests: notification API + token suites.
 
 Sub-tasks — Day 13 (triggers + screens):
-  6. Event triggers: new damage report → ALL agency admins; vehicle status change → the assigned
-     driver; driver self-registration → ALL agency admins (New_Access_Request).
+  6. Event triggers: new damage report → ALL agency admins; **flagged inspection → ALL agency
+     admins** (`Inspection_Flagged`, only when one or more items are Has Issue — an all-OK
+     submission notifies nobody; project-lead approved 2026-07, FR-21 wording updated in Ch1/Ch3/Ch4);
+     vehicle status change → the assigned driver (hooked into `VehicleStatusWriter` itself, so every
+     module that writes a status notifies, and an idempotent re-write of the same value does not);
+     driver self-registration → ALL agency admins (New_Access_Request).
   7. Scheduled alerts: `rvms:license-alerts` (Expiring Soon/Expired → admins) + PM Due Soon/Due
      (→ admins, PM Reminder → drivers); both in the scheduler.
   8. Automated tests: trigger suite (FCM transport faked).
