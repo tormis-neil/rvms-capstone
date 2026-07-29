@@ -38,10 +38,17 @@ return [
      |
      | FIREBASE_CREDENTIALS is a path to the service-account JSON. Keep it in
      | storage/app (already gitignored) — it is a private key.
+     |
+     | FIREBASE_CA_BUNDLE is optional and only needed on a machine whose PHP
+     | has no certificate store of its own — the usual XAMPP-on-Windows case,
+     | where every HTTPS call to Google fails with "cURL error 60: SSL
+     | certificate problem". Point it at a cacert.pem. Leave it blank on a
+     | properly configured server and PHP's own store is used.
      */
     'fcm' => [
         'project_id' => env('FIREBASE_PROJECT_ID'),
         'credentials' => env('FIREBASE_CREDENTIALS'),
+        'ca_bundle' => env('FIREBASE_CA_BUNDLE'),
     ],
 
     'slack' => [

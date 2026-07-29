@@ -3,10 +3,12 @@
 namespace App\Jobs;
 
 use App\Models\User;
+use App\Services\Fcm\FcmConfigurationException;
 use App\Services\Fcm\FcmMessage;
 use App\Services\Fcm\FcmTransport;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Delivers one push off the request cycle (FR-21).
@@ -32,7 +34,20 @@ class SendFcmMessage implements ShouldQueue
 
     public function handle(FcmTransport $transport): void
     {
-        $delivered = $transport->send($this->message);
+        try {
+            $delivered = $transport->send($this->message);
+        } catch (FcmConfigurationException $e) {
+            // Nothing about the next two attempts would differ, and three
+            // identical failures in the worker read like a flaky network when
+            // the real answer is one line of setup. Say it once, plainly, and
+            // stop.
+            Log::error('FCM is misconfigured — no push can be delivered until this is fixed. '
+                .$e->getMessage());
+
+            $this->fail($e);
+
+            return;
+        }
 
         if ($delivered || $this->userId === null) {
             return;
