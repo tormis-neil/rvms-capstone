@@ -3,6 +3,11 @@
 .idea/
 *.iml
 
+# VS Code — same reasoning. The Java/Gradle extensions write settings.json by
+# themselves whenever a build file changes, so tracking it would push one
+# developer's editor preferences onto everyone else.
+.vscode/
+
 # OS-generated files
 .DS_Store
 Thumbs.db
