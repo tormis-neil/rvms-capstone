@@ -252,4 +252,91 @@ class WebNotificationPageTest extends TestCase
     {
         $this->get('/notifications')->assertRedirect(route('login'));
     }
+
+    /* ----------------------------- clear read ---------------------------- */
+
+    /**
+     * Clearing removes only what the admin has already read. An alert nobody
+     * has opened yet is exactly the one FR-21 promised to deliver, so a stray
+     * click must not be able to destroy it.
+     */
+    public function test_clearing_removes_read_notifications_and_keeps_unread_ones(): void
+    {
+        $read = $this->notificationFor($this->admin, [
+            'is_read' => true, 'read_at' => now(), 'message' => 'Already seen',
+        ]);
+        $unread = $this->notificationFor($this->admin, ['message' => 'Still waiting']);
+
+        $this->actingAs($this->admin)
+            ->delete(route('notifications.clear-read'))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('notifications', ['id' => $read->id]);
+        $this->assertDatabaseHas('notifications', ['id' => $unread->id]);
+    }
+
+    /** An agency may have several admins; one clearing must not empty another's. */
+    public function test_clearing_never_touches_another_admins_inbox(): void
+    {
+        $mine = $this->notificationFor($this->admin, ['is_read' => true, 'read_at' => now()]);
+        $theirs = $this->notificationFor($this->secondAdmin, ['is_read' => true, 'read_at' => now()]);
+
+        $this->actingAs($this->admin)->delete(route('notifications.clear-read'));
+
+        $this->assertDatabaseMissing('notifications', ['id' => $mine->id]);
+        $this->assertDatabaseHas('notifications', ['id' => $theirs->id]);
+    }
+
+    public function test_clearing_never_touches_another_agency(): void
+    {
+        $other = Agency::factory()->create(['code' => 'CHO']);
+        $otherAdmin = User::factory()->admin()->create(['agency_id' => $other->id]);
+        $theirs = $this->notificationFor($otherAdmin, ['is_read' => true, 'read_at' => now()]);
+
+        $this->notificationFor($this->admin, ['is_read' => true, 'read_at' => now()]);
+
+        $this->actingAs($this->admin)->delete(route('notifications.clear-read'));
+
+        $this->assertDatabaseHas('notifications', ['id' => $theirs->id]);
+    }
+
+    /** Nothing to clear is a no-op that still says so, never an error. */
+    public function test_clearing_an_inbox_with_nothing_read_is_harmless(): void
+    {
+        $unread = $this->notificationFor($this->admin);
+
+        $this->actingAs($this->admin)
+            ->delete(route('notifications.clear-read'))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'There were no read notifications to clear.');
+
+        $this->assertDatabaseHas('notifications', ['id' => $unread->id]);
+    }
+
+    /** The control is offered only when it would do something. */
+    public function test_the_clear_button_is_disabled_with_nothing_read(): void
+    {
+        $this->notificationFor($this->admin);
+
+        $html = $this->actingAs($this->admin)->get('/notifications')->assertOk()->getContent();
+
+        $this->assertStringContainsString('Clear Read', $html);
+        $this->assertMatchesRegularExpression('/clearReadModal"[^>]*\sdisabled/', $html);
+    }
+
+    public function test_the_clear_button_is_enabled_once_something_is_read(): void
+    {
+        $this->notificationFor($this->admin, ['is_read' => true, 'read_at' => now()]);
+
+        $html = $this->actingAs($this->admin)->get('/notifications')->assertOk()->getContent();
+
+        $this->assertDoesNotMatchRegularExpression('/clearReadModal"[^>]*\sdisabled/', $html);
+        // The confirmation states what is about to be destroyed.
+        $this->assertStringContainsString('1 read notification', $html);
+    }
+
+    public function test_a_guest_cannot_clear_notifications(): void
+    {
+        $this->delete(route('notifications.clear-read'))->assertRedirect(route('login'));
+    }
 }

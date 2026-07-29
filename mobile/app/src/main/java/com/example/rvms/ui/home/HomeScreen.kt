@@ -46,15 +46,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import com.example.rvms.data.ServiceLocator
 import com.example.rvms.data.VehicleStatus
 import com.example.rvms.data.remote.dto.InspectionDto
 import com.example.rvms.data.remote.dto.VehicleDto
 import com.example.rvms.ui.common.LicenseState
+import com.example.rvms.ui.common.RefreshOnResume
 import com.example.rvms.ui.common.formatIsoDate
 import com.example.rvms.ui.common.formatMileage
+import com.example.rvms.ui.common.licenseBadge
+import com.example.rvms.ui.common.licenseColor
+import com.example.rvms.ui.common.licenseLabel
+import com.example.rvms.ui.common.licenseMessage
 import com.example.rvms.ui.common.licenseState
 import com.example.rvms.ui.common.logoForAgencyCode
 import com.example.rvms.ui.common.statusColor
@@ -62,8 +66,6 @@ import kotlinx.coroutines.launch
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
-import com.example.rvms.theme.StatusOperational
-import com.example.rvms.theme.StatusUnderPM
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
@@ -88,11 +90,18 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
 
     suspend fun refresh() {
+        // /me too, not just the vehicle: the licence card below is drawn from
+        // the session, so an admin editing an expiry date would otherwise stay
+        // invisible until the next cold start.
+        ServiceLocator.sessionManager.loadMe()
         vehicles = ServiceLocator.vehicleRepository.myVehicles()
         recentInspections = ServiceLocator.inspectionRepository.history().take(3)
     }
 
-    LaunchedEffect(Unit) { refresh() }
+    // Loads on entry AND every time the app returns to the foreground, so a
+    // status change announced by a push is already applied when the driver
+    // taps the banner (FR-18, NFR-04).
+    RefreshOnResume { refresh() }
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
@@ -245,14 +254,12 @@ fun HomeScreen(
         // Computed from the real /me payload — no license on file hides the card.
         val license = licenseState(currentUser?.licenseExpiryDate, currentUser?.agency?.licenseExpiryWarningDays)
         if (license != LicenseState.NONE) {
-            val expiringSoon = license == LicenseState.EXPIRING_SOON || license == LicenseState.EXPIRED
-            val licenseColor = if (expiringSoon) StatusUnderPM else StatusOperational
-            val licenseLabel = when (license) {
-                LicenseState.EXPIRED -> "Expired"
-                LicenseState.EXPIRING_SOON -> "Expiring Soon"
-                else -> "Valid"
-            }
-            val licenseBadge = if (expiringSoon) "Action Needed" else "Active"
+            // Three states, three tones — matching the admin dashboard, where
+            // Expired has always been red and Expiring Soon amber (see LicenseUi).
+            val licenseColor = licenseColor(license)
+            val licenseLabel = licenseLabel(license)
+            val licenseBadge = licenseBadge(license)
+            val licenseMessage = licenseMessage(license, currentUser?.licenseExpiryDate)
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -291,11 +298,10 @@ fun HomeScreen(
                             )
                         }
                     }
-                    if (expiringSoon) {
+                    if (licenseMessage != null) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Expires ${formatIsoDate(currentUser?.licenseExpiryDate)}. " +
-                                "Please coordinate with your agency administrator for renewal.",
+                            text = licenseMessage,
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary,
                         )
