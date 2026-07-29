@@ -267,7 +267,15 @@ class NotificationTriggerTest extends TestCase
         $this->assertDatabaseCount('notifications', 0);
     }
 
-    /** The status change carries where it came from, for the driver's context. */
+    /**
+     * The status change carries where it came from, for the driver's context.
+     *
+     * The keys are `from_status`/`to_status` rather than the obvious
+     * `from`/`to` because FCM reserves `from` in a data payload and rejects
+     * the entire message — which is exactly how this alert came to store its
+     * row and never reach a phone. FcmMessage refuses reserved keys outright
+     * now, so a rename back would fail loudly instead of silently.
+     */
     public function test_the_status_payload_records_the_transition(): void
     {
         app(VehicleStatusWriter::class)->write(
@@ -279,8 +287,8 @@ class NotificationTriggerTest extends TestCase
         $notification = Notification::withoutGlobalScopes()
             ->where('user_id', $this->driver->id)->firstOrFail();
 
-        $this->assertSame('Operational', $notification->data['from']);
-        $this->assertSame('Under Preventive Maintenance', $notification->data['to']);
+        $this->assertSame('Operational', $notification->data['from_status']);
+        $this->assertSame('Under Preventive Maintenance', $notification->data['to_status']);
         $this->assertSame('PM Schedules', $notification->data['source']);
     }
 

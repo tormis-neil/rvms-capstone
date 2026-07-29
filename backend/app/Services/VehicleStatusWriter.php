@@ -117,8 +117,13 @@ class VehicleStatusWriter
             [
                 'plate' => $vehicle->plate_number,
                 'vehicle_id' => $vehicle->id,
-                'from' => $previous,
-                'to' => $status,
+                // NOT 'from'/'to': FCM reserves 'from' as a data key and
+                // rejects the whole message with a 400, so this was the one
+                // alert in FR-21 that stored its row and then silently failed
+                // to reach the handset. FcmMessage now refuses reserved keys
+                // outright rather than letting Google discover them.
+                'from_status' => $previous,
+                'to_status' => $status,
                 'source' => $source,
             ],
         );
