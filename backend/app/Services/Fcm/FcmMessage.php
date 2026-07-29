@@ -21,6 +21,8 @@ class FcmMessage
     /** The exact body FCM HTTP v1 expects. */
     public function toPayload(): array
     {
+        $data = array_map(static fn ($value) => (string) $value, $this->data);
+
         return [
             'message' => [
                 'token' => $this->token,
@@ -28,7 +30,10 @@ class FcmMessage
                     'title' => $this->title,
                     'body' => $this->body,
                 ],
-                'data' => array_map(static fn ($value) => (string) $value, $this->data),
+                // An empty PHP array encodes to `[]`, and FCM's parser rejects
+                // a JSON array where it expects a map — a 400 on a message
+                // that carries no data at all. Cast so it encodes to `{}`.
+                'data' => $data === [] ? (object) [] : $data,
                 'android' => [
                     'priority' => 'high',
                     'notification' => ['channel_id' => 'rvms_alerts'],
