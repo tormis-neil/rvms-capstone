@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Services\MaintenanceAlerts;
 use App\Http\Requests\StoreDriverRequest;
 use App\Http\Requests\UpdateDriverLicenseRequest;
 use App\Http\Requests\UpdateDriverRequest;
@@ -55,6 +56,9 @@ class DriverController extends Controller
             Vehicle::whereKey($vehicleId)->update(['assigned_driver_id' => $driver->id]);
         }
 
+        // A licence can be recorded ALREADY inside the warning window (FR-08).
+        app(MaintenanceAlerts::class)->raiseForDriver($driver);
+
         return DriverResource::make($driver->load('vehicles'))->response()->setStatusCode(201);
     }
 
@@ -80,6 +84,8 @@ class DriverController extends Controller
         if ($vehicleId = $request->validated('assigned_vehicle_id')) {
             Vehicle::whereKey($vehicleId)->update(['assigned_driver_id' => $driver->id]);
         }
+
+        app(MaintenanceAlerts::class)->raiseForDriver($driver->fresh());
 
         return DriverResource::make($driver->fresh()->load('vehicles'));
     }
@@ -107,6 +113,9 @@ class DriverController extends Controller
         $this->authorizeDriver($request, $driver);
 
         $driver->update(['license_expiry_date' => $request->validated('license_expiry_date')]);
+
+        // A "renewal" may still land inside the warning window.
+        app(MaintenanceAlerts::class)->raiseForDriver($driver->fresh());
 
         return DriverResource::make($driver->fresh());
     }

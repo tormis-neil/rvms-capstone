@@ -34,11 +34,54 @@ php artisan test                     # run PHPUnit feature + unit tests
 php artisan route:list --path=api/v1 # verify registered API routes/middleware
 php artisan tinker                   # inspect Eloquent records/scopes
 php artisan schedule:list            # confirm scheduled PM/license alert jobs
+php artisan schedule:work            # run the scheduler in the foreground (dev/demo stand-in for cron)
 php artisan rvms:recalculate-pm      # recompute PM Due Soon/Due statuses
 php artisan rvms:license-alerts      # fire license expiry notifications
 php artisan storage:link             # expose uploaded damage-report photos
 php artisan queue:work               # process queued FCM sends
 ```
+
+---
+
+## Scheduled work — REQUIRED at deployment/turnover (FR-08, FR-14, FR-21)
+
+Most notifications are **event-driven**: a driver files a damage report or a flagged
+inspection, an admin changes a status, someone self-registers. The web request itself is
+the trigger, so they fire instantly with nothing else running.
+
+Two are **time-driven** — a licence expires because a date arrived, and a PM schedule comes
+due because a date or an odometer reading crossed a threshold. Nobody clicked anything, so
+no code runs unless something periodically *asks* "is anything due now?". That is what
+`rvms:pm-alerts` and `rvms:license-alerts` are for, and it is why they exist as commands.
+
+**The agency administrators never type a command.** On the deployed server this is ONE
+entry, added once, that runs forever:
+
+```
+# Linux (crontab -e)
+* * * * * cd /path/to/rvms/backend && php artisan schedule:run >> /dev/null 2>&1
+
+# Windows — Task Scheduler, every 1 minute:
+#   Program:   php
+#   Arguments: artisan schedule:run
+#   Start in:  C:\path\to\rvms\backend
+```
+
+The OS calls Laravel once a minute; Laravel decides which of its jobs are due
+(`rvms:recalculate-pm` 01:00, `rvms:pm-alerts` 01:15, `rvms:license-alerts` 06:00).
+**Without this entry the time-driven alerts never fire on a real deployment** — the single
+easiest way to hand over a system that looks complete and silently isn't. `php artisan
+queue:work` must likewise be running (or supervised) for FCM pushes to leave the server.
+
+For development and demos, `php artisan schedule:work` in a spare terminal stands in for
+cron for the length of the session.
+
+**A daily sweep is not enough on its own** (lead-reported, 2026-07): an admin who creates a
+PM schedule that is ALREADY due, or records a licence ALREADY inside the warning window,
+would wait up to a day to hear about something they just typed — and in a demo nobody runs
+a command at all. So the PM and driver controllers also raise the alert immediately for the
+single record they just wrote. Both paths call `App\Services\MaintenanceAlerts`, which owns
+the idempotency rules, so the immediate path and the daily sweep can never double-alert.
 
 ---
 

@@ -3,6 +3,9 @@ package com.example.rvms.data
 import com.example.rvms.data.remote.ApiClient
 import com.example.rvms.data.remote.ApiService
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -66,7 +69,9 @@ class NotificationRepositoryTest {
                       "type": "Vehicle_Status_Update",
                       "title": "Vehicle Status Updated",
                       "message": "BFP-0001 is now Not Operational.",
-                      "payload": {"plate": "BFP-0001", "to": "Not Operational"},
+                      "payload": {"plate": "BFP-0001", "vehicle_id": 3,
+                                  "from": "Operational", "to": "Not Operational",
+                                  "source": "Damage Review"},
                       "is_read": false,
                       "read_at": null,
                       "created_at": "2026-07-28T08:10:00.000000Z",
@@ -80,7 +85,10 @@ class NotificationRepositoryTest {
                       "type": "PM_Reminder",
                       "title": "Preventive Maintenance",
                       "message": "BFP-0001 — Oil Change & Filter is due soon.",
-                      "payload": {"plate": "BFP-0001"},
+                      "payload": {"pm_schedule_id": 7, "vehicle_id": 3,
+                                  "plate": "BFP-0001",
+                                  "service_target": "Oil Change & Filter",
+                                  "state": "Due Soon"},
                       "is_read": true,
                       "read_at": "2026-07-27T10:00:00.000000Z",
                       "created_at": "2026-07-27T08:00:00.000000Z",
@@ -107,7 +115,9 @@ class NotificationRepositoryTest {
         assertEquals("Today", first.group)
         assertEquals("8:10 AM", first.timeLabel)
         assertFalse(first.isRead)
-        assertEquals("BFP-0001", first.payload?.get("plate"))
+        assertEquals("BFP-0001", first.payload?.get("plate")?.jsonPrimitive?.content)
+        // The id is a JSON number — the shape that used to blow the whole inbox away.
+        assertEquals(3, first.payload?.get("vehicle_id")?.jsonPrimitive?.int)
 
         val second = inbox.notifications[1]
         assertEquals("PM_Reminder", second.type)
@@ -115,7 +125,51 @@ class NotificationRepositoryTest {
         assertTrue(second.isRead)
     }
 
-    /** The payload is `payload`, not `data` — it would collide with the envelope. */
+    /**
+     * The regression this file exists for.
+     *
+     * Every driver payload carries integer ids, and flagged inspections carry an
+     * array. When payload was typed Map<String, String?> the parse threw, the
+     * repository's catch swallowed it, and the driver's inbox rendered empty —
+     * indistinguishable from having no notifications at all.
+     */
+    @Test
+    fun `payloads containing numbers and arrays do not blank the inbox`() = runTest {
+        server.enqueue(
+            jsonResponse(
+                """
+                {"data":[
+                  {"id":11,"type":"Vehicle_Status_Update","title":"Vehicle Status Updated",
+                   "message":"BFP-0001 is now Under Preventive Maintenance.",
+                   "payload":{"plate":"BFP-0001","vehicle_id":3,"from":"Operational",
+                              "to":"Under Preventive Maintenance","source":"PM Schedules"},
+                   "is_read":false,"group":"Today","time_label":"9:15 AM"},
+                  {"id":12,"type":"PM_Reminder","title":"Preventive Maintenance",
+                   "message":"BFP-0001 — Oil Change & Filter is due.",
+                   "payload":{"pm_schedule_id":7,"vehicle_id":3,"plate":"BFP-0001",
+                              "service_target":"Oil Change & Filter","state":"Due"},
+                   "is_read":false,"group":"Today","time_label":"1:15 AM"},
+                  {"id":13,"type":"Inspection_Flagged","title":"Inspection Reported an Issue",
+                   "message":"BFP-0001 — 2 items flagged: Brakes, Tires.",
+                   "payload":{"plate":"BFP-0001","inspection_id":4,"flagged_count":2,
+                              "flagged_items":["Brakes","Tires"]},
+                   "is_read":false,"group":"Today","time_label":"7:05 AM"}
+                ],"meta":{"unread_count":3}}
+                """.trimIndent(),
+            ),
+        )
+
+        val inbox = repo.inbox()
+
+        assertEquals(3, inbox.notifications.size)
+        assertEquals(3, inbox.unreadCount)
+        assertEquals(3, inbox.notifications[0].payload?.get("vehicle_id")?.jsonPrimitive?.int)
+        assertEquals(7, inbox.notifications[1].payload?.get("pm_schedule_id")?.jsonPrimitive?.int)
+        // An ARRAY value must parse too.
+        assertEquals(2, inbox.notifications[2].payload?.get("flagged_items")?.jsonArray?.size)
+    }
+
+    /** A notification may legitimately carry no payload at all. */
     @Test
     fun `a notification without a payload still parses`() = runTest {
         server.enqueue(

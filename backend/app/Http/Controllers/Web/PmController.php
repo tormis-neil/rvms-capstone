@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Services\MaintenanceAlerts;
 use App\Http\Requests\CompletePmScheduleRequest;
 use App\Http\Requests\StorePmScheduleRequest;
 use App\Models\PmSchedule;
@@ -36,7 +37,13 @@ class PmController extends Controller
 
     public function store(StorePmScheduleRequest $request): RedirectResponse
     {
-        PmSchedule::create($this->payload($request));
+        $schedule = PmSchedule::create($this->payload($request));
+
+        // A schedule can be created or edited ALREADY Due Soon or Due — the
+        // admin entered a past-due date or a mileage beyond the threshold.
+        // Alert now rather than making them wait for tomorrow's sweep; the
+        // command shares this method, so neither path double-alerts.
+        app(MaintenanceAlerts::class)->raiseForSchedule($schedule);
 
         return redirect()->route('pm')->with('status', 'PM schedule created.');
     }
@@ -44,6 +51,8 @@ class PmController extends Controller
     public function update(StorePmScheduleRequest $request, PmSchedule $pmSchedule): RedirectResponse
     {
         $pmSchedule->update($this->payload($request));
+
+        app(MaintenanceAlerts::class)->raiseForSchedule($pmSchedule->fresh());
 
         return redirect()->route('pm')->with('status', 'PM schedule updated.');
     }

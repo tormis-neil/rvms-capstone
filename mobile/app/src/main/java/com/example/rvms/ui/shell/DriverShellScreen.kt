@@ -18,8 +18,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -27,6 +29,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.rvms.data.ServiceLocator
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.StatusNotOperational
@@ -37,6 +40,10 @@ import com.example.rvms.ui.home.HomeScreen
 import com.example.rvms.ui.inspection.InspectionScreen
 import com.example.rvms.ui.notification.NotificationScreen
 import com.example.rvms.ui.profile.ProfileScreen
+import kotlinx.coroutines.delay
+
+/** How often the shell re-checks the unread count while the app is open. */
+private const val UNREAD_POLL_MILLIS = 30_000L
 
 data class BottomNavItem(
     val label: String,
@@ -53,9 +60,30 @@ fun DriverShellScreen(
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    // The unread-alerts badge lights up when the notifications backend + FCM
-    // land in R7; until then there are no notifications, so no badge.
-    val unreadAlerts = 0
+
+    /*
+     * Unread count on the Alerts tab (FR-21).
+     *
+     * Refreshed on entry, whenever the driver switches tabs, and on a slow poll
+     * while the app is open. The poll matters: a push banner only appears if
+     * Firebase is configured AND the driver granted notification permission, so
+     * without it a driver would have no way to learn a notification had arrived
+     * short of opening the Alerts tab and guessing.
+     */
+    var unreadAlerts by remember { mutableIntStateOf(0) }
+
+    suspend fun refreshUnread() {
+        unreadAlerts = ServiceLocator.notificationRepository.inbox().unreadCount
+    }
+
+    LaunchedEffect(selectedTab) { refreshUnread() }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(UNREAD_POLL_MILLIS)
+            refreshUnread()
+        }
+    }
 
     val navItems = listOf(
         BottomNavItem("Home", Icons.Default.Home),
@@ -137,7 +165,12 @@ fun DriverShellScreen(
                 onSubmitNew = onNavigateToNewDamageReport,
                 modifier = contentModifier,
             )
-            3 -> NotificationScreen(modifier = contentModifier)
+            3 -> NotificationScreen(
+                // Marking read inside the screen must clear the badge immediately,
+                // rather than waiting for the next poll.
+                onUnreadCountChanged = { unreadAlerts = it },
+                modifier = contentModifier,
+            )
             4 -> ProfileScreen(
                 onSignOut = onSignOut,
                 onNavigateToVehicle = onNavigateToVehicleInfo,

@@ -2,6 +2,7 @@ package com.example.rvms.data.remote.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 /*
  * DTOs for the driver notification inbox (FR-21):
@@ -42,7 +43,17 @@ data class NotificationDto(
     val type: String,
     val title: String,
     val message: String,
-    val payload: Map<String, String?>? = null,
+    /**
+     * The reference payload, kept as raw JSON on purpose.
+     *
+     * It is NOT Map<String, String?>: the backend puts real ids in here
+     * (`vehicle_id`, `pm_schedule_id`) and, for flagged inspections, an array of
+     * item names. Typing it as strings made kotlinx.serialization throw on every
+     * driver notification — and the repository's catch turned that into an empty
+     * inbox, so the driver saw "No notifications yet" instead of their alerts.
+     * JsonObject accepts whatever shape a type sends.
+     */
+    val payload: JsonObject? = null,
     @SerialName("is_read") val isRead: Boolean = false,
     @SerialName("read_at") val readAt: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
