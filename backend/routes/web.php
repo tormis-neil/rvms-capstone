@@ -62,6 +62,10 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     // link — the prototype has no sidebar item for it either.
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
     Route::patch('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    // Clearing removes only rows the admin has already read (FR-21 addition,
+    // project-lead approved 2026-07) — declared before the {notification}
+    // route so "clear-read" is never taken for a record id.
+    Route::delete('/notifications/clear-read', [NotificationController::class, 'clearRead'])->name('notifications.clear-read');
     // Opening one marks it read and forwards to the module it concerns.
     Route::post('/notifications/{notification}', [NotificationController::class, 'open'])
         ->whereNumber('notification')->name('notifications.open');

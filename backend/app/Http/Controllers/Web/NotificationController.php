@@ -33,6 +33,9 @@ class NotificationController extends Controller
         return view('notifications', [
             'groups' => $groups,
             'unreadCount' => $notifications->where('is_read', false)->count(),
+            // Drives the Clear Read button's disabled state and the count the
+            // confirmation names, so the admin knows what they are removing.
+            'readCount' => $notifications->where('is_read', true)->count(),
         ]);
     }
 
@@ -60,5 +63,29 @@ class NotificationController extends Controller
 
         return back(fallback: route('notifications'))
             ->with('status', 'All notifications marked as read.');
+    }
+
+    /**
+     * Clear the admin's READ notifications (project-lead approved 2026-07).
+     *
+     * Read-only by design: an alert nobody has opened yet cannot be destroyed
+     * by a stray click, so the FR-21 delivery guarantee still holds for
+     * anything the admin has not actually seen. Scoped to the caller's own id
+     * for the same reason `readAll` is — an agency may have several
+     * administrators, and one clearing their inbox must not empty another's.
+     */
+    public function clearRead(Request $request): RedirectResponse
+    {
+        $cleared = Notification::query()
+            ->forUser($request->user()->id)
+            ->where('is_read', true)
+            ->delete();
+
+        return back(fallback: route('notifications'))->with(
+            'status',
+            $cleared === 0
+                ? 'There were no read notifications to clear.'
+                : trans_choice('Cleared :count read notification.|Cleared :count read notifications.', $cleared, ['count' => $cleared]),
+        );
     }
 }

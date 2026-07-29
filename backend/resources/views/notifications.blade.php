@@ -17,13 +17,24 @@
                         <h3 class="fw-bold mb-0" style="color: var(--primary);">Notifications</h3>
                         <p class="text-secondary mb-0">All alerts and submissions for your agency</p>
                     </div>
-                    <form method="POST" action="{{ route('notifications.read-all') }}">
-                        @csrf
-                        @method('PATCH')
-                        <button type="submit" class="btn btn-light border fw-medium px-4 py-2 rounded-3" @disabled($unreadCount === 0)>
-                            <i class="bi bi-check2-all me-2"></i>Mark All as Read
+                    <div class="d-flex gap-2">
+                        {{-- Documented addition (project-lead approved 2026-07): the prototype
+                             has only "Mark All as Read". Clearing removes rows the admin has
+                             already read, so an unopened alert can never be destroyed by a
+                             stray click. Disabled with nothing to clear, exactly as the
+                             prototype's own button behaves with nothing unread. --}}
+                        <button type="button" class="btn btn-light border fw-medium px-4 py-2 rounded-3 text-danger"
+                                data-bs-toggle="modal" data-bs-target="#clearReadModal" @disabled($readCount === 0)>
+                            <i class="bi bi-trash me-2"></i>Clear Read
                         </button>
-                    </form>
+                        <form method="POST" action="{{ route('notifications.read-all') }}">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="btn btn-light border fw-medium px-4 py-2 rounded-3" @disabled($unreadCount === 0)>
+                                <i class="bi bi-check2-all me-2"></i>Mark All as Read
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
                 @include('partials.alerts')
@@ -55,4 +66,40 @@
                     </div>
                 </div>
                 @endif
+@endsection
+
+{{-- Clearing is irreversible, so it is confirmed first — the prototype's danger-flow
+     modal convention (bg-danger header + btn-close-white, border-0 footer, Cancel
+     btn-light border + solid danger confirm). --}}
+@section('modals')
+<div class="modal fade" id="clearReadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-3">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-trash me-2"></i>Clear Read Notifications</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">
+                    This permanently removes
+                    <strong>{{ $readCount }} read {{ Str::plural('notification', $readCount) }}</strong>
+                    from your inbox. This cannot be undone.
+                </p>
+                <p class="text-secondary small mb-0">
+                    Unread notifications are kept@if ($unreadCount > 0) — you still have
+                    <strong>{{ $unreadCount }}</strong> unread@endif. Only your own inbox is
+                    affected; other administrators in your agency keep theirs.
+                </p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light border fw-medium px-4" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ route('notifications.clear-read') }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger fw-medium px-4">Clear Read</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection

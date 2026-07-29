@@ -30,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -47,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.rvms.data.ServiceLocator
 import com.example.rvms.data.remote.dto.NotificationDto
+import com.example.rvms.ui.common.RefreshOnResume
 import com.example.rvms.ui.common.ScreenHeader
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.NavyBlue
@@ -90,7 +90,7 @@ fun NotificationScreen(
         loaded = true
     }
 
-    LaunchedEffect(Unit) { load() }
+    RefreshOnResume { load() }
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,

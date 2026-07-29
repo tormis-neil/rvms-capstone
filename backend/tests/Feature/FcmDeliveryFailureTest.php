@@ -5,16 +5,20 @@ namespace Tests\Feature;
 use App\Jobs\SendFcmMessage;
 use App\Models\Agency;
 use App\Models\User;
+use App\Models\Vehicle;
 use App\Services\Fcm\FcmConfigurationException;
 use App\Services\Fcm\FcmHttpV1Transport;
 use App\Services\Fcm\FcmMessage;
 use App\Services\Fcm\FcmTransport;
 use App\Services\Fcm\FcmTransportFactory;
 use App\Services\Fcm\LogFcmTransport;
+use App\Services\VehicleStatusWriter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use ReflectionProperty;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -273,6 +277,71 @@ class FcmDeliveryFailureTest extends TestCase
         } catch (FcmConfigurationException $e) {
             $this->assertStringContainsString('no CA bundle configured', $e->getMessage());
         }
+    }
+
+    /**
+     * The bug that made R7 look intermittent: PM reminders arrived, vehicle
+     * status updates never did, and both reported a queued job. The status
+     * payload carried `from`, which FCM reserves, so Google rejected that one
+     * message type and only that one.
+     */
+    public function test_a_reserved_data_key_is_refused_before_google_ever_sees_it(): void
+    {
+        $this->expectException(FcmConfigurationException::class);
+        $this->expectExceptionMessageMatches('/reserves it|reserves for its own protocol/');
+
+        (new FcmMessage('device-abc', 'Vehicle Status Updated', 'ABC-1234 is now Dispatched.', [
+            'from' => 'Operational',
+        ]))->toPayload();
+    }
+
+    /** Anything namespaced to Google is reserved too, in any casing. */
+    public function test_google_and_gcm_prefixed_keys_are_refused(): void
+    {
+        foreach (['google_id', 'GCM_thing', 'MESSAGE_TYPE'] as $key) {
+            try {
+                (new FcmMessage('device-abc', 'T', 'B', [$key => 'x']))->toPayload();
+                $this->fail("\"{$key}\" should have been refused.");
+            } catch (FcmConfigurationException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    /**
+     * The real status-change payload, end to end. A rename that satisfied the
+     * guard but broke the alert would pass every test above.
+     */
+    public function test_the_vehicle_status_alert_builds_a_payload_fcm_accepts(): void
+    {
+        $agency = Agency::factory()->create(['code' => 'BFP']);
+        $driver = User::factory()->driver()->create([
+            'agency_id' => $agency->id,
+            'fcm_token' => 'device-abc',
+        ]);
+        $vehicle = Vehicle::factory()->create([
+            'agency_id' => $agency->id,
+            'assigned_driver_id' => $driver->id,
+            'status' => Vehicle::STATUS_OPERATIONAL,
+        ]);
+
+        Bus::fake();
+
+        app(VehicleStatusWriter::class)->write(
+            $vehicle,
+            Vehicle::STATUS_NOT_OPERATIONAL,
+            VehicleStatusWriter::SOURCE_VEHICLES,
+        );
+
+        Bus::assertDispatched(SendFcmMessage::class, function (SendFcmMessage $job) {
+            // toPayload() throws on a reserved key, so building it IS the check.
+            $payload = (new ReflectionProperty($job, 'message'))->getValue($job)->toPayload();
+
+            $this->assertSame('Operational', $payload['message']['data']['from_status']);
+            $this->assertSame('Not Operational', $payload['message']['data']['to_status']);
+
+            return true;
+        });
     }
 
     /** Device tokens are credentials — the log gets a stub, never the token. */

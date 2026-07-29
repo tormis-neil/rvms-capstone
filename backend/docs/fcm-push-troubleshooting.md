@@ -80,6 +80,7 @@ Failures are now split in two:
 | `403 PERMISSION_DENIED` | The "Firebase Cloud Messaging API" is not enabled for the project, or the key belongs to another project | Enable it in the Google Cloud console for that project, or download the right key |
 | `invalid_grant` | The server clock is minutes out of step, or the key was revoked | Fix the system clock, or generate a new key |
 | `401 UNAUTHENTICATED` | The cached access token was refused | Handled automatically: the cache is dropped and the retry mints a new one |
+| One alert type never arrives while others do | Its data payload uses an FCM-reserved key (`from`, `to`, `notification`, `message_type`, anything starting with `google`/`gcm`). Google rejects that message type and only that one | Rename the key. `FcmMessage` now refuses reserved keys before sending, naming the offender |
 | `404 UNREGISTERED` / `SENDER_ID_MISMATCH` | The handset uninstalled, or its token came from a different Firebase project | Not an error. The stale token is cleared; sign in on the phone again to register a fresh one |
 
 ## The job went DONE but no banner appeared

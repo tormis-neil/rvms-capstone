@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rvms.data.ServiceLocator
+import com.example.rvms.ui.common.RefreshOnResume
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.StatusNotOperational
@@ -77,6 +78,11 @@ fun DriverShellScreen(
     }
 
     LaunchedEffect(selectedTab) { refreshUnread() }
+
+    // Returning to the app is the moment a driver is most likely to have
+    // missed a push, so the badge is brought up to date before the poll's next
+    // tick rather than after it.
+    RefreshOnResume { refreshUnread() }
 
     LaunchedEffect(Unit) {
         while (true) {
