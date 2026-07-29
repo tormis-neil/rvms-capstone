@@ -8,12 +8,16 @@ import kotlinx.coroutines.tasks.await
 /**
  * Registers this device with the backend so it can receive pushes (FR-21).
  *
- * Every call is best-effort and never throws: push is an extra on top of the
- * stored notification, which the driver can always read in the app. In
- * particular, when google-services.json is absent Firebase never initialises and
- * asking for a token throws — that is caught here and treated as "no token",
- * so a build without Firebase behaves exactly like a device that has not
- * granted notification permission.
+ * Every entry point swallows everything, including [Error], because push is an
+ * extra on top of the stored notification the driver can always read in the
+ * app. Nothing here may ever fail a sign-in or a sign-out — an earlier version
+ * let a Firebase failure escape into AuthRepository, where a SUCCESSFUL login
+ * was reported to the driver as "cannot reach the server".
+ *
+ * `Throwable` rather than `Exception` on purpose: a build with no Firebase, or
+ * a JVM unit test where the Android framework classes are stubs, raises
+ * NoClassDefFoundError and ExceptionInInitializerError, neither of which is an
+ * Exception.
  */
 object PushTokenRegistrar {
 
@@ -22,9 +26,7 @@ object PushTokenRegistrar {
     /** Called after a successful sign-in, and from the service on token rotation. */
     suspend fun register() {
         val token = currentToken() ?: return
-
-        val ok = ServiceLocator.notificationRepository.registerDevice(token)
-        Log.d(TAG, if (ok) "Device registered for push." else "Device registration failed.")
+        registerToken(token)
     }
 
     /**
@@ -32,24 +34,40 @@ object PushTokenRegistrar {
      * needs to be authenticated to identify whose device this is.
      */
     suspend fun unregister() {
-        try {
-            ServiceLocator.notificationRepository.clearDevice()
-        } catch (e: Exception) {
-            Log.d(TAG, "Could not clear device token: ${e.message}")
-        }
+        runCatchingSilently { ServiceLocator.notificationRepository.clearDevice() }
     }
 
     /** Sends a token the service just received on rotation. */
     suspend fun registerToken(token: String) {
-        ServiceLocator.notificationRepository.registerDevice(token)
+        runCatchingSilently { ServiceLocator.notificationRepository.registerDevice(token) }
     }
 
+    /**
+     * Null whenever this install cannot receive push today: no
+     * google-services.json, no Play Services, no network, or a unit-test JVM.
+     * All of them mean the same thing to the caller.
+     */
     private suspend fun currentToken(): String? = try {
         FirebaseMessaging.getInstance().token.await()
-    } catch (e: Exception) {
-        // No google-services.json, no Play Services, or no network. All three
-        // mean the same thing here: this install cannot receive push today.
-        Log.d(TAG, "No FCM token available (${e.javaClass.simpleName}). Push is inert.")
+    } catch (t: Throwable) {
+        log("No FCM token available (${t.javaClass.simpleName}). Push is inert.")
         null
+    }
+
+    private inline fun runCatchingSilently(block: () -> Unit) {
+        try {
+            block()
+        } catch (t: Throwable) {
+            log("Push token call failed (${t.javaClass.simpleName}).")
+        }
+    }
+
+    /** android.util.Log is a throwing stub under plain JVM unit tests. */
+    private fun log(message: String) {
+        try {
+            Log.d(TAG, message)
+        } catch (t: Throwable) {
+            // Nothing to do — this is diagnostics, not behaviour.
+        }
     }
 }
