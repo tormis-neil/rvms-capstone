@@ -215,6 +215,10 @@ class FcmDoctor extends Command
             $this->components->error('Could not complete a call to Google.');
             $this->line('  '.wordwrap($e->getMessage(), 100, PHP_EOL.'  '));
 
+            if (str_contains($e->getMessage(), "verify Google's TLS certificate")) {
+                $this->reportCertificateEnvironment();
+            }
+
             return false;
         }
 
@@ -228,6 +232,72 @@ class FcmDoctor extends Command
         );
 
         return true;
+    }
+
+    /**
+     * What certificate store this PHP is ACTUALLY using — printed only when the
+     * TLS handshake failed.
+     *
+     * Editing php.ini and seeing no change is the normal next step here, and it
+     * has three usual explanations, none of which are visible from the error:
+     * the setting was edited in a php.ini this PHP does not read (Apache's,
+     * or a second PHP install earlier on the PATH), the line is still
+     * commented out, or the path it points at does not exist. Rather than
+     * guess, show the values PHP reports for itself.
+     */
+    private function reportCertificateEnvironment(): void
+    {
+        $this->newLine();
+        $this->components->info('The certificate settings THIS php is using');
+
+        $this->components->twoColumnDetail('php binary', PHP_BINARY);
+        $this->components->twoColumnDetail(
+            'php.ini it loaded',
+            php_ini_loaded_file() ?: '<fg=red>(none — PHP is running with no php.ini at all)</>'
+        );
+
+        // Any of these can also set curl.cainfo, so their existence matters —
+        // but the full list is pages long on Linux and empty on XAMPP, so the
+        // directory and the count are what is worth reading.
+        if ($extra = php_ini_scanned_files()) {
+            $files = array_filter(array_map('trim', explode(',', $extra)));
+            $this->components->twoColumnDetail(
+                'extra .ini files',
+                count($files).' in '.dirname((string) reset($files))
+            );
+        }
+
+        foreach (['curl.cainfo', 'openssl.cafile', 'openssl.capath'] as $setting) {
+            $this->components->twoColumnDetail($setting, self::describeCaPath((string) ini_get($setting)));
+        }
+
+        $locations = openssl_get_cert_locations();
+        $this->components->twoColumnDetail(
+            'OpenSSL built-in default',
+            self::describeCaPath((string) ($locations['default_cert_file'] ?? ''))
+        );
+
+        $this->newLine();
+        $this->hint('The php.ini named above is the ONLY one `php artisan` and `php artisan queue:work` read. '
+            .'Apache has its own — editing that one changes nothing for the queue worker.');
+        $this->hint('If a setting shows "(not set)" after you edited it: the line is probably still commented '
+            .'out with a leading ";", or a later duplicate of the same key further down the file is winning.');
+        $this->hint('If a path shows "(MISSING)": download https://curl.se/ca/cacert.pem to exactly that path.');
+        $this->hint('To skip php.ini entirely: download https://curl.se/ca/cacert.pem into '
+            .'backend/storage/app/, put FIREBASE_CA_BUNDLE=storage/app/cacert.pem in backend/.env, and '
+            .'run `php artisan config:clear`. Keep the path relative — an absolute Windows path breaks '
+            .'dotenv on its spaces unquoted, and on its backslashes double-quoted.');
+    }
+
+    private static function describeCaPath(string $path): string
+    {
+        if (blank($path)) {
+            return '<fg=red>(not set)</>';
+        }
+
+        return is_readable($path)
+            ? $path.' <fg=green>(exists)</>'
+            : $path.' <fg=red>(MISSING — nothing at this path)</>';
     }
 
     /** Stage 6 — is there a handset to send to at all? */

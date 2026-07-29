@@ -218,19 +218,32 @@ class FcmHttpV1Transport implements FcmTransport
 
     private function certificateException(string $message, string $during): FcmConfigurationException
     {
+        // Two different faults wear the same TLS jacket, and the fix differs:
+        // no bundle at all (cURL 60) versus a bundle configured at a path that
+        // holds nothing (cURL 77) — the state you land in after a php.ini edit
+        // with a typo, or after pointing at a cacert.pem never downloaded.
+        $misconfigured = str_contains($message, 'cURL error 77')
+            || str_contains($message, 'error setting certificate');
+
+        $cause = $misconfigured
+            ? 'PHP is configured to use a CA bundle, but there is no file at the path it was given.'
+            : 'PHP has no CA bundle configured.';
+
         return new FcmConfigurationException(
-            "This machine cannot verify Google's TLS certificate while {$during}. PHP has no CA "
-            .'bundle configured. Fix it once in php.ini — download https://curl.se/ca/cacert.pem '
-            .'and set curl.cainfo and openssl.cafile to its full path, then restart Apache and the '
-            .'queue worker — or point FIREBASE_CA_BUNDLE at that file in .env. '
-            ."The underlying error was: {$message}"
+            "This machine cannot verify Google's TLS certificate while {$during}. {$cause} "
+            .'Download https://curl.se/ca/cacert.pem and set curl.cainfo and openssl.cafile to its '
+            .'full path in php.ini, then restart the queue worker — or point FIREBASE_CA_BUNDLE at '
+            .'that file in .env. Run `php artisan rvms:fcm-doctor` to see which php.ini this PHP '
+            ."actually reads and which paths it is using. The underlying error was: {$message}"
         );
     }
 
     private static function looksLikeCertificateFailure(string $message): bool
     {
         return str_contains($message, 'SSL certificate problem')
-            || str_contains($message, 'cURL error 60')
+            || str_contains($message, 'cURL error 60')      // cannot verify the peer
+            || str_contains($message, 'cURL error 77')      // the CA bundle it was told to use is not there
+            || str_contains($message, 'error setting certificate')
             || str_contains($message, 'unable to get local issuer certificate')
             || str_contains($message, 'certificate verify failed');
     }

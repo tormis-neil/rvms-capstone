@@ -12,6 +12,7 @@ use App\Services\Fcm\FcmTransport;
 use App\Services\Fcm\FcmTransportFactory;
 use App\Services\Fcm\LogFcmTransport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -237,6 +238,41 @@ class FcmDeliveryFailureTest extends TestCase
         $this->artisan('rvms:fcm-doctor')
             ->expectsOutputToContain('SIMULATED')
             ->assertExitCode(1);
+    }
+
+    /**
+     * A CA bundle configured at a path that holds nothing is cURL error 77,
+     * not 60 — the state a php.ini edit with a typo leaves you in, and one
+     * that reads as a totally different problem if it is not recognised.
+     */
+    public function test_a_missing_ca_bundle_is_recognised_as_a_certificate_fault(): void
+    {
+        Http::fake(fn () => throw new ConnectionException(
+            'cURL error 77: error setting certificate file: C:\\xampp\\php\\cacert.pem'
+        ));
+
+        try {
+            $this->transport->send($this->push());
+            $this->fail('A certificate fault should have thrown.');
+        } catch (FcmConfigurationException $e) {
+            $this->assertStringContainsString('no file at the path it was given', $e->getMessage());
+            $this->assertStringContainsString('rvms:fcm-doctor', $e->getMessage());
+        }
+    }
+
+    /** No bundle at all is the other half, and gets the other instruction. */
+    public function test_an_absent_ca_bundle_is_recognised_as_a_certificate_fault(): void
+    {
+        Http::fake(fn () => throw new ConnectionException(
+            'cURL error 60: SSL certificate problem: unable to get local issuer certificate'
+        ));
+
+        try {
+            $this->transport->send($this->push());
+            $this->fail('A certificate fault should have thrown.');
+        } catch (FcmConfigurationException $e) {
+            $this->assertStringContainsString('no CA bundle configured', $e->getMessage());
+        }
     }
 
     /** Device tokens are credentials — the log gets a stub, never the token. */
