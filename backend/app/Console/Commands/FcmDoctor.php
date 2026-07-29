@@ -283,8 +283,10 @@ class FcmDoctor extends Command
         $this->hint('If a setting shows "(not set)" after you edited it: the line is probably still commented '
             .'out with a leading ";", or a later duplicate of the same key further down the file is winning.');
         $this->hint('If a path shows "(MISSING)": download https://curl.se/ca/cacert.pem to exactly that path.');
-        $this->hint('To skip php.ini entirely, put the full path to a cacert.pem in FIREBASE_CA_BUNDLE in '
-            .'backend/.env and run `php artisan config:clear`.');
+        $this->hint('To skip php.ini entirely: download https://curl.se/ca/cacert.pem into '
+            .'backend/storage/app/, put FIREBASE_CA_BUNDLE=storage/app/cacert.pem in backend/.env, and '
+            .'run `php artisan config:clear`. Keep the path relative — an absolute Windows path breaks '
+            .'dotenv on its spaces unquoted, and on its backslashes double-quoted.');
     }
 
     private static function describeCaPath(string $path): string

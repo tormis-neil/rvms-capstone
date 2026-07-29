@@ -38,6 +38,11 @@ FIREBASE_CREDENTIALS=storage/app/firebase.json
 FIREBASE_CA_BUNDLE=
 ```
 
+Keep both paths **relative to `backend/`**. An absolute Windows path breaks dotenv twice over: left
+unquoted, the spaces in a folder name end the value early; wrapped in double quotes, the backslashes
+are read as escape sequences (`\r` in `\rvms` becomes a carriage return). Single quotes are the
+escape hatch if you genuinely need an absolute path — `FIREBASE_CA_BUNDLE='C:\path\to\cacert.pem'`.
+
 `storage/app/firebase.json` is the service-account key from Firebase console → Project settings →
 Service accounts → Generate new private key. **It is a private key — it is gitignored and must
 never be committed.**
@@ -70,7 +75,8 @@ Failures are now split in two:
 | Symptom | Cause | Fix |
 |---|---|---|
 | Job fails in 7–48 ms, `Class "Google\Auth\...ServiceAccountCredentials" not found` | `vendor/` predates the commit that added `google/auth` | `composer install` in `backend/`, then restart the worker |
-| `cURL error 60: SSL certificate problem` | PHP on Windows/XAMPP ships with no CA bundle | Download <https://curl.se/ca/cacert.pem>, set `curl.cainfo` **and** `openssl.cafile` to its full path in `php.ini`, restart Apache and the worker. Or set `FIREBASE_CA_BUNDLE` to that path |
+| `cURL error 60: SSL certificate problem` | PHP on Windows ships with no CA bundle | Download <https://curl.se/ca/cacert.pem> into `storage/app/` and set `FIREBASE_CA_BUNDLE=storage/app/cacert.pem`. Or set `curl.cainfo` **and** `openssl.cafile` to its full path in php.ini — in the php.ini the **CLI** loads, which `rvms:fcm-doctor` names for you and which is often NOT XAMPP's |
+| `cURL error 77: error setting certificate file` | A CA bundle is configured at a path holding nothing | Fix the path, or download the bundle to exactly that path |
 | `403 PERMISSION_DENIED` | The "Firebase Cloud Messaging API" is not enabled for the project, or the key belongs to another project | Enable it in the Google Cloud console for that project, or download the right key |
 | `invalid_grant` | The server clock is minutes out of step, or the key was revoked | Fix the system clock, or generate a new key |
 | `401 UNAUTHENTICATED` | The cached access token was refused | Handled automatically: the cache is dropped and the retry mints a new one |
