@@ -69,6 +69,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationScreen(
+    /** Reports the unread count up so the Alerts tab badge stays in step. */
+    onUnreadCountChanged: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
@@ -84,6 +86,7 @@ fun NotificationScreen(
         notifications.clear()
         notifications.addAll(inbox.notifications)
         unreadCount = inbox.unreadCount
+        onUnreadCountChanged(inbox.unreadCount)
         loaded = true
     }
 
