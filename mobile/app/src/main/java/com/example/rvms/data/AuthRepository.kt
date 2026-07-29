@@ -43,11 +43,15 @@ class AuthRepository(
         if (response.isSuccessful) {
             val body = response.body()!!
             session.onLoggedIn(body.token, body.user)
+
             // Register this handset for push now that requests are authenticated
-            // (FR-21). Best-effort: a device with no Firebase, no Play Services
-            // or no permission simply never registers, and the driver still
-            // reads every notification in the app's inbox.
-            PushTokenRegistrar.register()
+            // (FR-21). Deliberately isolated: push is best-effort, and nothing
+            // about it may turn a SUCCESSFUL sign-in into a failure. Without this
+            // guard a Firebase hiccup — or simply a build with no Firebase at
+            // all — surfaced to the driver as "cannot reach the server" even
+            // though they were signed in.
+            runCatching { PushTokenRegistrar.register() }
+
             LoginResult.Success(body.user)
         } else {
             LoginResult.Error(
@@ -107,7 +111,9 @@ class AuthRepository(
      * notifications until they signed in somewhere else.
      */
     suspend fun logout() {
-        PushTokenRegistrar.unregister()
+        // Same isolation as login: a driver must always be able to sign out,
+        // even if releasing the device token fails.
+        runCatching { PushTokenRegistrar.unregister() }
         session.signOut()
     }
 

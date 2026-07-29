@@ -48,6 +48,17 @@ android {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
+    /*
+     * Android framework classes are stubs under plain JVM unit tests and throw
+     * "Stub!" when called. Returning defaults instead keeps a stray
+     * android.util.Log call from failing an otherwise valid test — and, more
+     * importantly, makes the tests behave like the device rather than like a
+     * environment that throws on logging.
+     */
+    testOptions {
+      unitTests.isReturnDefaultValues = true
+    }
+
     buildFeatures {
       compose = true
       aidl = false

@@ -76,6 +76,40 @@ class AuthRepositoryTest {
         assertEquals("42|TOK", tokenStore.cachedToken)
     }
 
+    /**
+     * Push registration runs inside login (FR-21) and WILL fail here: Firebase is
+     * not initialised in a JVM test and ServiceLocator has no Android context.
+     * A successful sign-in must survive that. It did not before — the exception
+     * escaped into login's catch and the driver was told "cannot reach the
+     * server" despite being signed in.
+     */
+    @Test
+    fun `a failing push registration cannot fail a successful login`() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {"token":"77|TOK","user":{"id":9,"agency_id":1,"role":"driver",
+                 "name":"Ramon","email":"r@rvms.local","status":"active"}}
+                """.trimIndent(),
+            ),
+        )
+
+        val result = repo.login("r@rvms.local", "password")
+
+        assertTrue(result is LoginResult.Success)
+        assertEquals("77|TOK", tokenStore.cachedToken)
+    }
+
+    /** Likewise, a driver must always be able to sign out. */
+    @Test
+    fun `a failing device release cannot fail a sign out`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(200).setBody("""{"message":"Logged out successfully."}"""))
+
+        repo.logout()
+
+        assertNull(tokenStore.cachedToken)
+    }
+
     @Test
     fun `login with bad credentials surfaces the 422 validation message`() = runTest {
         server.enqueue(
