@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Services\MaintenanceAlerts;
 use App\Http\Requests\CompletePmScheduleRequest;
 use App\Http\Requests\StorePmScheduleRequest;
 use App\Http\Resources\PmScheduleResource;
@@ -31,6 +32,9 @@ class PmScheduleController extends Controller
     {
         $schedule = PmSchedule::create($this->payload($request));
 
+        // Already Due Soon or Due on creation — alert now, not tomorrow.
+        app(MaintenanceAlerts::class)->raiseForSchedule($schedule);
+
         return PmScheduleResource::make($schedule->load('vehicle'))
             ->response()
             ->setStatusCode(201);
@@ -44,6 +48,8 @@ class PmScheduleController extends Controller
     public function update(StorePmScheduleRequest $request, PmSchedule $pmSchedule)
     {
         $pmSchedule->update($this->payload($request));
+
+        app(MaintenanceAlerts::class)->raiseForSchedule($pmSchedule->fresh());
 
         return PmScheduleResource::make($pmSchedule->fresh()->load('vehicle'));
     }

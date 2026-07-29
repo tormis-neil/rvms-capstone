@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Services\MaintenanceAlerts;
 use App\Http\Requests\StoreDriverRequest;
 use App\Http\Requests\UpdateDriverLicenseRequest;
 use App\Http\Requests\UpdateDriverRequest;
@@ -96,6 +97,11 @@ class DriverController extends Controller
             Vehicle::whereKey($vehicleId)->update(['assigned_driver_id' => $driver->id]);
         }
 
+        // A licence can be recorded ALREADY inside the warning window, or
+        // already expired. Alert now rather than waiting for tomorrow's sweep;
+        // rvms:license-alerts shares this method, so neither path double-alerts.
+        app(MaintenanceAlerts::class)->raiseForDriver($driver);
+
         return redirect()->route('drivers')->with('status', 'Driver registered successfully.');
     }
 
@@ -115,6 +121,8 @@ class DriverController extends Controller
             Vehicle::whereKey($vehicleId)->update(['assigned_driver_id' => $driver->id]);
         }
 
+        app(MaintenanceAlerts::class)->raiseForDriver($driver->fresh());
+
         return redirect()->route('drivers')->with('status', 'Driver details updated.');
     }
 
@@ -123,6 +131,9 @@ class DriverController extends Controller
         $this->authorizeDriver($request, $driver);
 
         $driver->update(['license_expiry_date' => $request->validated('license_expiry_date')]);
+
+        // A "renewal" may still land inside the warning window.
+        app(MaintenanceAlerts::class)->raiseForDriver($driver->fresh());
 
         return redirect()->route('drivers')->with('status', 'License renewal recorded.');
     }
