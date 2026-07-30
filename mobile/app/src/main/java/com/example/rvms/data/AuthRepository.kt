@@ -4,6 +4,7 @@ import com.example.rvms.data.remote.ApiService
 import com.example.rvms.data.remote.dto.AgencyDto
 import com.example.rvms.data.remote.dto.LoginRequestDto
 import com.example.rvms.data.remote.dto.RegisterRequestDto
+import com.example.rvms.data.remote.dto.UpdateProfileRequestDto
 import com.example.rvms.data.remote.dto.UserDto
 import com.example.rvms.data.remote.laravelErrorMessage
 import com.example.rvms.push.PushTokenRegistrar
@@ -21,6 +22,13 @@ sealed interface RegisterResult {
     data object Success : RegisterResult
     /** Validation failure (422, e.g. email already taken) or a network failure. */
     data class Error(val message: String) : RegisterResult
+}
+
+/** Outcome of a self-service profile edit (FR-04). */
+sealed interface UpdateProfileResult {
+    data class Success(val user: UserDto) : UpdateProfileResult
+    /** Validation failure (422, e.g. email taken, weak password) or a network failure. */
+    data class Error(val message: String) : UpdateProfileResult
 }
 
 /**
@@ -115,6 +123,48 @@ class AuthRepository(
         // even if releasing the device token fails.
         runCatching { PushTokenRegistrar.unregister() }
         session.signOut()
+    }
+
+    /**
+     * Update the signed-in driver's own name / email / password (FR-04).
+     *
+     * A blank password is omitted from the body entirely rather than sent as
+     * "", because the API's rule is `sometimes|min:8` — an empty string would
+     * be rejected as too short when the driver simply did not want to change
+     * it.
+     *
+     * On success the session's cached user is refreshed, so the Profile and
+     * Home screens show the new name without a sign-out.
+     */
+    suspend fun updateProfile(
+        name: String,
+        email: String,
+        password: String,
+        passwordConfirmation: String,
+    ): UpdateProfileResult {
+        val body = UpdateProfileRequestDto(
+            name = name.trim(),
+            email = email.trim(),
+            password = password.ifBlank { null },
+            passwordConfirmation = password.ifBlank { null }?.let { passwordConfirmation },
+        )
+
+        val response = try {
+            api.updateProfile(body)
+        } catch (e: Exception) {
+            return UpdateProfileResult.Error(NETWORK_ERROR)
+        }
+
+        val user = response.body()?.user
+
+        return if (response.isSuccessful && user != null) {
+            session.refreshUser(user)
+            UpdateProfileResult.Success(user)
+        } else {
+            UpdateProfileResult.Error(
+                laravelErrorMessage(response, fallback = "Could not save your changes. Please try again."),
+            )
+        }
     }
 
     private companion object {

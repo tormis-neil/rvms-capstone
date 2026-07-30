@@ -40,6 +40,22 @@ data class RegisterRequestDto(
     @SerialName("license_expiry_date") val licenseExpiryDate: String? = null,
 )
 
+/**
+ * PATCH /me/profile body (FR-04 self-edit).
+ *
+ * Every field is optional and nulls are dropped from the JSON, matching the
+ * API's `sometimes` rules: leaving the password blank means "keep the current
+ * one", which must not be sent as an empty string or validation would reject
+ * it as too short.
+ */
+@Serializable
+data class UpdateProfileRequestDto(
+    val name: String? = null,
+    val email: String? = null,
+    val password: String? = null,
+    @SerialName("password_confirmation") val passwordConfirmation: String? = null,
+)
+
 /** POST /login success body: token + the authenticated user. */
 @Serializable
 data class LoginResponseDto(

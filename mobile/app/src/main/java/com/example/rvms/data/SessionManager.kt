@@ -56,6 +56,17 @@ class SessionManager(
         }
     }
 
+    /**
+     * Replace the cached user after a self-service edit (FR-04).
+     *
+     * The token is untouched — changing your own name or password does not
+     * end the session, and every screen reading `currentUser` picks the new
+     * values up on the next recomposition without a sign-out.
+     */
+    fun refreshUser(user: UserDto) {
+        _currentUser.value = user
+    }
+
     /** Record a successful login: persist the token and cache the user. */
     suspend fun onLoggedIn(token: String, user: UserDto) {
         tokenStore.save(token)

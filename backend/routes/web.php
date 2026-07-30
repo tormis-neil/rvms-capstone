@@ -9,6 +9,7 @@ use App\Http\Controllers\Web\InspectionController;
 use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\PmController;
 use App\Http\Controllers\Web\RepairController;
+use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\ReportController;
 use App\Http\Controllers\Web\VehicleController;
 use Illuminate\Support\Facades\Route;
@@ -60,6 +61,11 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     Route::post('/dispatch', [DispatchController::class, 'store'])->name('dispatch.store');
     Route::put('/dispatch/{dispatch}', [DispatchController::class, 'update'])->name('dispatch.update');
     Route::patch('/dispatch/{dispatch}/close', [DispatchController::class, 'close'])->name('dispatch.close');
+
+    // Profile (FR-04) — the admin's own account. Agency details are read-only
+    // (design decision 7: no FR backs editing agency information).
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     // Reports (FR-20). One route: the page, plus the generated report when a
     // ?type= is present — the prototype renders its report into the same page.
