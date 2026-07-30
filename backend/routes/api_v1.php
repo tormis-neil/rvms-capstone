@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AgencyController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DamageReportController;
 use App\Http\Controllers\Api\V1\DispatchController;
 use App\Http\Controllers\Api\V1\DriverController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PmScheduleController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\RepairLogController;
+use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\VehicleController;
 use Illuminate\Support\Facades\Route;
 
@@ -70,6 +72,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject']);
         Route::patch('/drivers/{driver}/license', [DriverController::class, 'updateLicense']);
         Route::get('/licenses/monitoring', LicenseMonitoringController::class);
+
+        // Admin — dashboard summary (FR-19)
+        Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+
+        // Admin — the six printable reports (FR-20)
+        Route::get('/reports/{type}', [ReportController::class, 'show']);
 
         // Admin — inspection monitoring & review (FR-10). index/show live in the
         // shared group above (role-branched); these two stay admin-only.
