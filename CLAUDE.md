@@ -1192,6 +1192,18 @@ Sub-tasks — Day 13 (triggers + screens):
     11. Wire the bell to live unread counts/latest items; replace the notifications page's
         hardcoded rows with live data grouped Today / Yesterday / Earlier; wire mark-read/mark-all.
     12. CHECKPOINT B: bell + notifications page vs prototype, with live seeded data → lead approves.
+    13. **"Clear Read" on the notifications page — documented addition (lead-approved 2026-07),
+        WEB ADMIN ONLY.** The prototype offers only "Mark All as Read", and FR-21 as originally
+        worded covered delivery alone, so this is a scope addition rather than a prototype copy —
+        it IS mirrored into the manuscript (FR-21 wording + Ch1 Purpose and Scope). Three rules
+        make it safe: it deletes **only rows already marked read**, so an alert nobody has opened
+        cannot be destroyed and FR-21's delivery guarantee still holds for anything unseen; it is
+        scoped to the caller's **own user id**, not merely the agency, because an agency may have
+        several administrators and one clearing their list must not empty another's; and it is
+        confirmed through the prototype's danger-flow modal, which names the exact count first.
+        No schema change — rows are deleted, so there is no `cleared_at` column and no ERD or
+        data-dictionary edit. Deliberately NOT built on mobile: drivers receive two alert types
+        and their inbox does not accumulate the way an admin's does.
 
 Testing task:
   Automated — `php artisan test`: users see only their own notifications; foreign mark-read blocked; triggers create the right rows for the right people; commands generate license/PM alerts.
