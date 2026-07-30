@@ -22,15 +22,17 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rvms.data.ServiceLocator
 import com.example.rvms.data.remote.dto.DamageDto
+import com.example.rvms.ui.common.RefreshOnResume
 import com.example.rvms.ui.common.ScreenHeader
 import com.example.rvms.ui.common.formatIsoDate
 import com.example.rvms.theme.Background
@@ -50,7 +53,9 @@ import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DamageScreen(
     onSubmitNew: () -> Unit,
@@ -64,19 +69,38 @@ fun DamageScreen(
     val reports = remember { mutableStateListOf<DamageDto>() }
     var loaded by remember { mutableStateOf(false) }
     var vehicleLabel by remember { mutableStateOf("") }
+    var isRefreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
+    suspend fun load() {
+        val fresh = ServiceLocator.damageRepository.history()
         reports.clear()
-        reports.addAll(ServiceLocator.damageRepository.history())
+        reports.addAll(fresh)
         val vehicle = ServiceLocator.vehicleRepository.myVehicles().firstOrNull()
         vehicleLabel = vehicle?.let { "${it.type} — ${it.plateNumber}" }.orEmpty()
         loaded = true
     }
 
-    Column(
+    // On entry and on every return to the foreground, so a report the admin
+    // has since marked Reviewed shows that here without a restart (FR-12).
+    RefreshOnResume { load() }
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = {
+            isRefreshing = true
+            scope.launch {
+                load()
+                isRefreshing = false
+            }
+        },
         modifier = modifier
             .fillMaxSize()
-            .background(Background)
+            .background(Background),
+    ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
             .verticalScroll(scrollState)
             .padding(16.dp),
     ) {
@@ -134,6 +158,7 @@ fun DamageScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
     }
 }
 
