@@ -44,7 +44,7 @@
                 <a href="{{ route('dispatch') }}" class="nav-item {{ request()->routeIs('dispatch') ? 'active' : '' }}">
                     <i class="bi bi-send-check"></i> Dispatch Logs
                 </a>
-                <a href="#" class="nav-item" title="Available in a later phase (R8)">
+                <a href="{{ route('reports') }}" class="nav-item {{ request()->routeIs('reports') ? 'active' : '' }}">
                     <i class="bi bi-file-earmark-bar-graph"></i> Reports
                 </a>
 

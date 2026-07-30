@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Web\AuthController;
+use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\DamageReportController;
 use App\Http\Controllers\Web\DispatchController;
 use App\Http\Controllers\Web\DriverController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\Web\InspectionController;
 use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\PmController;
 use App\Http\Controllers\Web\RepairController;
+use App\Http\Controllers\Web\ReportController;
 use App\Http\Controllers\Web\VehicleController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,7 +22,8 @@ Route::middleware('guest')->group(function () {
 // Back button re-fetches instead of replaying a snapshot with a stale vehicle
 // status — and so the pages are not recoverable after sign-out (NFR-02).
 Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::class])->group(function () {
-    Route::view('/dashboard', 'dashboard')->name('dashboard');
+    // Fleet Overview (FR-19) — live counts, no longer a static view.
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Vehicles (FR-05, FR-18)
     Route::get('/vehicles', [VehicleController::class, 'index'])->name('vehicles');
@@ -57,6 +60,10 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     Route::post('/dispatch', [DispatchController::class, 'store'])->name('dispatch.store');
     Route::put('/dispatch/{dispatch}', [DispatchController::class, 'update'])->name('dispatch.update');
     Route::patch('/dispatch/{dispatch}/close', [DispatchController::class, 'close'])->name('dispatch.close');
+
+    // Reports (FR-20). One route: the page, plus the generated report when a
+    // ?type= is present — the prototype renders its report into the same page.
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports');
 
     // Notifications (FR-21). Reached from the bell's "View All Notifications"
     // link — the prototype has no sidebar item for it either.

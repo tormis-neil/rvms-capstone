@@ -71,6 +71,15 @@ class TableColumnAlignmentTest extends TestCase
             'repairs' => ['/repairs'],
             'pm schedules' => ['/pm'],
             'dispatch' => ['/dispatch'],
+            // A report is printed and filed, so a column shifted one place left
+            // survives on paper in a way a screen misalignment does not. Every
+            // module already has a seeded row above, so all six render rows.
+            'report — inspections' => ['/reports?type=inspections'],
+            'report — damage' => ['/reports?type=damage'],
+            'report — repairs' => ['/reports?type=repairs-maintenance'],
+            'report — pm' => ['/reports?type=pm'],
+            'report — dispatch' => ['/reports?type=dispatch'],
+            'report — vehicle status' => ['/reports?type=vehicle-status'],
         ];
     }
 
