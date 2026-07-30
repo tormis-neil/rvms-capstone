@@ -118,19 +118,25 @@ fun NotificationScreen(
             ) {
                 ScreenHeader(title = "Notifications")
 
-                if (unreadCount > 0) {
-                    TextButton(onClick = {
+                // Always shown, disabled with nothing unread — the same way
+                // the admin dashboard and the prototype present it. Hiding it
+                // at zero made the control look absent rather than inactive.
+                TextButton(
+                    onClick = {
                         scope.launch {
                             ServiceLocator.notificationRepository.markAllRead()
                             load()
                         }
-                    }) {
-                        Text(
-                            text = "Mark all read",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = NavyBlue,
-                        )
-                    }
+                    },
+                    enabled = unreadCount > 0,
+                ) {
+                    Text(
+                        text = "Mark all read",
+                        style = MaterialTheme.typography.labelLarge,
+                        // Set explicitly, so TextButton's own disabled tint
+                        // cannot be overridden by the enabled colour.
+                        color = if (unreadCount > 0) NavyBlue else TextSecondary.copy(alpha = 0.5f),
+                    )
                 }
             }
 

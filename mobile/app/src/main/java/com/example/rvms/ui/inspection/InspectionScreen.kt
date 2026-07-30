@@ -24,16 +24,18 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rvms.data.ServiceLocator
 import com.example.rvms.data.remote.dto.InspectionDto
+import com.example.rvms.ui.common.RefreshOnResume
 import com.example.rvms.ui.common.ScreenHeader
 import com.example.rvms.ui.common.formatIsoDate
 import com.example.rvms.ui.common.formatIsoTime
@@ -55,6 +58,7 @@ import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
+import kotlinx.coroutines.launch
 
 /** Issue count from a real inspection's items. */
 private fun InspectionDto.issueCount(): Int = items.count { it.status == "Has Issue" }
@@ -70,6 +74,7 @@ private fun InspectionDto.resultLabel(): String =
         else -> "$n Issues"
     }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InspectionScreen(
     onStartInspection: () -> Unit,
@@ -84,23 +89,42 @@ fun InspectionScreen(
     val history = remember { mutableStateListOf<InspectionDto>() }
     var loaded by remember { mutableStateOf(false) }
     var vehicleLabel by remember { mutableStateOf("") }
+    var isRefreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
+    suspend fun load() {
+        val fresh = ServiceLocator.inspectionRepository.history()
         history.clear()
-        history.addAll(ServiceLocator.inspectionRepository.history())
+        history.addAll(fresh)
         val vehicle = ServiceLocator.vehicleRepository.myVehicles().firstOrNull()
         vehicleLabel = vehicle?.let { "${it.type} — ${it.plateNumber}" }.orEmpty()
         loaded = true
     }
 
+    // On entry and on every return to the foreground, so an admin's review of
+    // an inspection is already reflected when the driver looks (FR-10).
+    RefreshOnResume { load() }
+
     val today = todayIso()
     val todaysInspection = history.firstOrNull { it.inspectionDate == today }
     var showResubmitWarning by remember { mutableStateOf(false) }
 
-    Column(
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = {
+            isRefreshing = true
+            scope.launch {
+                load()
+                isRefreshing = false
+            }
+        },
         modifier = modifier
             .fillMaxSize()
-            .background(Background)
+            .background(Background),
+    ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
             .verticalScroll(scrollState)
             .padding(16.dp),
     ) {
@@ -219,6 +243,7 @@ fun InspectionScreen(
                 }
             },
         )
+    }
     }
 }
 

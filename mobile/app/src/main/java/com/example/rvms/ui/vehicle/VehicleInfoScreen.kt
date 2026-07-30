@@ -27,12 +27,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import com.example.rvms.data.ServiceLocator
 import com.example.rvms.data.VehicleStatus
 import com.example.rvms.data.remote.dto.VehicleDto
+import com.example.rvms.ui.common.RefreshOnResume
 import com.example.rvms.ui.common.formatMileage
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.Gold
@@ -56,6 +58,7 @@ import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
 import com.example.rvms.theme.White
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,10 +70,17 @@ fun VehicleInfoScreen(
     // may hold several — each renders the same card layout below.
     val currentUser by ServiceLocator.sessionManager.currentUser.collectAsState()
     var vehicles by remember { mutableStateOf<List<VehicleDto>>(emptyList()) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
+    suspend fun load() {
         vehicles = ServiceLocator.vehicleRepository.myVehicles()
     }
+
+    // This screen exists to answer "what state is my vehicle in?", so it is the
+    // one that must never be stale: reloaded on entry and on every return to
+    // the foreground, and pullable by hand (FR-07, FR-18, NFR-04).
+    RefreshOnResume { load() }
 
     val driverName = currentUser?.name.orEmpty()
     val agencyName = currentUser?.agency?.name.orEmpty()
@@ -90,12 +100,24 @@ fun VehicleInfoScreen(
             )
         }
     ) { innerPadding ->
-        Column(
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                isRefreshing = true
+                scope.launch {
+                    load()
+                    isRefreshing = false
+                }
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .background(Background)
+                .padding(innerPadding),
+        ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(innerPadding)
                 .padding(16.dp),
         ) {
             if (vehicles.isEmpty()) {
@@ -141,6 +163,7 @@ fun VehicleInfoScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
         }
     }
 }
