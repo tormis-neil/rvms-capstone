@@ -22,8 +22,7 @@
             </div>
             
             <div class="sidebar-nav">
-                {{-- All 9 prototype nav items stay visible; pages from later phases are
-                     disabled ("Available in a later phase") until their phase ships (plan R1.6). --}}
+                {{-- All 9 prototype nav items, every one live as of R9. --}}
                 <div class="px-4 pb-2 small text-white-50 text-uppercase fw-semibold">Overview</div>
                 <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <i class="bi bi-grid-1x2-fill"></i> Dashboard
@@ -57,7 +56,7 @@
                 </a>
 
                 <div class="px-4 pt-3 pb-2 small text-white-50 text-uppercase fw-semibold">Settings</div>
-                <a href="#" class="nav-item" title="Available in a later phase (R9)">
+                <a href="{{ route('profile') }}" class="nav-item {{ request()->routeIs('profile') ? 'active' : '' }}">
                     <i class="bi bi-person-gear"></i> Agency Profile
                 </a>
             </div>
@@ -84,8 +83,7 @@
                             <span class="fw-medium">{{ auth()->user()->name }}</span>
                         </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                        {{-- Profile page ships in R9; disabled placeholder until then --}}
-                        <li><a class="dropdown-item" href="#" title="Available in a later phase (R9)"><i class="bi bi-person me-2"></i>Profile</a></li>
+                        <li><a class="dropdown-item" href="{{ route('profile') }}"><i class="bi bi-person me-2"></i>Profile</a></li>
                         <li>
                             <form action="{{ route('logout') }}" method="POST">
                                 @csrf

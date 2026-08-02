@@ -16,6 +16,7 @@ import com.example.rvms.data.remote.dto.NotificationListDto
 import com.example.rvms.data.remote.dto.ReadAllResponseDto
 import com.example.rvms.data.remote.dto.RegisterRequestDto
 import com.example.rvms.data.remote.dto.SubmitInspectionDto
+import com.example.rvms.data.remote.dto.UpdateProfileRequestDto
 import com.example.rvms.data.remote.dto.UserEnvelopeDto
 import com.example.rvms.data.remote.dto.VehicleListDto
 import okhttp3.MultipartBody
@@ -59,6 +60,10 @@ interface ApiService {
 
     @GET("me")
     suspend fun me(): Response<UserEnvelopeDto>
+
+    /** Self-edit of the signed-in driver's own name/email/password (FR-04). */
+    @PATCH("me/profile")
+    suspend fun updateProfile(@Body body: UpdateProfileRequestDto): Response<UserEnvelopeDto>
 
     /** The driver's assigned vehicle(s) (FR-07) — a driver may hold several. */
     @GET("my-vehicle")

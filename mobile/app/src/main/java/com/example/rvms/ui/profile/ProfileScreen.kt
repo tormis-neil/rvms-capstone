@@ -21,9 +21,13 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.example.rvms.data.ServiceLocator
+import com.example.rvms.ui.common.RefreshOnResume
 import com.example.rvms.ui.common.formatIsoDate
 import com.example.rvms.ui.common.initialsFor
 import com.example.rvms.ui.common.logoForAgencyCode
@@ -58,6 +63,11 @@ fun ProfileScreen(
     // Real driver identity from the authenticated session (FR-01), replacing
     // the prototype's mock Session/SampleData.
     val currentUser by ServiceLocator.sessionManager.currentUser.collectAsState()
+    var showEditProfile by remember { mutableStateOf(false) }
+
+    // An admin may have edited this driver's licence expiry on the web, so the
+    // details below are re-read whenever the app returns to the foreground.
+    RefreshOnResume { ServiceLocator.sessionManager.loadMe() }
     val name = currentUser?.name.orEmpty()
     val email = currentUser?.email.orEmpty()
     val agencyCode = currentUser?.agency?.code.orEmpty()
@@ -162,7 +172,28 @@ fun ProfileScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Edit Profile — the driver's own name / email / password (FR-04).
+        // Licence fields are NOT editable here: FR-06 makes the licence an
+        // administrator's record, and FR-08 monitors it, so a driver editing
+        // their own expiry date would defeat the monitoring.
+        OutlinedButton(
+            onClick = { showEditProfile = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+        ) {
+            Text(
+                text = "Edit Profile",
+                color = NavyBlue,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Vehicle Info Button
         Button(
@@ -201,6 +232,15 @@ fun ProfileScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+
+    if (showEditProfile) {
+        EditProfileDialog(
+            initialName = name,
+            initialEmail = email,
+            onDismiss = { showEditProfile = false },
+            onSaved = { showEditProfile = false },
+        )
     }
 }
 
