@@ -1308,6 +1308,15 @@ Prototype source: all 10 screens (final pass).
   split with a PRIORITY ORDER, because the phase is now sized in hours and the last item is
   the one to cut if time runs short.
 
+  **Decisions confirmed by the lead 2026-07-30, before any code:**
+    - All ten sub-tasks below are IN, in the order given.
+    - Sub-task 9 (dead code) is narrowed to the mobile app's `SampleData` layer ONLY, and runs
+      LAST — after everything else is green. It buys tidiness, not function, and deleting code
+      is the one activity whose failure mode is "what worked yesterday is broken today".
+    - Non-critical security findings go to `backend/docs/security-audit.md`, not GitHub issues:
+      this is a capstone, and a document titled "findings and disposition" can be shown to a
+      panel, cited in the manuscript, and read by anyone who clones the repo.
+
 Sub-tasks, in priority order (effort is a working estimate, not a promise):
 
   1. **Offline behaviour on mobile — 3h. Do this first; it is a crash.**
@@ -1376,21 +1385,25 @@ Sub-tasks, in priority order (effort is a working estimate, not a promise):
        - airplane mode mid-inspection, mid-photo-upload, and at cold start (ties to sub-task 1);
        - all four agencies operating at once — the isolation wall under real use.
 
-  9. **Dead code cleanup — 4h. CUT THIS FIRST if time runs short.** Adapted from the lead's
-     cleanup prompt, with two HARD boundaries that override it:
+  9. **Dead code cleanup — 2h, LAST, and `SampleData` ONLY (lead-confirmed scope).** Adapted
+     from the lead's cleanup prompt, narrowed to the one deletion that carries real weight, and
+     bounded by two HARD rules that override the prompt:
        - **`public/assets/css/style.css` is never edited** (Non-Negotiable Rule 9). "Dead CSS
          classes" are therefore OUT OF SCOPE — the stylesheet is a prototype copy and every
          checkpoint since R1 has depended on it being untouched.
        - **`web/` is never edited.** It is the prototype, and it is the reference every
          side-by-side comparison is made against.
-     What IS in scope: the mobile app's `SampleData` mock layer (every phase R0–R9 replaced a
-     piece of it, so it may now be entirely unused — and a panel reading the code should not
-     find a file called SampleData); unused Blade partials; unused model methods; unreachable
-     branches and commented-out blocks. Verify with a search before EVERY deletion — dynamic
-     references and Blade string includes count. Delete in small commits, run `php artisan test`
-     after each, and report total lines removed plus anything not 100% certain.
-     Composer/Gradle dependencies are deliberately left alone: `laravel/sail` and `laravel/pail`
-     came with the framework skeleton and removing them is near-zero value at non-zero risk.
+     IN SCOPE: the mobile app's `SampleData` mock layer. Every phase R0–R9 replaced a piece of
+     it with real API calls, so it is probably now entirely unused — and a panel opening the
+     code and finding a file called `SampleData` will reasonably ask whether the app is really
+     running on live data. That question is the whole reason this task exists.
+     Verify with a search before EVERY deletion; dynamic references count. Delete in small
+     commits, run `./gradlew test` and `php artisan test` after each, and report total lines
+     removed plus anything not 100% certain.
+     OUT OF SCOPE, deliberately: unused Blade partials and model methods (small gain, and the
+     Blade side is what every checkpoint is measured on), and composer/Gradle dependencies —
+     `laravel/sail` and `laravel/pail` came with the framework skeleton, and removing them is
+     near-zero value at non-zero risk this close to a defense.
 
   10. **Chrome / Firefox / Edge pass on every page** (NFR-05), then **FINAL CHECKPOINT B**:
       all 10 screens vs the prototype with the lead — the exit gate.
