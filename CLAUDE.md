@@ -1295,28 +1295,125 @@ Testing task:
           prototype look without inventing a feature.
 
 ---
-PHASE R10 — Days 17–18: Hardening + Final Verification (NFR-01…NFR-05)
-Goal: The whole system meets the quality attributes, the complete suite is green, and every screen passes a final side-by-side.
+PHASE R10 — Hardening + Final Verification (NFR-01…NFR-05)
+Goal: The whole system meets the quality attributes, the complete suite is green, and every
+screen passes a final side-by-side. Nothing new is BUILT here — everything is made true,
+proven, and re-checked harder.
 Prototype source: all 10 screens (final pass).
 
-Sub-tasks — Day 17 (performance + security):
-  1. Pagination on every list endpoint + page; eager-loading/N+1 audit with query-count assertions.
-  2. Login rate limiting (429 after repeated failures); password strength rules; HTTPS/encrypted-transport config notes.
-  3. `AgencyIsolationSweepTest`: parameterized proof that EVERY list/show/update/delete endpoint blocks cross-agency access.
+  **Re-scoped 2026-07-30 (project-lead approved).** The original seven sub-tasks assumed the
+  only risks left were the ones the plan had predicted. Two were found by inspection while
+  scoping this phase — both crashes or lies rather than slowness — and two lead-supplied audit
+  passes (security, dead code) were folded in. The list below replaces the old Day 17 / Day 18
+  split with a PRIORITY ORDER, because the phase is now sized in hours and the last item is
+  the one to cut if time runs short.
 
-Sub-tasks — Day 18 (reliability + compatibility + final pass):
-  4. Queue retry/backoff for FCM + scheduled jobs; idempotent status writes; single-status consistency check across all modules.
-  5. Consistent JSON envelope + API contract notes handed to the Android build (its consumer).
-  6. Chrome / Firefox / Edge pass on every page.
-  7. FINAL CHECKPOINT B: all 10 screens vs the prototype with the lead — the v2 exit gate.
+Sub-tasks, in priority order (effort is a working estimate, not a promise):
+
+  1. **Offline behaviour on mobile — 3h. Do this first; it is a crash.**
+     `SessionManager.loadMe()` has no try/catch around `api.me()`, unlike every repository in
+     the app. It is called from `bootstrap()` (Splash, cold start), `HomeScreen.refresh()` and
+     `ProfileScreen`'s resume refresh — so opening or resuming the app without a signal throws
+     an uncaught exception inside a coroutine and takes the app down. Two of those three call
+     sites were added in the R7 fixes and R9.
+     Second half of the same task: every repository returns `emptyList()` when a call fails, so
+     a network failure is indistinguishable from having no records — a driver in the field with
+     no signal is told "No Vehicle Assigned", which is a confident wrong answer rather than an
+     error. Ch1 already states the system requires connectivity, so the honest state is
+     "cannot reach the server", offered with a retry. Applies to My Vehicle, Inspections,
+     Damage history and the Alerts inbox.
+
+  2. **Security audit — 1d.** Adapted from the lead's audit prompt; its PAYMENTS focus area
+     does not apply (there are no transactions — `repair_logs.cost` is a number on a form), so
+     the three focus areas are **auth · agency data isolation · driver PII**. Findings are
+     ranked by severity with exact `file:line`; criticals are fixed in this phase, the rest
+     become tickets with effort estimates. Cover:
+       - **IDOR** on every `{id}` route across all nine modules — this IS FR-02, and it is the
+         highest-value check in the phase.
+       - **Secrets in code, config and git history** — `firebase.json` and `.env` are gitignored
+         NOW; verify neither was ever committed before that.
+       - **File uploads** — damage photos are the only upload surface: content-type spoofing,
+         SVG-as-XSS, path traversal in the filename, size limits.
+       - **Injection** — SQL (Eloquent covers most, audit any raw), XSS (Blade escapes by
+         default, but `reports.blade.php` uses `{!! !!}` once and must be audited, not trusted),
+         command, path traversal.
+       - **Error and log leakage** — `APP_DEBUG` on a demo machine puts stack traces with DB
+         credentials on screen; check what the logs carry (FCM device tokens are already masked).
+       - **Dependency CVEs** — `composer audit`, plus the Gradle side. Never run on this repo.
+       - **Rate limiting** — login (sub-task 5) plus report generation, which is six unpaginated
+         queries and the most expensive endpoint in the system.
+
+  3. **`AgencyIsolationSweepTest` — 3h.** Parameterised proof that EVERY list/show/update/delete
+     endpoint blocks cross-agency access. The automated half of sub-task 2's IDOR check.
+
+  4. **Pagination + N+1 audit — 4h.** Pagination on every list endpoint and page, with
+     query-count assertions. **Reports are deliberately excluded**: a printout with a pager is
+     not a printout (see `ReportBuilder`).
+
+  5. **Login rate limiting + password strength — 2h.** 429 after repeated failures;
+     HTTPS/encrypted-transport config notes.
+
+  6. **`rvms:doctor` deployment check — 2h.** The same idea as `rvms:fcm-doctor`, which earned
+     its keep. Checks the things that silently break a handover: is the scheduler cron entry
+     present, is a queue worker running, has `storage:link` been run (without it EVERY damage
+     photo 404s), is `APP_DEBUG` off, is `APP_TIMEZONE` Asia/Manila. This is the difference
+     between a system that works and one that only works on the developer's laptop.
+
+  7. **Queue retry/backoff + idempotency review — 2h.** FCM and the scheduled jobs; idempotent
+     status writes; single-status consistency across all modules. Consistent JSON envelope +
+     API contract notes for the Android build.
+
+  8. **Multi-device / concurrency test plan — 3h (document).** Written like
+     `docs/manual-testing-r7-r9.md`. What to deliberately attack:
+       - two admins of the same agency opening a dispatch on the SAME vehicle at the same
+         instant (`DispatchGuard` locks rows for exactly this and has never been raced by real
+         humans);
+       - two admins reviewing the same damage report simultaneously;
+       - two admins clearing notifications while the other is reading them;
+       - one driver signed in on two phones — only the most recent receives pushes
+         (`users.fcm_token` is a single column); demonstrate the limitation rather than
+         discover it;
+       - airplane mode mid-inspection, mid-photo-upload, and at cold start (ties to sub-task 1);
+       - all four agencies operating at once — the isolation wall under real use.
+
+  9. **Dead code cleanup — 4h. CUT THIS FIRST if time runs short.** Adapted from the lead's
+     cleanup prompt, with two HARD boundaries that override it:
+       - **`public/assets/css/style.css` is never edited** (Non-Negotiable Rule 9). "Dead CSS
+         classes" are therefore OUT OF SCOPE — the stylesheet is a prototype copy and every
+         checkpoint since R1 has depended on it being untouched.
+       - **`web/` is never edited.** It is the prototype, and it is the reference every
+         side-by-side comparison is made against.
+     What IS in scope: the mobile app's `SampleData` mock layer (every phase R0–R9 replaced a
+     piece of it, so it may now be entirely unused — and a panel reading the code should not
+     find a file called SampleData); unused Blade partials; unused model methods; unreachable
+     branches and commented-out blocks. Verify with a search before EVERY deletion — dynamic
+     references and Blade string includes count. Delete in small commits, run `php artisan test`
+     after each, and report total lines removed plus anything not 100% certain.
+     Composer/Gradle dependencies are deliberately left alone: `laravel/sail` and `laravel/pail`
+     came with the framework skeleton and removing them is near-zero value at non-zero risk.
+
+  10. **Chrome / Firefox / Edge pass on every page** (NFR-05), then **FINAL CHECKPOINT B**:
+      all 10 screens vs the prototype with the lead — the exit gate.
+
+  No manuscript impact. Hardening touches NFR-01…NFR-05, which are already written; making
+  them true does not change what they say.
 
 Testing task:
-  Automated — `php artisan test`: full R0–R9 regression + isolation sweep + rate-limit + pagination/N+1 assertions.
+  Automated — `php artisan test`: full R0–R9 regression + isolation sweep + rate-limit +
+  pagination/N+1 assertions. Mobile — `./gradlew test` (run by the lead; the assistant cannot
+  compile Android).
   Manual testing checklist (plain language):
     In plain words: the final safety inspection of the whole building. Nothing new is built
     today — everything is re-checked harder.
+      [ ] Put the phone in airplane mode, then cold-start the app, then resume it  → a clear
+          "cannot reach the server" message every time, and NO crash.
+          Why: drivers work in the field, and a crash is the one failure they cannot work around.
+      [ ] With airplane mode still on, open My Vehicle  → it says it cannot reach the server, NOT
+          "No Vehicle Assigned".  Why: a wrong answer stated confidently is worse than an error.
       [ ] Run the login curl (guide section C) with a WRONG password ~6 times fast  → it starts
           refusing with "429 Too Many Requests".  Why: password-guessing robots get locked out.
+      [ ] `php artisan rvms:doctor`  → every line green on the deployment machine.
+          Why: proves the handover is complete, not just the code.
       [ ] Change one vehicle's status once  → the SAME status shows on the vehicle row, the
           availability list, the dashboard card, and the vehicle-status report.
           Why: one truth, never conflicting copies (FR-18 / NFR-04).
@@ -1326,9 +1423,38 @@ Testing task:
           Why: a vehicle out on a mission can never be silently re-statused (design decision 9).
       [ ] Change a status from any screen  → the confirmation names the current status, where it
           was set from, and the new status before it commits.
+      [ ] Two admins of the same agency open a dispatch on the same vehicle at the same moment
+          → exactly one succeeds; the other is refused by name.
+          Why: an agency has several administrators and they WILL collide.
       [ ] Long lists arrive in pages, and pages load fast.  Why: it stays quick when real data grows.
       [ ] Open the dashboard in Chrome, Firefox, and Edge  → same look, same behavior (NFR-05).
       [ ] `php artisan test`  → the entire suite green, one last time.
+
+---
+
+## AFTER R10 — the run to the defense (lead's sequence, 2026-07-30)
+
+R10 is not the finish line; it is the first of six steps. The order matters and is the lead's:
+
+  1. **Hardening** (R10 above) — make the quality attributes true.
+  2. **Final demo plan** — the script for the client demo and the panel demo: who does what, on
+     which device, in what order, with seeded data that tells the story. Written down, because a
+     demo improvised in front of a panel is where a working system looks broken.
+  3. **Testing & troubleshooting** — run the demo plan and the multi-device plan for real, with
+     the members, on different devices and connections, simultaneously. Collect everything, fix
+     in one pass.
+  4. **System & manuscript audit** — walk the manuscript against the built system, chapter by
+     chapter: every FR against the screen that implements it, every table in the data dictionary
+     against the migration, every figure against the code. The four repo-only columns
+     (`vehicles.remarks`, `status_source`, `status_changed_at`) are deliberate omissions and stay
+     out; anything else that differs is either a manuscript edit or a system bug, and the audit's
+     job is to say which.
+  5. **Revisions** — apply what the audit found, to the system and to the manuscript.
+  6. **Testing & troubleshooting, again** — because step 5 changed things, and the last change
+     before a defense is the one nobody tested.
+
+The goal of steps 2–6 is stated plainly: the system runs smoothly in front of the client and the
+panel, and the manuscript describes the system that actually exists.
 
 ---
 
