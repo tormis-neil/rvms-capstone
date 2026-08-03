@@ -75,6 +75,46 @@ class DamageReportTest extends TestCase
         Storage::disk('public')->assertExists($path);
     }
 
+    /**
+     * Security audit R10.2: Laravel's bare `image` rule also admits SVG, and
+     * an SVG is a document that can carry scripts — served back from /storage
+     * it would run in the dashboard's origin when the admin clicks View
+     * (stored XSS). A camera never produces one, so refusing it costs nothing.
+     */
+    public function test_an_svg_is_refused_as_a_photo(): void
+    {
+        Storage::fake('public');
+        [, $driver, $vehicle] = $this->driverWithVehicle();
+        Sanctum::actingAs($driver);
+
+        $svg = UploadedFile::fake()->createWithContent(
+            'damage.svg',
+            '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(document.cookie)"></svg>'
+        );
+
+        $this->postJson('/api/v1/damage-reports', [
+            'vehicle_id' => $vehicle->id,
+            'nature_of_damage' => 'Scratch',
+            'photo' => $svg,
+        ])->assertStatus(422)->assertJsonValidationErrors('photo');
+    }
+
+    /** The phone camera's real formats all still pass. */
+    public function test_jpeg_png_and_webp_photos_are_accepted(): void
+    {
+        Storage::fake('public');
+        [, $driver, $vehicle] = $this->driverWithVehicle();
+        Sanctum::actingAs($driver);
+
+        foreach (['damage.jpg', 'damage.png', 'damage.webp'] as $name) {
+            $this->postJson('/api/v1/damage-reports', [
+                'vehicle_id' => $vehicle->id,
+                'nature_of_damage' => 'Test '.$name,
+                'photo' => UploadedFile::fake()->image($name),
+            ])->assertCreated();
+        }
+    }
+
     public function test_nature_of_damage_is_required(): void
     {
         [, $driver, $vehicle] = $this->driverWithVehicle();

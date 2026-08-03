@@ -28,7 +28,12 @@ class StoreDamageReportRequest extends FormRequest
             ],
             'nature_of_damage' => ['required', 'string'],
             'suspected_parts' => ['nullable', 'string', 'max:255'],
-            'photo' => ['nullable', 'image', 'max:5120'], // optional, ≤5 MB
+            // 'image' alone also admits SVG, and an SVG is a document that can
+            // carry scripts — served back from /storage it would execute in the
+            // dashboard's own origin when the admin clicks View (stored XSS,
+            // security audit R10.2). Photos from a phone camera are only ever
+            // raster formats, so nothing legitimate is lost.
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'], // optional, ≤5 MB
         ];
     }
 

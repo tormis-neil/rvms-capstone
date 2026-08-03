@@ -17,7 +17,10 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            // email:strict rejects CRLF and other RFC warnings — the mitigation
+            // for GHSA-5vg9-5847-vvmq on a framework line past its security
+            // window (security audit R10.2).
+            'email' => ['required', 'string', 'email:strict'],
             'password' => ['required', 'string'],
         ];
     }

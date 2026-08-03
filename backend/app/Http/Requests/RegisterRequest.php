@@ -24,7 +24,7 @@ class RegisterRequest extends FormRequest
         return [
             'agency_id' => ['required', 'integer', 'exists:agencies,id'],
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'string', 'email:strict', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             // Same per-agency rule as an admin-added driver (FR-03/FR-06): a
             // self-registering driver whose licence is already on file would

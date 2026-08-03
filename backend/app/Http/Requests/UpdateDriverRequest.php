@@ -25,7 +25,7 @@ class UpdateDriverRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($driverId)],
+            'email' => ['required', 'string', 'email:strict', 'max:255', Rule::unique('users', 'email')->ignore($driverId)],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             // Per agency and nullable; ignores this driver so an edit that leaves
             // the licence untouched does not collide with itself.
