@@ -60,8 +60,7 @@ fun ProfileScreen(
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
-    // Real driver identity from the authenticated session (FR-01), replacing
-    // the prototype's mock Session/SampleData.
+    // Driver identity from the authenticated session (FR-01).
     val currentUser by ServiceLocator.sessionManager.currentUser.collectAsState()
     var showEditProfile by remember { mutableStateOf(false) }
 

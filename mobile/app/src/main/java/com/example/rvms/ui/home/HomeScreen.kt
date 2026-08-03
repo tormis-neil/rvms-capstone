@@ -82,8 +82,7 @@ fun HomeScreen(
 ) {
     val scrollState = rememberScrollState()
 
-    // Real driver session (FR-01) + assigned vehicle(s) (FR-07), replacing the
-    // prototype's mock Session/SampleData for identity and vehicle data.
+    // Driver session (FR-01) + assigned vehicle(s) (FR-07), both from the API.
     val currentUser by ServiceLocator.sessionManager.currentUser.collectAsState()
     var vehicles by remember { mutableStateOf<List<VehicleDto>>(emptyList()) }
     var recentInspections by remember { mutableStateOf<List<InspectionDto>>(emptyList()) }
