@@ -77,7 +77,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
 
         // Admin — the six printable reports (FR-20)
-        Route::get('/reports/{type}', [ReportController::class, 'show']);
+        // Throttled (R10 sub-task 5, NFR-01/NFR-02): reports are unpaginated
+        // by design, making this the most expensive endpoint in the system.
+        // 20/min is far above how fast an admin can read a printout and far
+        // below what a script would want.
+        Route::get('/reports/{type}', [ReportController::class, 'show'])
+            ->middleware('throttle:20,1');
 
         // Admin — inspection monitoring & review (FR-10). index/show live in the
         // shared group above (role-branched); these two stay admin-only.
