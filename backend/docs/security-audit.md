@@ -64,8 +64,23 @@ is exactly where a curious onlooker plugs in a cable. (Body logging of PII: tick
 | **T3** | Sanctum tokens never expire (`'expiration' => null`) — a leaked bearer token is valid forever, bounded only by logout's revoke | `config/sanctum.php:53` | Set an expiry (e.g. 30 days) once the mobile re-auth path is tested; do together with T2's build-variant work | 2 h |
 | **T4** | `SESSION_SECURE_COOKIE` unset — fine on localhost, required once HTTPS lands | `config/session.php:172` | Deployment-time setting; noted in the deployment docs. `http_only` and `same_site=lax` already sound | 15 min at deploy |
 | **T5** | Password policy is `min:8` only — no letter/number mix, no breached-password check | all password rules | A policy change the agencies should agree to (drivers type these on phones in the field); `Password::min(8)->letters()->numbers()` when agreed | 1 h |
-| **T6** | No rate limiting on login or report generation | routes | **Being fixed as R10 sub-task 5** — login throttle (429) + a throttle on `/reports`, the most expensive endpoint | in phase |
-| **T7** | `APP_DEBUG=true` is `.env.example`'s default — correct for local, catastrophic on a demo machine (stack traces expose DB credentials) | `.env.example:4` | `rvms:doctor` (R10 sub-task 6) fails loudly when `APP_DEBUG` is on outside local | in phase |
+| ~~**T6**~~ | ~~No rate limiting on login or report generation~~ | routes | **CLOSED (R10.5).** `LoginThrottle` — 5 failures per account+IP, shared by web and API; `/reports` capped at 20/min on both surfaces. `LoginThrottleTest` | done |
+| ~~**T7**~~ | ~~`APP_DEBUG=true` on a demo machine exposes DB credentials in stack traces~~ | `.env.example:4` | **CLOSED (R10.6).** `php artisan rvms:doctor` fails with a non-zero exit when `APP_DEBUG` is on outside a development environment, alongside eight other handover checks | done |
+
+---
+
+## 3b. Closed since the audit
+
+| # | Closed by | What changed |
+|---|---|---|
+| T6 | R10.5 | Login throttling on both front doors + a cap on report generation |
+| T7 | R10.6 | `rvms:doctor` fails loudly on `APP_DEBUG` outside development |
+
+**Still open and deliberately deferred:** T1 (Laravel 12 upgrade — a framework major days
+before a defense is the wrong risk; the CRLF advisory is mitigated by `email:strict`), T2 and
+T3 (OkHttp response-body logging and Sanctum token expiry — both belong with the release-APK
+build-variant work), T4 (`SESSION_SECURE_COOKIE`, a deployment-day setting), and T5 (password
+policy, which the agencies should agree to rather than have imposed).
 
 ---
 
