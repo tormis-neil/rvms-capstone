@@ -4,6 +4,23 @@ Static, no-backend prototype of the Agency Administrator dashboard for the
 Rescue Vehicle Management System. All data is sample/static data defined in
 `assets/js/agency.js` and scoped per agency (BFP, PNP, CDRRMO, CHO).
 
+> ## This folder is the reference, not the system
+>
+> The working admin dashboard is the Laravel/Blade application in **`backend/`**, and these ten
+> pages are what it was built from. Every screen there was copied here verbatim first, then
+> wired to live data — and each one is checked side by side against the page in `pages/` before
+> it is accepted.
+>
+> That makes this folder a **frozen reference**: it is deliberately never edited, because the
+> moment it changes, the comparison it exists for stops meaning anything. Fixes belong in
+> `backend/resources/views/`. The one recorded prototype defect — `repairs.html` declaring nine
+> table headers over eight body cells — is corrected in the Blade copy and documented there,
+> not here.
+>
+> Run this folder when you want to see the original design intent, demonstrate a screen without
+> starting MySQL, or compare a dashboard page against its source. For the real thing, see
+> [`backend/README.md`](../backend/README.md).
+
 ## Folder structure
 
 ```
