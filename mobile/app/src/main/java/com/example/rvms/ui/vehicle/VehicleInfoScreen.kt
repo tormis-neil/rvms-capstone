@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import com.example.rvms.data.ServiceLocator
 import com.example.rvms.data.VehicleStatus
 import com.example.rvms.data.remote.dto.VehicleDto
+import com.example.rvms.ui.common.ConnectionErrorCard
 import com.example.rvms.ui.common.RefreshOnResume
 import com.example.rvms.ui.common.formatMileage
 import com.example.rvms.theme.Background
@@ -71,10 +72,17 @@ fun VehicleInfoScreen(
     val currentUser by ServiceLocator.sessionManager.currentUser.collectAsState()
     var vehicles by remember { mutableStateOf<List<VehicleDto>>(emptyList()) }
     var isRefreshing by remember { mutableStateOf(false) }
+    var loadError by remember { mutableStateOf<String?>(null) }
+    var loaded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     suspend fun load() {
-        vehicles = ServiceLocator.vehicleRepository.myVehicles()
+        val result = ServiceLocator.vehicleRepository.myVehicles()
+        // Keep the last known vehicle on screen when the call fails — this is
+        // the screen a driver checks before deciding to drive (R10 sub-task 1).
+        result.dataOrNull?.let { vehicles = it }
+        loadError = result.errorOrNull
+        loaded = true
     }
 
     // This screen exists to answer "what state is my vehicle in?", so it is the
@@ -120,7 +128,14 @@ fun VehicleInfoScreen(
                 .verticalScroll(scrollState)
                 .padding(16.dp),
         ) {
-            if (vehicles.isEmpty()) {
+            loadError?.let { message ->
+                ConnectionErrorCard(message = message, staleDataShown = vehicles.isNotEmpty())
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            // Shown only when the server actually answered "none" — never
+            // because the request failed (R10 sub-task 1).
+            if (vehicles.isEmpty() && loadError == null && loaded) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),

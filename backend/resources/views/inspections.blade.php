@@ -87,6 +87,8 @@
                             </tbody>
                         </table>
                     </div>
+                    {{-- Paginated (R10.4, NFR-01) — documented addition using the established card-footer convention. --}}
+                    @include('partials.table-footer', ['paginator' => $inspections, 'label' => 'inspections'])
                 </div>
 
                 <!-- Frequently Reported Issues (aggregated from inspections & damage) -->
@@ -198,6 +200,8 @@
                             </tbody>
                         </table>
                     </div>
+                    {{-- Paginated (R10.4, NFR-01). --}}
+                    @include('partials.table-footer', ['paginator' => $damageReports, 'label' => 'damage reports'])
                 </div>
 
 @endsection

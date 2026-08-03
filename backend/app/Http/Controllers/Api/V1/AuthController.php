@@ -9,6 +9,7 @@ use App\Http\Resources\UserResource;
 use App\Models\Notification;
 use App\Models\User;
 use App\Services\NotificationDispatcher;
+use App\Support\LoginThrottle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -21,21 +22,34 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request): JsonResponse
     {
-        $user = User::where('email', $request->input('email'))->first();
+        $email = (string) $request->input('email');
+
+        // Same throttle as the dashboard (R10 sub-task 5): both front doors
+        // open the same accounts, so locking one and not the other would
+        // leave the back door propped open.
+        LoginThrottle::assertNotLocked($request, $email);
+
+        $user = User::where('email', $email)->first();
 
         if (! $user || ! Hash::check($request->input('password'), $user->password)) {
+            LoginThrottle::recordFailure($request, $email);
+
             throw ValidationException::withMessages([
                 'email' => 'These credentials do not match our records.',
             ]);
         }
 
         if (! $user->isActive()) {
+            LoginThrottle::recordFailure($request, $email);
+
             $reason = $user->status === User::STATUS_PENDING
                 ? 'Your account is pending approval by your agency administrator.'
                 : 'Your account registration was rejected. Contact your agency administrator.';
 
             return response()->json(['message' => $reason], 403);
         }
+
+        LoginThrottle::clear($request, $email);
 
         $token = $user->createToken($user->role.'-token')->plainTextToken;
 

@@ -88,7 +88,9 @@ fun NewDamageReportScreen(
     val currentUser by ServiceLocator.sessionManager.currentUser.collectAsState()
     var vehicle by remember { mutableStateOf<VehicleDto?>(null) }
     LaunchedEffect(Unit) {
-        vehicle = ServiceLocator.vehicleRepository.myVehicles().firstOrNull()
+        // dataOrNull: a failed fetch leaves the vehicle null, and the screen's
+        // existing no-vehicle state handles that (R10 sub-task 1).
+        vehicle = ServiceLocator.vehicleRepository.myVehicles().dataOrNull?.firstOrNull()
     }
     val driverName = currentUser?.name.orEmpty()
 

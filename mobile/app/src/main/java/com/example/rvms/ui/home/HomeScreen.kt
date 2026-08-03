@@ -51,6 +51,7 @@ import com.example.rvms.data.ServiceLocator
 import com.example.rvms.data.VehicleStatus
 import com.example.rvms.data.remote.dto.InspectionDto
 import com.example.rvms.data.remote.dto.VehicleDto
+import com.example.rvms.ui.common.ConnectionErrorCard
 import com.example.rvms.ui.common.LicenseState
 import com.example.rvms.ui.common.RefreshOnResume
 import com.example.rvms.ui.common.formatIsoDate
@@ -81,12 +82,13 @@ fun HomeScreen(
 ) {
     val scrollState = rememberScrollState()
 
-    // Real driver session (FR-01) + assigned vehicle(s) (FR-07), replacing the
-    // prototype's mock Session/SampleData for identity and vehicle data.
+    // Driver session (FR-01) + assigned vehicle(s) (FR-07), both from the API.
     val currentUser by ServiceLocator.sessionManager.currentUser.collectAsState()
     var vehicles by remember { mutableStateOf<List<VehicleDto>>(emptyList()) }
     var recentInspections by remember { mutableStateOf<List<InspectionDto>>(emptyList()) }
     var isRefreshing by remember { mutableStateOf(false) }
+    var loadError by remember { mutableStateOf<String?>(null) }
+    var loaded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     suspend fun refresh() {
@@ -94,8 +96,18 @@ fun HomeScreen(
         // the session, so an admin editing an expiry date would otherwise stay
         // invisible until the next cold start.
         ServiceLocator.sessionManager.loadMe()
-        vehicles = ServiceLocator.vehicleRepository.myVehicles()
-        recentInspections = ServiceLocator.inspectionRepository.history().take(3)
+
+        val vehicleResult = ServiceLocator.vehicleRepository.myVehicles()
+        val inspectionResult = ServiceLocator.inspectionRepository.history()
+
+        // Records are replaced only on success, so a dropped connection keeps
+        // the last known fleet on screen instead of blanking it — with the
+        // banner below saying so (R10 sub-task 1).
+        vehicleResult.dataOrNull?.let { vehicles = it }
+        inspectionResult.dataOrNull?.let { recentInspections = it.take(3) }
+
+        loadError = vehicleResult.errorOrNull ?: inspectionResult.errorOrNull
+        loaded = true
     }
 
     // Loads on entry AND every time the app returns to the foreground, so a
@@ -153,11 +165,18 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        loadError?.let { message ->
+            ConnectionErrorCard(message = message, staleDataShown = vehicles.isNotEmpty())
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
         // Assigned Vehicle Card — the driver's primary vehicle from GET
         // /my-vehicle; a driver with several vehicles sees all of them on the
         // Vehicle Info screen (FR-07).
         val vehicle = vehicles.firstOrNull()
-        if (vehicle == null) {
+        // "No Vehicle Assigned" is only ever said when the server actually
+        // answered — never because the request failed (R10 sub-task 1).
+        if (vehicle == null && loadError == null && loaded) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),

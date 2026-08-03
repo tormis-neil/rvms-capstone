@@ -69,7 +69,9 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
 
     // Reports (FR-20). One route: the page, plus the generated report when a
     // ?type= is present — the prototype renders its report into the same page.
-    Route::get('/reports', [ReportController::class, 'index'])->name('reports');
+    Route::get('/reports', [ReportController::class, 'index'])
+        ->middleware('throttle:20,1')
+        ->name('reports');
 
     // Notifications (FR-21). Reached from the bell's "View All Notifications"
     // link — the prototype has no sidebar item for it either.

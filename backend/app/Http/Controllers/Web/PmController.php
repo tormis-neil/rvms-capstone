@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Services\MaintenanceAlerts;
 use App\Http\Requests\CompletePmScheduleRequest;
 use App\Http\Requests\StorePmScheduleRequest;
 use App\Models\PmSchedule;
 use App\Models\Vehicle;
+use App\Services\MaintenanceAlerts;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -20,13 +20,22 @@ class PmController extends Controller
 {
     public function index(Request $request): View
     {
-        $schedules = PmSchedule::query()
+        // Two paginators with distinct page parameters (R10.4, NFR-01), so
+        // paging the completed history does not move the active tab. Completed
+        // records are the unbounded half — every cycle adds one forever.
+        $active = PmSchedule::query()
             ->with('vehicle')
+            ->where('status', '!=', PmSchedule::STATUS_COMPLETED)
             ->latest('id')
-            ->get();
+            ->paginate(10, ['*'], 'active_page')
+            ->withQueryString();
 
-        $active = $schedules->where('status', '!=', PmSchedule::STATUS_COMPLETED);
-        $completed = $schedules->where('status', PmSchedule::STATUS_COMPLETED);
+        $completed = PmSchedule::query()
+            ->with('vehicle')
+            ->where('status', PmSchedule::STATUS_COMPLETED)
+            ->latest('id')
+            ->paginate(10, ['*'], 'completed_page')
+            ->withQueryString();
 
         $vehicles = Vehicle::query()
             ->orderBy('plate_number')

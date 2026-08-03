@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\LoginThrottle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,11 +26,18 @@ class AuthController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $credentials = $request->validate([
-            'email' => ['required', 'string', 'email'],
+            'email' => ['required', 'string', 'email:strict'],
             'password' => ['required', 'string'],
         ]);
 
+        // Throttled per account+IP (R10 sub-task 5, NFR-02). Checked BEFORE
+        // Auth::attempt, so a locked-out caller never reaches the password
+        // comparison at all.
+        LoginThrottle::assertNotLocked($request, $credentials['email']);
+
         if (! Auth::attempt($credentials)) {
+            LoginThrottle::recordFailure($request, $credentials['email']);
+
             throw ValidationException::withMessages([
                 'email' => 'These credentials do not match our records.',
             ]);
@@ -38,6 +46,7 @@ class AuthController extends Controller
         $user = Auth::user();
 
         if ($user->role !== User::ROLE_ADMIN) {
+            LoginThrottle::recordFailure($request, $credentials['email']);
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -48,6 +57,7 @@ class AuthController extends Controller
         }
 
         if (! $user->isActive()) {
+            LoginThrottle::recordFailure($request, $credentials['email']);
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -56,6 +66,10 @@ class AuthController extends Controller
                 'email' => 'This account is not active. Contact your system administrator.',
             ]);
         }
+
+        // A correct sign-in wipes the counter: two typos then success must
+        // not leave the admin part-way to a lockout.
+        LoginThrottle::clear($request, $credentials['email']);
 
         $request->session()->regenerate();
 

@@ -35,6 +35,12 @@ object ApiClient {
     fun create(tokenProvider: () -> String?): ApiService {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
+            // Level.BODY prints request headers too, and one of them is
+            // `Authorization: Bearer <token>` — a session credential readable
+            // by anyone with adb access to the handset. Redacted always, not
+            // only in release builds, because a demo device is exactly where a
+            // curious onlooker plugs in a cable (security audit R10.2).
+            redactHeader("Authorization")
         }
 
         val client = OkHttpClient.Builder()

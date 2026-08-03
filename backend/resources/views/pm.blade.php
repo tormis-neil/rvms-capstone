@@ -19,7 +19,7 @@
                 <!-- Tabs -->
                 <ul class="nav nav-tabs mb-4" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab">Active Schedules <span class="badge bg-navy text-white ms-1">{{ $active->count() }}</span></button>
+                        <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab">Active Schedules <span class="badge bg-navy text-white ms-1">{{ $active->total() }}</span></button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">Completed Records</button>
@@ -88,6 +88,8 @@
                                     </tbody>
                                 </table>
                             </div>
+                                {{-- Paginated (R10.4, NFR-01) — its own page parameter so paging one tab never moves the other. --}}
+                                @include('partials.table-footer', ['paginator' => $active, 'label' => 'active schedules'])
                         </div>
                     </div>
 
@@ -125,6 +127,8 @@
                                     </tbody>
                                 </table>
                             </div>
+                                {{-- Paginated (R10.4, NFR-01). --}}
+                                @include('partials.table-footer', ['paginator' => $completed, 'label' => 'completed records'])
                         </div>
                     </div>
                 </div>

@@ -3,10 +3,9 @@ package com.example.rvms.data
 import com.example.rvms.R
 
 /**
- * Small domain enums shared by the UI. These are reference values (agency
- * identity + the four vehicle statuses), NOT sample account data — the mock
- * prototype data (SampleData/Session) was removed once every screen was wired
- * to the real API.
+ * Small domain enums shared by the UI. These are reference values — agency
+ * identity and the four vehicle statuses — not account data, which always
+ * comes from the API.
  */
 
 /** The four participating agencies, each with its official logo asset. */

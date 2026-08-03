@@ -97,7 +97,9 @@ fun NewInspectionScreen(
     LaunchedEffect(Unit) {
         checklist.clear()
         checklist.addAll(ServiceLocator.inspectionRepository.checklist())
-        vehicle = ServiceLocator.vehicleRepository.myVehicles().firstOrNull()
+        // dataOrNull: a failed fetch leaves the vehicle null, and the screen's
+        // existing no-vehicle state handles that (R10 sub-task 1).
+        vehicle = ServiceLocator.vehicleRepository.myVehicles().dataOrNull?.firstOrNull()
         loading = false
     }
 

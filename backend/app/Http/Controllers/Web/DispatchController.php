@@ -23,13 +23,17 @@ class DispatchController extends Controller
 {
     public function index(Request $request): View
     {
+        // Paginated (R10.4, NFR-01): a logbook only ever grows. The active
+        // banner counts the TRUE total with its own query, so it can never be
+        // trimmed to whatever happens to be on the current page.
         $dispatches = Dispatch::query()
             ->with(['vehicle', 'driver'])
             ->latest('time_out')
             ->latest('id')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
-        $activeCount = $dispatches->whereNull('time_in')->count();
+        $activeCount = Dispatch::query()->whereNull('time_in')->count();
 
         // New-dispatch selects: Operational vehicles (only these may be dispatched)
         // and the agency's drivers. assigned_driver_id rides along so the modal can
