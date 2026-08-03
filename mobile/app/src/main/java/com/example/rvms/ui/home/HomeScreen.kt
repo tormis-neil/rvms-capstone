@@ -174,30 +174,13 @@ fun HomeScreen(
         // /my-vehicle; a driver with several vehicles sees all of them on the
         // Vehicle Info screen (FR-07).
         val vehicle = vehicles.firstOrNull()
-        // "No Vehicle Assigned" is only ever said when the server actually
-        // answered — never because the request failed (R10 sub-task 1).
-        if (vehicle == null && loadError == null && loaded) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Surface),
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Text(
-                        text = "No Vehicle Assigned",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = TextPrimary,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Your agency administrator has not assigned a vehicle to your account yet.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary,
-                    )
-                }
-            }
-        } else {
+        // Ordered vehicle-first on purpose. Testing the vehicle for null in the
+        // FIRST branch is what lets the card below read `vehicle.status`
+        // directly: with the null test buried in a compound condition the
+        // compiler cannot narrow the type in the else branch, and an offline
+        // start — no vehicle, no answer — would have walked straight into the
+        // card and dereferenced null.
+        if (vehicle != null) {
             val vehicleStatus = VehicleStatus.fromApiLabel(vehicle.status)
             Card(
                 modifier = Modifier
@@ -262,6 +245,31 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         InfoChip(formatMileage(vehicle.currentMileage), Modifier.weight(1f))
                     }
+                }
+            }
+        } else if (loadError == null && loaded) {
+            // "No Vehicle Assigned" is only ever said when the server actually
+            // answered and said so — never because the request failed and never
+            // while it is still in flight (R10 sub-task 1). Offline, the
+            // connection banner above stands in its place.
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Surface),
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text(
+                        text = "No Vehicle Assigned",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Your agency administrator has not assigned a vehicle to your account yet.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                    )
                 }
             }
         }

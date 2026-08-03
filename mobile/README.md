@@ -1,71 +1,116 @@
-# RVMS — Driver Mobile App (Prototype)
+# RVMS — Driver Mobile App
 
-Android driver application for the Rescue Vehicle Management System. Built with
-Kotlin + Jetpack Compose following the "Structured Authority" design theme
-(navy structure, light surfaces, gold accent). This is a **frontend-only
-prototype** — all data is static sample data (no backend), per the prototype plan.
+Android driver application for the Rescue Vehicle Management System. Built with Kotlin +
+Jetpack Compose following the "Structured Authority" design theme (navy structure, light
+surfaces, gold accent).
+
+The app runs on **live data from the Laravel backend** — every screen reads and writes through
+the REST API at `/api/v1` with a Sanctum bearer token. The backend must be running for the app
+to do anything; there is no offline mode, and the app says so plainly rather than showing
+stale or empty data.
 
 ## Requirements
+
 - Android Studio Meerkat (2024.3.1)+
 - JDK 21
-- Android SDK (compileSdk 36, minSdk 24)
+- Android SDK — `compileSdk` 36, `minSdk` 26 (Android 8.0+)
 
 ## Build & Run
+
 1. Open the `mobile/` folder in Android Studio (it contains the Gradle project).
 2. Let Gradle sync.
-3. Run the `app` configuration on an emulator (Android 8.0+) or a physical device.
+3. Run the `app` configuration on a device or emulator.
 
 CLI alternative (with a local Android SDK configured):
+
 ```
 cd mobile
 ./gradlew assembleDebug      # build APK -> app/build/outputs/apk/debug/
 ./gradlew installDebug       # install on a connected device/emulator
+./gradlew test               # unit tests
 ```
 
-## What to test (driver workflows)
-- **Splash → Sign In**: auto-advances after 2s. Sign In now validates email/password
-  (try empty fields and a value without "@"). Sign Up validates all fields,
-  agency selection, password length, and password match.
-- **Home**: shows the signed-in driver's agency logo and assigned vehicle (static),
-  including when it was last inspected. Tapping the vehicle card or the "Vehicle
-  Info" quick action opens the Vehicle Information screen directly. Pull down to
-  refresh (simulated).
-- **BLOWBAGETS Inspection** (Inspect tab): if no inspection was submitted today,
-  "Start New Inspection" opens the checklist form. If one was already submitted,
-  the tab shows today's result with a "View Today's Inspection" button and a
-  "Submit Another Inspection" option behind a confirmation warning. On the form,
-  items carry their BLOWBAGETS acronym letter, the progress bar and submit button
-  stay pinned at the bottom, and each item is marked **OK** or **Has Issue**
-  (48dp touch targets); flagged items require **Remarks**. BFP vehicles include
-  the 2 extra items (Hydraulic System, Fire Pump). Submit is blocked until all
-  items are marked and all flagged items have remarks, then a confirmation lists
-  any flagged items. Tap any history entry to view its full per-item results
-  and remarks.
-- **Damage Report** (Damage tab): vehicle info is read-only/auto-filled. Nature of
-  Damage is required; photo attachment is an optional mock toggle. Submit shows a
-  "Pending" confirmation and resets the form. History badges use dedicated report
-  colors (slate Pending, navy Reviewed) so the vehicle status palette keeps a
-  single meaning.
-- **Alerts**: unread count badge on the bottom-nav bell; pull down to refresh
-  (simulated).
-- **Profile**: driver details + agency logo badge; Sign Out returns to Sign In.
+## Connecting to the backend
 
-## Per-agency demo data
-On the **Sign In** screen, the "Sign in as" chips (BFP / PNP / CDRRMO / CHO)
-choose which agency account to enter. The whole app then reflects that agency:
-driver, assigned vehicle, logo, inspection history, damage reports, notifications,
-and recent activity. Each account is self-contained and exercises the full range
-of states:
-- **Current vehicle status differs per agency** — BFP Operational (green),
-  PNP Dispatched (blue), CDRRMO Under Preventive Maintenance (orange),
-  CHO Not Operational (red).
-- Inspection history mixes *All OK* and *Has Issues* results. BFP, CDRRMO, and
-  CHO have already inspected today; **PNP has not**, so it demos the
-  "Start New Inspection" state.
-- Damage reports include both *Pending* and *Reviewed*.
-- Notifications/recent activity walk the vehicle through all four statuses and
-  both driver notification types (PM Reminder, Vehicle Status Update).
-- PNP's driver (Mark Santos) has an **expiring license**, shown on Profile.
+The base URL lives in one place — `BASE_URL` in `data/remote/ApiClient.kt`.
 
-All data lives in `data/SampleData.kt`; the signed-in account is held in
-`data/Session.kt`. To switch agencies, Sign Out and pick a different chip.
+**Real phone over USB (the method used in testing).** No Wi-Fi, no IP address, no firewall
+changes: `adb reverse` forwards the phone's own `127.0.0.1:8000` through the cable to the
+laptop.
+
+1. On the phone: enable **Developer Options** (tap Build Number 7 times) → **USB Debugging**.
+   Plug in and tap **Allow**.
+2. On the laptop: `php artisan serve --port=8000` in `backend/`.
+3. Once per session: `adb reverse tcp:8000 tcp:8000` (check with `adb devices`).
+4. Leave `BASE_URL` at `http://127.0.0.1:8000/api/v1/` and run the app.
+
+**Emulator:** change `BASE_URL` to `http://10.0.2.2:8000/api/v1/` — the emulator's alias for
+the host's localhost. No `adb reverse` needed. Push notifications require an emulator image
+**with Google Play**.
+
+**Same Wi-Fi:** serve with `--host=0.0.0.0`, point `BASE_URL` at the laptop's IPv4 address, and
+allow port 8000 through the firewall.
+
+Cleartext traffic is permitted to `127.0.0.1` and `10.0.2.2` only, via
+`network_security_config` — a development affordance, not a production setting.
+
+Sign in with a seeded driver, e.g. `ramon.villanueva@rvms.local` / `password`. A driver who
+self-registers from the Sign Up screen starts **pending** and cannot sign in until their agency
+administrator approves them on the web dashboard (FR-03).
+
+## Structure
+
+```
+app/src/main/java/com/example/rvms/
+├── data/
+│   ├── remote/          Retrofit ApiService, ApiClient, AuthInterceptor, error mapping, DTOs
+│   ├── *Repository.kt   Auth, Vehicle, Inspection, Damage, Notification
+│   ├── SessionManager   The signed-in driver, backed by /me + the token store
+│   ├── TokenStore       DataStore-backed token persistence
+│   ├── FetchResult      Success / Failure — how "the server said none" is kept distinct
+│   │                    from "the server could not be reached"
+│   └── ServiceLocator   Wiring
+├── push/                FCM device-token registration + the messaging service
+├── ui/                  Compose screens (auth, home, vehicle, inspection, damage,
+│                        notification, profile, shell, splash) + shared UI in ui/common
+└── theme/               Colors, typography
+```
+
+## Driver workflows
+
+- **Splash → Sign In**: a saved token routes straight into the app; otherwise Sign In. Sign In
+  surfaces the API's own refusal reasons (bad credentials, pending approval, rejected).
+- **Home**: agency logo, greeting, the driver's **assigned vehicle** with its live four-value
+  status badge, **License Status**, and recent inspections. Pull to refresh; it also refreshes
+  every time the app returns to the foreground, so a status change announced by a push is
+  already applied when the driver opens the app.
+- **Vehicle Info**: every vehicle assigned to this driver — a driver may be the primary driver
+  of more than one.
+- **BLOWBAGETS Inspection** (Inspect tab): the checklist is built from the live catalog, so a
+  **BFP driver gets 14 items** (the standard 12 plus Hydraulic System and Fire Pump) and other
+  agencies get 12. Each item is marked **OK** or **Has Issue**; a flagged item **requires
+  remarks**, blocked client-side to match the API's 422. History and per-item detail come from
+  the driver's own real submissions.
+- **Damage Report** (Damage tab): vehicle details auto-filled, nature of damage required, photo
+  optional, submitted as multipart. History shows each report's real review status.
+- **Alerts**: the driver's notification inbox with an unread badge on the bottom nav; tap to
+  mark read, or mark all read. Push notifications arrive via FCM even when the app is closed.
+- **Profile**: the driver's own details and licence status; self-edit name, email, and password
+  (FR-04). Leaving the password blank leaves it unchanged.
+
+## Offline behaviour
+
+Every repository returns a `FetchResult`, so a failed call is never mistaken for an empty
+result. A driver in the field with no signal sees **"Cannot reach the server"** with a retry —
+not "No Vehicle Assigned", which would be a confident wrong answer. Records already on screen
+stay there; only the banner is added.
+
+## Tests
+
+```bash
+./gradlew test
+```
+
+Covers DTO serialization, the auth interceptor attaching the bearer token, each repository's
+success/failure mapping (including 401/403/422), `SessionManager`'s offline behaviour, the
+licence-state calculation shared with the dashboard, and formatting helpers.

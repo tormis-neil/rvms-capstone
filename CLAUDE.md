@@ -1372,8 +1372,10 @@ Sub-tasks, in priority order (effort is a working estimate, not a promise):
      status writes; single-status consistency across all modules. Consistent JSON envelope +
      API contract notes for the Android build.
 
-  8. **Multi-device / concurrency test plan — 3h (document).** Written like
-     `docs/manual-testing-r7-r9.md`. What to deliberately attack:
+  8. **Multi-device / concurrency test plan — 3h (document).** *(The written plan was folded
+     into the final demo plan and the phase's own manual checklist when the loose per-phase
+     testing documents were retired, 2026-08 — `backend/docs/` now holds `security-audit.md`
+     alone. What it must cover is unchanged.)* What to deliberately attack:
        - two admins of the same agency opening a dispatch on the SAME vehicle at the same
          instant (`DispatchGuard` locks rows for exactly this and has never been raced by real
          humans);
