@@ -20,22 +20,28 @@ class NotificationController extends Controller
 {
     public function index(Request $request): View
     {
+        // Paginated (R10.4, NFR-01): an admin inbox accumulates for as long
+        // as the account exists, and Clear Read is optional housekeeping, not
+        // a guarantee. The Today/Yesterday/Earlier grouping applies WITHIN the
+        // page — headings repeat across pages, which reads naturally.
         $notifications = Notification::query()
             ->forUser($request->user()->id)
             ->latest('created_at')
             ->latest('id')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
 
-        // The prototype groups the page under Today / Yesterday / Earlier and
-        // renders nothing for an empty group (agency.js renderNotificationsPage).
-        $groups = $notifications->groupBy(fn (Notification $n) => $n->group());
+        $groups = $notifications->getCollection()->groupBy(fn (Notification $n) => $n->group());
+
+        // True totals from their own queries — the buttons' states must not
+        // depend on which page happens to be open.
+        $base = fn () => Notification::query()->forUser($request->user()->id);
 
         return view('notifications', [
             'groups' => $groups,
-            'unreadCount' => $notifications->where('is_read', false)->count(),
-            // Drives the Clear Read button's disabled state and the count the
-            // confirmation names, so the admin knows what they are removing.
-            'readCount' => $notifications->where('is_read', true)->count(),
+            'paginator' => $notifications,
+            'unreadCount' => (clone $base())->unread()->count(),
+            'readCount' => (clone $base())->where('is_read', true)->count(),
         ]);
     }
 

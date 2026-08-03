@@ -24,13 +24,20 @@ class InspectionController extends Controller
 {
     public function index(Request $request): View
     {
+        // Both tables paginated with their own page parameter (R10.4, NFR-01):
+        // inspections arrive daily per driver per vehicle, the fastest-growing
+        // table in the system. The pending pills count the TRUE totals with
+        // their own queries, so they can never shrink to the visible page.
         $inspections = Inspection::query()
             ->with(['vehicle', 'driver', 'items.checklistItem'])
             ->latest('inspection_date')
             ->latest('id')
-            ->get();
+            ->paginate(10, ['*'], 'inspections_page')
+            ->withQueryString();
 
-        $pendingCount = $inspections->where('review_status', Inspection::STATUS_PENDING)->count();
+        $pendingCount = Inspection::query()
+            ->where('review_status', Inspection::STATUS_PENDING)
+            ->count();
 
         $frequentIssues = $this->frequentIssues($request->user()->agency_id);
 
@@ -39,9 +46,12 @@ class InspectionController extends Controller
             ->with(['vehicle', 'driver', 'reviewer'])
             ->latest('date_reported')
             ->latest('id')
-            ->get();
+            ->paginate(10, ['*'], 'damage_page')
+            ->withQueryString();
 
-        $damagePendingCount = $damageReports->where('status', DamageReport::STATUS_PENDING)->count();
+        $damagePendingCount = DamageReport::query()
+            ->where('status', DamageReport::STATUS_PENDING)
+            ->count();
 
         return view('inspections', compact(
             'inspections', 'pendingCount', 'frequentIssues', 'damageReports', 'damagePendingCount'

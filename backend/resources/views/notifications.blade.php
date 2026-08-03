@@ -57,6 +57,15 @@
                     @endif
                 @endforeach
 
+                @if ($paginator->hasPages())
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    {{-- Paginated (R10.4, NFR-01) — the prototype's footer wording, without a
+                         table to sit under. Grouping applies within the page. --}}
+                    <span class="small text-secondary">Showing {{ $paginator->firstItem() ?? 0 }} to {{ $paginator->lastItem() ?? 0 }} of {{ $paginator->total() }} notifications</span>
+                    {!! $paginator->links('vendor.pagination.rvms') !!}
+                </div>
+                @endif
+
                 @if ($groups->isEmpty())
                 <div class="card border-0 shadow-sm rounded-3">
                     <div class="card-body text-center text-secondary py-5">

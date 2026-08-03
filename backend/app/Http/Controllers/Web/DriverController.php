@@ -35,7 +35,9 @@ class DriverController extends Controller
                     ->orWhere('license_number', 'like', $term));
             })
             ->when($request->filled('license_status'), fn ($q) => $q->whereIn('id', $this->driverIdsWithLicenseStatus($agencyId, $request->string('license_status'))))
-            ->with('vehicles')
+            // 'agency' too: licenseStatus() reads the agency's warning window,
+            // so without it every table row costs one extra query (R10.4 N+1).
+            ->with(['vehicles', 'agency'])
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString();
@@ -48,7 +50,7 @@ class DriverController extends Controller
             ->orderBy('created_at')
             ->get();
 
-        $allDrivers = User::query()->drivers()->where('agency_id', $agencyId)->where('status', User::STATUS_ACTIVE)->get();
+        $allDrivers = User::query()->drivers()->with('agency')->where('agency_id', $agencyId)->where('status', User::STATUS_ACTIVE)->get();
         $licenseCounts = ['Valid' => 0, 'Expiring Soon' => 0, 'Expired' => 0];
         foreach ($allDrivers as $driver) {
             if ($status = $driver->licenseStatus()) {

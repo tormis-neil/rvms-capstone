@@ -99,6 +99,8 @@
                             </tbody>
                         </table>
                     </div>
+                    {{-- Paginated (R10.4, NFR-01) — documented addition using the established card-footer convention. --}}
+                    @include('partials.table-footer', ['paginator' => $dispatches, 'label' => 'dispatches'])
                 </div>
 @endsection
 
