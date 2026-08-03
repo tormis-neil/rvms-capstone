@@ -58,7 +58,7 @@ class VehicleRepositoryTest {
             ),
         )
 
-        val vehicles = repo.myVehicles()
+        val vehicles = repo.myVehicles().dataOrNull.orEmpty()
 
         assertEquals(1, vehicles.size)
         assertEquals("ABC-1234", vehicles[0].plateNumber)
@@ -81,23 +81,43 @@ class VehicleRepositoryTest {
             ),
         )
 
-        val vehicles = repo.myVehicles()
+        val vehicles = repo.myVehicles().dataOrNull.orEmpty()
 
         assertEquals(2, vehicles.size)
         assertEquals("DEF-5678", vehicles[1].plateNumber)
     }
 
+    /** The server answering "none" is a real, distinct outcome (FR-07). */
     @Test
-    fun `no vehicle assigned yields an empty list`() = runTest {
+    fun `no vehicle assigned is a SUCCESS carrying an empty list`() = runTest {
         server.enqueue(MockResponse().setResponseCode(200).setBody("""{"data":[]}"""))
 
-        assertTrue(repo.myVehicles().isEmpty())
+        val result = repo.myVehicles()
+
+        assertTrue(result is FetchResult.Success)
+        assertTrue(result.dataOrNull.orEmpty().isEmpty())
     }
 
+    /**
+     * R10 sub-task 1: a failed request is a FAILURE, never an empty list.
+     * The old behaviour collapsed both into emptyList(), so a driver with no
+     * signal was told "No Vehicle Assigned" — a confident wrong answer.
+     */
     @Test
-    fun `a failed request yields an empty list rather than throwing`() = runTest {
+    fun `a failed request is a Failure not an empty list`() = runTest {
         server.enqueue(MockResponse().setResponseCode(500))
 
-        assertTrue(repo.myVehicles().isEmpty())
+        val result = repo.myVehicles()
+
+        assertTrue(result is FetchResult.Failure)
+        assertEquals(FetchResult.OFFLINE_MESSAGE, result.errorOrNull)
+    }
+
+    /** A dead connection maps the same way — and never throws. */
+    @Test
+    fun `an unreachable server is a Failure not a crash`() = runTest {
+        server.shutdown()
+
+        assertTrue(repo.myVehicles() is FetchResult.Failure)
     }
 }

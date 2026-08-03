@@ -46,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.rvms.data.ServiceLocator
 import com.example.rvms.data.remote.dto.NotificationDto
+import com.example.rvms.ui.common.ConnectionErrorCard
 import com.example.rvms.ui.common.RefreshOnResume
 import com.example.rvms.ui.common.ScreenHeader
 import com.example.rvms.theme.Background
@@ -81,12 +82,19 @@ fun NotificationScreen(
     var isRefreshing by remember { mutableStateOf(false) }
     var loaded by remember { mutableStateOf(false) }
 
+    var loadError by remember { mutableStateOf<String?>(null) }
+
     suspend fun load() {
-        val inbox = ServiceLocator.notificationRepository.inbox()
-        notifications.clear()
-        notifications.addAll(inbox.notifications)
-        unreadCount = inbox.unreadCount
-        onUnreadCountChanged(inbox.unreadCount)
+        val result = ServiceLocator.notificationRepository.inbox()
+        // Replaced only on success — an unreachable server must not blank the
+        // inbox and read as "nothing has happened" (R10 sub-task 1).
+        result.dataOrNull?.let { inbox ->
+            notifications.clear()
+            notifications.addAll(inbox.notifications)
+            unreadCount = inbox.unreadCount
+            onUnreadCountChanged(inbox.unreadCount)
+        }
+        loadError = result.errorOrNull
         loaded = true
     }
 
@@ -142,7 +150,14 @@ fun NotificationScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            if (loaded && notifications.isEmpty()) {
+            loadError?.let { message ->
+                ConnectionErrorCard(message = message, staleDataShown = notifications.isNotEmpty())
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            // The empty state is only truthful when the server actually
+            // answered "empty" (R10 sub-task 1).
+            if (loaded && notifications.isEmpty() && loadError == null) {
                 EmptyInbox()
             }
 

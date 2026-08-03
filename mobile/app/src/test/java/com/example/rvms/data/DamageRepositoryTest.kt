@@ -102,7 +102,7 @@ class DamageRepositoryTest {
             ),
         )
 
-        val history = repo.history()
+        val history = repo.history().dataOrNull.orEmpty()
 
         assertEquals(1, history.size)
         assertEquals("Dented bumper", history[0].natureOfDamage)
@@ -113,6 +113,7 @@ class DamageRepositoryTest {
     fun `history is empty on a failed request`() = runTest {
         server.enqueue(MockResponse().setResponseCode(500))
 
-        assertTrue(repo.history().isEmpty())
+        // R10 sub-task 1: a failure is reported, not disguised as no records.
+        assertTrue(repo.history() is FetchResult.Failure)
     }
 }

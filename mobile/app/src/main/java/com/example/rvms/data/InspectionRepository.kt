@@ -17,8 +17,9 @@ sealed interface SubmitInspectionResult {
 /**
  * The driver's daily inspection flow (FR-09): fetch the agency-correct
  * checklist (14 for BFP, 12 for others), submit a completed inspection, and
- * read the driver's own history/detail. History/detail return empty/null on
- * failure so a fresh account simply shows an empty history rather than an error.
+ * read the driver's own history/detail. Reads distinguish "no records" from
+ * "could not reach the server" (R10 sub-task 1): an empty history is a fresh
+ * account; a failure is something the driver can fix by reconnecting.
  */
 class InspectionRepository(private val api: ApiService) {
 
@@ -29,11 +30,13 @@ class InspectionRepository(private val api: ApiService) {
         emptyList()
     }
 
-    suspend fun history(): List<InspectionDto> = try {
+    suspend fun history(): FetchResult<List<InspectionDto>> = fetchCatching {
         val response = api.myInspections()
-        if (response.isSuccessful) response.body()?.data.orEmpty() else emptyList()
-    } catch (e: Exception) {
-        emptyList()
+        if (response.isSuccessful) {
+            FetchResult.Success(response.body()?.data.orEmpty())
+        } else {
+            FetchResult.Failure(FetchResult.OFFLINE_MESSAGE)
+        }
     }
 
     suspend fun detail(id: Long): InspectionDto? = try {

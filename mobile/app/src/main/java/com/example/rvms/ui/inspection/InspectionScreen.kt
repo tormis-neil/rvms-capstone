@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rvms.data.ServiceLocator
 import com.example.rvms.data.remote.dto.InspectionDto
+import com.example.rvms.ui.common.ConnectionErrorCard
 import com.example.rvms.ui.common.RefreshOnResume
 import com.example.rvms.ui.common.ScreenHeader
 import com.example.rvms.ui.common.formatIsoDate
@@ -90,14 +91,20 @@ fun InspectionScreen(
     var loaded by remember { mutableStateOf(false) }
     var vehicleLabel by remember { mutableStateOf("") }
     var isRefreshing by remember { mutableStateOf(false) }
+    var loadError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     suspend fun load() {
-        val fresh = ServiceLocator.inspectionRepository.history()
-        history.clear()
-        history.addAll(fresh)
-        val vehicle = ServiceLocator.vehicleRepository.myVehicles().firstOrNull()
-        vehicleLabel = vehicle?.let { "${it.type} — ${it.plateNumber}" }.orEmpty()
+        val historyResult = ServiceLocator.inspectionRepository.history()
+        // Replaced only on success: a failed refresh keeps the last known
+        // history on screen with the banner saying so (R10 sub-task 1).
+        historyResult.dataOrNull?.let { fresh ->
+            history.clear()
+            history.addAll(fresh)
+        }
+        val vehicle = ServiceLocator.vehicleRepository.myVehicles().dataOrNull?.firstOrNull()
+        vehicle?.let { vehicleLabel = "${it.type} — ${it.plateNumber}" }
+        loadError = historyResult.errorOrNull
         loaded = true
     }
 
@@ -134,6 +141,11 @@ fun InspectionScreen(
         )
 
         Spacer(modifier = Modifier.height(20.dp))
+
+        loadError?.let { message ->
+            ConnectionErrorCard(message = message, staleDataShown = history.isNotEmpty())
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
         if (todaysInspection == null) {
             // No inspection yet today — primary call to action

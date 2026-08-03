@@ -15,16 +15,19 @@ sealed interface SubmitDamageResult {
 
 /**
  * The driver's damage-report flow (FR-11): file a report (photo optional) and
- * read the driver's own history. History returns empty on failure so a fresh
- * account simply shows no reports.
+ * read the driver's own history. A read distinguishes "no reports yet" from
+ * "could not reach the server" (R10 sub-task 1) — the first is a fresh
+ * account, the second is something the driver can act on.
  */
 class DamageRepository(private val api: ApiService) {
 
-    suspend fun history(): List<DamageDto> = try {
+    suspend fun history(): FetchResult<List<DamageDto>> = fetchCatching {
         val response = api.myDamageReports()
-        if (response.isSuccessful) response.body()?.data.orEmpty() else emptyList()
-    } catch (e: Exception) {
-        emptyList()
+        if (response.isSuccessful) {
+            FetchResult.Success(response.body()?.data.orEmpty())
+        } else {
+            FetchResult.Failure(FetchResult.OFFLINE_MESSAGE)
+        }
     }
 
     /**

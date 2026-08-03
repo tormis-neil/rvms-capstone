@@ -18,7 +18,7 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 /**
  * Proves InspectionRepository maps the FR-09 endpoints: the agency-correct
  * checklist (14 vs 12 by payload), submit success/422, and the driver's own
- * history (mapped, empty on failure).
+ * history (mapped; a failure is a distinct outcome, R10 sub-task 1).
  */
 class InspectionRepositoryTest {
 
@@ -130,17 +130,18 @@ class InspectionRepositoryTest {
             ),
         )
 
-        val history = repo.history()
+        val history = repo.history().dataOrNull.orEmpty()
 
         assertEquals(1, history.size)
         assertEquals(5L, history[0].id)
         assertEquals("Brakes", history[0].items.first().name)
     }
 
+    /** R10 sub-task 1: a failure is reported, not disguised as no records. */
     @Test
-    fun `history is empty on a failed request`() = runTest {
+    fun `history reports a failure rather than an empty list`() = runTest {
         server.enqueue(MockResponse().setResponseCode(500))
 
-        assertTrue(repo.history().isEmpty())
+        assertTrue(repo.history() is FetchResult.Failure)
     }
 }

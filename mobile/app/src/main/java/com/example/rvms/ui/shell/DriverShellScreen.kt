@@ -74,7 +74,12 @@ fun DriverShellScreen(
     var unreadAlerts by remember { mutableIntStateOf(0) }
 
     suspend fun refreshUnread() {
-        unreadAlerts = ServiceLocator.notificationRepository.inbox().unreadCount
+        // On failure the badge keeps its last value rather than dropping to
+        // zero — a lost connection must not read as "no unread alerts"
+        // (R10 sub-task 1).
+        ServiceLocator.notificationRepository.inbox().dataOrNull?.let {
+            unreadAlerts = it.unreadCount
+        }
     }
 
     LaunchedEffect(selectedTab) { refreshUnread() }

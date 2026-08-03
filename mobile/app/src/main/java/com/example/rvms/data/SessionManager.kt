@@ -41,10 +41,23 @@ class SessionManager(
         return loadMe()
     }
 
-    /** Fetch the authenticated user; on 401 the token is stale, so clear it. */
-    suspend fun loadMe(): Boolean {
+    /**
+     * Fetch the authenticated user; on 401 the token is stale, so clear it.
+     *
+     * Never throws (R10 sub-task 1). Every repository already caught its own
+     * network failures, but this did not — and it is called from three places
+     * that run unattended: bootstrap() at cold start, and the resume refresh
+     * on Home and Profile. On a dead connection the exception escaped into a
+     * coroutine and took the app down, which is the one failure a driver in
+     * the field cannot work around.
+     *
+     * A network failure returns false and leaves the cached user ALONE: being
+     * briefly offline is no reason to forget who is signed in. Only a 401 —
+     * the server actively rejecting the token — clears the session.
+     */
+    suspend fun loadMe(): Boolean = try {
         val response = api.me()
-        return if (response.isSuccessful) {
+        if (response.isSuccessful) {
             _currentUser.value = response.body()?.user
             true
         } else {
@@ -54,6 +67,8 @@ class SessionManager(
             }
             false
         }
+    } catch (t: Throwable) {
+        false
     }
 
     /**

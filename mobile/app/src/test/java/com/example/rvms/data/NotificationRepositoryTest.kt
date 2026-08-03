@@ -23,7 +23,7 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
  *
  * Drivers receive two of the nine types — Vehicle_Status_Update and
  * PM_Reminder — and the API filters by user id, so the app never has to.
- * Reads degrade to an empty inbox rather than an error: a driver in the field
+ * A read failure is a distinct outcome (R10 sub-task 1): a driver in the field
  * with no signal should see "no notifications", not a crash.
  */
 class NotificationRepositoryTest {
@@ -104,7 +104,7 @@ class NotificationRepositoryTest {
             ),
         )
 
-        val inbox = repo.inbox()
+        val inbox = repo.inbox().dataOrNull!!
 
         assertEquals(2, inbox.notifications.size)
         assertEquals(1, inbox.unreadCount)
@@ -159,7 +159,7 @@ class NotificationRepositoryTest {
             ),
         )
 
-        val inbox = repo.inbox()
+        val inbox = repo.inbox().dataOrNull!!
 
         assertEquals(3, inbox.notifications.size)
         assertEquals(3, inbox.unreadCount)
@@ -181,7 +181,7 @@ class NotificationRepositoryTest {
             ),
         )
 
-        val inbox = repo.inbox()
+        val inbox = repo.inbox().dataOrNull!!
 
         assertEquals(1, inbox.notifications.size)
         assertEquals(null, inbox.notifications.first().payload)
@@ -191,7 +191,7 @@ class NotificationRepositoryTest {
     fun `an empty inbox maps to no notifications`() = runTest {
         server.enqueue(jsonResponse("""{"data":[],"meta":{"unread_count":0}}"""))
 
-        val inbox = repo.inbox()
+        val inbox = repo.inbox().dataOrNull!!
 
         assertTrue(inbox.notifications.isEmpty())
         assertEquals(0, inbox.unreadCount)
@@ -202,7 +202,7 @@ class NotificationRepositoryTest {
     fun `a server error degrades to an empty inbox`() = runTest {
         server.enqueue(MockResponse().setResponseCode(500))
 
-        val inbox = repo.inbox()
+        val inbox = repo.inbox().dataOrNull!!
 
         assertTrue(inbox.notifications.isEmpty())
         assertEquals(0, inbox.unreadCount)

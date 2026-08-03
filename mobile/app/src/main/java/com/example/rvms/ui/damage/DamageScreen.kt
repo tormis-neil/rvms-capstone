@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rvms.data.ServiceLocator
 import com.example.rvms.data.remote.dto.DamageDto
+import com.example.rvms.ui.common.ConnectionErrorCard
 import com.example.rvms.ui.common.RefreshOnResume
 import com.example.rvms.ui.common.ScreenHeader
 import com.example.rvms.ui.common.formatIsoDate
@@ -70,14 +71,20 @@ fun DamageScreen(
     var loaded by remember { mutableStateOf(false) }
     var vehicleLabel by remember { mutableStateOf("") }
     var isRefreshing by remember { mutableStateOf(false) }
+    var loadError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     suspend fun load() {
-        val fresh = ServiceLocator.damageRepository.history()
-        reports.clear()
-        reports.addAll(fresh)
-        val vehicle = ServiceLocator.vehicleRepository.myVehicles().firstOrNull()
-        vehicleLabel = vehicle?.let { "${it.type} — ${it.plateNumber}" }.orEmpty()
+        val historyResult = ServiceLocator.damageRepository.history()
+        // Replaced only on success: a failed refresh keeps the last known
+        // reports on screen with the banner saying so (R10 sub-task 1).
+        historyResult.dataOrNull?.let { fresh ->
+            reports.clear()
+            reports.addAll(fresh)
+        }
+        val vehicle = ServiceLocator.vehicleRepository.myVehicles().dataOrNull?.firstOrNull()
+        vehicle?.let { vehicleLabel = "${it.type} — ${it.plateNumber}" }
+        loadError = historyResult.errorOrNull
         loaded = true
     }
 
@@ -110,6 +117,11 @@ fun DamageScreen(
         )
 
         Spacer(modifier = Modifier.height(20.dp))
+
+        loadError?.let { message ->
+            ConnectionErrorCard(message = message, staleDataShown = reports.isNotEmpty())
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
         Button(
             onClick = onSubmitNew,

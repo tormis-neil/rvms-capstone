@@ -12,8 +12,10 @@ import com.example.rvms.data.remote.dto.NotificationDto
  * admin-facing and never reaches this inbox — the API filters by user id, so the
  * app does not have to.
  *
- * Reads degrade to an empty inbox rather than an error state: a driver in the
- * field with no signal should see "no notifications", not a crash.
+ * A read distinguishes an empty inbox from an unreachable server (R10
+ * sub-task 1). Both used to render as "no notifications", which told a driver
+ * with no signal that nothing had happened — the one thing an alerts screen
+ * must never say wrongly.
  */
 class NotificationRepository(private val api: ApiService) {
 
@@ -22,19 +24,19 @@ class NotificationRepository(private val api: ApiService) {
         val unreadCount: Int = 0,
     )
 
-    suspend fun inbox(): Inbox = try {
+    suspend fun inbox(): FetchResult<Inbox> = fetchCatching {
         val response = api.notifications()
         if (response.isSuccessful) {
             val body = response.body()
-            Inbox(
-                notifications = body?.data.orEmpty(),
-                unreadCount = body?.meta?.unreadCount ?: 0,
+            FetchResult.Success(
+                Inbox(
+                    notifications = body?.data.orEmpty(),
+                    unreadCount = body?.meta?.unreadCount ?: 0,
+                ),
             )
         } else {
-            Inbox()
+            FetchResult.Failure(FetchResult.OFFLINE_MESSAGE)
         }
-    } catch (e: Exception) {
-        Inbox()
     }
 
     /** Idempotent server-side: re-reading keeps the original read_at. */
