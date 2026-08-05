@@ -57,7 +57,8 @@ class UpdateProfileTest {
 
     @After
     fun tearDown() {
-        server.shutdown()
+        // Some tests shut the server down themselves; a second call is a no-op.
+        runCatching { server.shutdown() }
     }
 
     private fun userBody(name: String, email: String) =

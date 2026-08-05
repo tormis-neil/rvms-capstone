@@ -68,10 +68,20 @@ class FcmTransportFactory
         return $this->fallbackReason;
     }
 
-    /** An absolute path to the service-account key, however it was written. */
+    /**
+     * An absolute path to the service-account key, however it was written.
+     *
+     * A leading slash counts on EVERY platform, not just the one whose
+     * DIRECTORY_SEPARATOR happens to match. Testing against the separator meant
+     * a Unix-style `/etc/rvms/firebase.json` was read as relative on Windows
+     * and quietly prefixed with the project directory, producing a path that
+     * cannot exist — and the only symptom would have been the factory falling
+     * back to the log while `.env` looked correct.
+     */
     public static function resolvePath(string $credentials): string
     {
-        $isAbsolute = str_starts_with($credentials, DIRECTORY_SEPARATOR)
+        $isAbsolute = str_starts_with($credentials, '/')
+            || str_starts_with($credentials, '\\')
             || (bool) preg_match('/^[A-Za-z]:[\\\\\/]/', $credentials); // C:\... on Windows
 
         return $isAbsolute ? $credentials : base_path($credentials);

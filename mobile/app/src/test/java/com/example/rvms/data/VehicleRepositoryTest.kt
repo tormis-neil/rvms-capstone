@@ -43,7 +43,8 @@ class VehicleRepositoryTest {
 
     @After
     fun tearDown() {
-        server.shutdown()
+        // Some tests shut the server down themselves; a second call is a no-op.
+        runCatching { server.shutdown() }
     }
 
     @Test
