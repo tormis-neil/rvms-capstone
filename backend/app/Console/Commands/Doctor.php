@@ -88,9 +88,7 @@ class Doctor extends Command
         // APP_DEBUG on a machine an agency can reach puts stack traces —
         // including database credentials — on screen for anyone who triggers
         // an error (security audit ticket T7).
-        $isDevelopment = in_array($env, ['local', 'testing'], true);
-
-        if ($debug && ! $isDevelopment) {
+        if ($debug && ! $this->isDevelopment()) {
             $this->failed('APP_DEBUG is ON outside development', "APP_ENV={$env}. Stack traces expose database credentials. Set APP_DEBUG=false.");
         } elseif ($debug) {
             $this->warning("APP_DEBUG is on (APP_ENV={$env})", 'Correct for development. It MUST be false on the deployment machine.');
@@ -264,11 +262,28 @@ class Doctor extends Command
             ->filter(fn (User $user) => Hash::check('password', $user->password))
             ->count();
 
-        if ($demoPasswords > 0 && ! app()->environment('local')) {
+        if ($demoPasswords > 0 && ! $this->isDevelopment()) {
             $this->failed("{$demoPasswords} account(s) still use the seeded demo password", 'Change them before the system is reachable by anyone else.');
         } elseif ($demoPasswords > 0) {
             $this->warning("{$demoPasswords} account(s) use the seeded demo password", 'Expected locally; must be changed before deployment.');
         }
+    }
+
+    /**
+     * One definition of "a developer's machine", shared by every check that
+     * needs it.
+     *
+     * Both the debug-mode check and the demo-password check ask this question,
+     * and they used to answer it differently: one accepted `local` and
+     * `testing`, the other only `local`. Under `APP_ENV=testing` the seeded
+     * password therefore became a hard failure, so the command reported a
+     * clean deployment as broken — caught by `a healthy deployment exits zero`,
+     * which only runs on a checkout that has had `storage:link` run. Answering
+     * it in one place is what stops the two drifting apart again.
+     */
+    private function isDevelopment(): bool
+    {
+        return in_array(app()->environment(), ['local', 'testing'], true);
     }
 
     /* ------------------------------- output ------------------------------- */

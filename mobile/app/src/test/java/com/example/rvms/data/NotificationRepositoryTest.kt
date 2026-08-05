@@ -24,7 +24,8 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
  * Drivers receive two of the nine types — Vehicle_Status_Update and
  * PM_Reminder — and the API filters by user id, so the app never has to.
  * A read failure is a distinct outcome (R10 sub-task 1): a driver in the field
- * with no signal should see "no notifications", not a crash.
+ * with no signal must be told the server is unreachable, never that nothing
+ * has happened.
  */
 class NotificationRepositoryTest {
 
@@ -49,7 +50,8 @@ class NotificationRepositoryTest {
 
     @After
     fun tearDown() {
-        server.shutdown()
+        // Some tests shut the server down themselves; a second call is a no-op.
+        runCatching { server.shutdown() }
     }
 
     private fun jsonResponse(body: String) = MockResponse()
@@ -197,22 +199,45 @@ class NotificationRepositoryTest {
         assertEquals(0, inbox.unreadCount)
     }
 
-    /** A failure must look like an empty inbox, never an exception. */
+    /**
+     * A failure is reported as a failure — NOT as an empty inbox (R10 sub-task 1).
+     *
+     * These two tests previously asserted the opposite, because that WAS the
+     * behaviour: every error became `emptyList()`, so a driver with no signal
+     * was told nothing had happened. On an alerts screen that is the worst
+     * possible lie, and it is the reason FetchResult exists. The assertions are
+     * inverted deliberately.
+     */
     @Test
-    fun `a server error degrades to an empty inbox`() = runTest {
+    fun `a server error is reported as a failure, not an empty inbox`() = runTest {
         server.enqueue(MockResponse().setResponseCode(500))
 
-        val inbox = repo.inbox().dataOrNull!!
+        val result = repo.inbox()
 
-        assertTrue(inbox.notifications.isEmpty())
-        assertEquals(0, inbox.unreadCount)
+        assertTrue(result is FetchResult.Failure)
+        assertEquals(FetchResult.OFFLINE_MESSAGE, result.errorOrNull)
+        assertEquals(null, result.dataOrNull)
     }
 
     @Test
-    fun `an unauthenticated response degrades to an empty inbox`() = runTest {
+    fun `an unauthenticated response is reported as a failure`() = runTest {
         server.enqueue(MockResponse().setResponseCode(401))
 
-        assertTrue(repo.inbox().notifications.isEmpty())
+        val result = repo.inbox()
+
+        assertTrue(result is FetchResult.Failure)
+        assertEquals(null, result.dataOrNull)
+    }
+
+    /** A dropped connection is the case the driver actually hits in the field. */
+    @Test
+    fun `an unreachable server is reported as a failure`() = runTest {
+        server.shutdown()
+
+        val result = repo.inbox()
+
+        assertTrue(result is FetchResult.Failure)
+        assertEquals(FetchResult.OFFLINE_MESSAGE, result.errorOrNull)
     }
 
     @Test
