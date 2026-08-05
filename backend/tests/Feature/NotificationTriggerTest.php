@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Services\VehicleStatusWriter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -97,11 +96,13 @@ class NotificationTriggerTest extends TestCase
     {
         Storage::fake('public');
 
+        // Deliberately no photo: this test is about the WORDING of the alert,
+        // and attaching one only tied it to PHP's GD extension (which fakes the
+        // image) for no assertion it ever made. Photo handling is DamageReportTest's.
         $this->actingAs($this->driver, 'sanctum')
             ->postJson('/api/v1/damage-reports', [
                 'vehicle_id' => $this->vehicle->id,
                 'nature_of_damage' => 'Cracked side mirror (driver side).',
-                'photo' => UploadedFile::fake()->image('damage.jpg'),
             ])
             ->assertCreated();
 

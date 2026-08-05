@@ -59,6 +59,7 @@ class DamageReportTest extends TestCase
 
     public function test_driver_files_a_damage_report_with_a_photo(): void
     {
+        $this->requiresImageGeneration();
         Storage::fake('public');
         [, $driver, $vehicle] = $this->driverWithVehicle();
         Sanctum::actingAs($driver);
@@ -102,6 +103,7 @@ class DamageReportTest extends TestCase
     /** The phone camera's real formats all still pass. */
     public function test_jpeg_png_and_webp_photos_are_accepted(): void
     {
+        $this->requiresImageGeneration();
         Storage::fake('public');
         [, $driver, $vehicle] = $this->driverWithVehicle();
         Sanctum::actingAs($driver);
