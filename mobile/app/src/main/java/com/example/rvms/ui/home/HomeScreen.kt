@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,9 +20,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ReportProblem
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -54,6 +55,8 @@ import com.example.rvms.data.remote.dto.VehicleDto
 import com.example.rvms.ui.common.ConnectionErrorCard
 import com.example.rvms.ui.common.LicenseState
 import com.example.rvms.ui.common.RefreshOnResume
+import com.example.rvms.ui.common.formatIsoTime
+import com.example.rvms.ui.common.todayIso
 import com.example.rvms.ui.common.formatIsoDate
 import com.example.rvms.ui.common.formatMileage
 import com.example.rvms.ui.common.licenseBadge
@@ -67,6 +70,7 @@ import kotlinx.coroutines.launch
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
+import com.example.rvms.theme.StatusOperational
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
@@ -86,6 +90,7 @@ fun HomeScreen(
     val currentUser by ServiceLocator.sessionManager.currentUser.collectAsState()
     var vehicles by remember { mutableStateOf<List<VehicleDto>>(emptyList()) }
     var recentInspections by remember { mutableStateOf<List<InspectionDto>>(emptyList()) }
+    var todaysInspection by remember { mutableStateOf<InspectionDto?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
     var loadError by remember { mutableStateOf<String?>(null) }
     var loaded by remember { mutableStateOf(false) }
@@ -104,7 +109,15 @@ fun HomeScreen(
         // the last known fleet on screen instead of blanking it — with the
         // banner below saying so (R10 sub-task 1).
         vehicleResult.dataOrNull?.let { vehicles = it }
-        inspectionResult.dataOrNull?.let { recentInspections = it.take(3) }
+        inspectionResult.dataOrNull?.let { history ->
+            recentInspections = history.take(3)
+            // Computed from the FULL history, not the three shown below. The
+            // Recent Activity list is truncated for display; asking it whether
+            // today's inspection exists would answer "no" for any driver whose
+            // last three submissions happen to be older — a wrong answer to the
+            // one question the card exists to answer.
+            todaysInspection = history.firstOrNull { it.inspectionDate == todayIso() }
+        }
 
         loadError = vehicleResult.errorOrNull ?: inspectionResult.errorOrNull
         loaded = true
@@ -349,26 +362,39 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Two cards, not three, and the first one ANSWERS a question rather than
+        // just linking somewhere (2026-08, lead-reported).
+        //
+        // The old row was three shortcuts to places the driver could already
+        // reach in one tap: "Daily Inspection" and "Report Damage" duplicated
+        // bottom-nav tabs, and "Vehicle Info" duplicated the Assigned Vehicle
+        // card directly above, which is itself tappable. It also used the same
+        // list glyph as the Inspect tab and every Recent Activity row, so the
+        // icon had stopped meaning anything.
+        //
+        // A driver opening the app in the morning has one question — have I done
+        // my inspection today? The nav bar can never answer it; this can, and
+        // that is what earns the space.
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             QuickActionCard(
-                title = "Daily\nInspection",
-                icon = Icons.Default.List,
+                title = "Daily Inspection",
+                subtitle = todaysInspection
+                    ?.let { "Submitted ${formatIsoTime(it.submittedAt)}" }
+                    ?: "Not submitted today",
+                icon = if (todaysInspection != null) Icons.Default.CheckCircle else Icons.Default.Checklist,
+                done = todaysInspection != null,
                 onClick = onNavigateToInspection,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1.4f),
             )
             QuickActionCard(
-                title = "Report\nDamage",
-                icon = Icons.Default.Warning,
+                title = "Report Damage",
+                subtitle = "Something is wrong",
+                icon = Icons.Default.ReportProblem,
+                done = false,
                 onClick = onNavigateToDamageReport,
-                modifier = Modifier.weight(1f),
-            )
-            QuickActionCard(
-                title = "Vehicle\nInfo",
-                icon = Icons.Default.Info,
-                onClick = onNavigateToVehicle,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -398,8 +424,12 @@ fun HomeScreen(
                 ActivityItem(
                     title = "Daily Inspection Submitted",
                     subtitle = if (issues == 0) "All items OK" else "$issues issue(s) found",
-                    time = formatIsoDate(inspection.inspectionDate),
-                    icon = Icons.Default.List,
+                    // Date AND time. A driver may submit more than once in a day
+                    // (the Inspect tab offers "Submit Another"), and with only the
+                    // date those rows rendered as three identical lines that read
+                    // like a display bug rather than three real submissions.
+                    time = "${formatIsoDate(inspection.inspectionDate)} · ${formatIsoTime(inspection.submittedAt)}",
+                    icon = Icons.Default.Checklist,
                     iconTint = NavyBlue,
                 )
             }
@@ -426,16 +456,32 @@ private fun InfoChip(label: String, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * A quick action that reports state as well as offering a tap.
+ *
+ * `subtitle` is what separates this from a bottom-nav tab: the card says
+ * whether the thing has been done, so the driver does not have to open the
+ * screen to find out.
+ *
+ * The title wraps naturally instead of carrying a hardcoded "\n" as it used to.
+ * A baked-in line break survives exactly one font size — at the larger scales a
+ * driver may well be using in the field, it broke in the wrong place, which
+ * NFR-03 cares about.
+ */
 @Composable
 private fun QuickActionCard(
     title: String,
+    subtitle: String,
     icon: ImageVector,
+    done: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val accent = if (done) StatusOperational else NavyBlue
+
     Card(
         modifier = modifier
-            .height(100.dp)
+            .heightIn(min = 108.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
@@ -450,23 +496,31 @@ private fun QuickActionCard(
                 modifier = Modifier
                     .size(32.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(NavyBlue.copy(alpha = 0.1f)),
+                    .background(accent.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = NavyBlue,
+                    tint = accent,
                     modifier = Modifier.size(18.dp),
                 )
             }
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextPrimary,
-                fontWeight = FontWeight.SemiBold,
-                lineHeight = 16.sp,
-            )
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 16.sp,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (done) StatusOperational else TextSecondary,
+                    lineHeight = 14.sp,
+                )
+            }
         }
     }
 }

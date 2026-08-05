@@ -84,6 +84,10 @@ app/src/main/java/com/example/rvms/
   status badge, **License Status**, and recent inspections. Pull to refresh; it also refreshes
   every time the app returns to the foreground, so a status change announced by a push is
   already applied when the driver opens the app.
+  **Quick Actions** carries two cards, not three (2026-08). The first reports whether today's
+  inspection has been **submitted or is still outstanding** — the question a driver actually
+  opens the app to answer, and one the bottom nav can never answer. The third card was dropped
+  because the Assigned Vehicle card above it already navigates to the same screen.
 - **Vehicle Info**: every vehicle assigned to this driver — a driver may be the primary driver
   of more than one.
 - **BLOWBAGETS Inspection** (Inspect tab): the checklist is built from the live catalog, so a
