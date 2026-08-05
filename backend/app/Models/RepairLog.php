@@ -48,12 +48,12 @@ class RepairLog extends Model
 
     public function vehicle(): BelongsTo
     {
-        return $this->belongsTo(Vehicle::class);
+        return $this->belongsTo(Vehicle::class)->withTrashed();
     }
 
     public function driver(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'driver_id');
+        return $this->belongsTo(User::class, 'driver_id')->withTrashed();
     }
 
     /** REPAIR DATE label: "Mon j, Y". */
