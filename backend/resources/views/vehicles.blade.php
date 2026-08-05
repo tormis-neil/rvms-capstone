@@ -93,9 +93,11 @@
                                         <span class="badge status-badge {{ $vehicle->badgeClass() }} px-3 py-2 rounded-pill">{{ $vehicle->status }}</span>
                                     </td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
+                                            <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
+                                            <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                        </div>
                                     </td>
                                 </tr>
                                 @empty

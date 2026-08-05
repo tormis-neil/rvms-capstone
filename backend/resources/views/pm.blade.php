@@ -72,7 +72,7 @@
                                             </td>
                                             <td><span class="badge {{ $pm->statusBadgeClass() }} px-3 py-2 rounded-pill">{{ $pm->status }}</span></td>
                                             <td class="text-end">
-                                                <div class="d-flex align-items-center justify-content-end gap-2">
+                                                <div class="d-flex gap-2 justify-content-end">
                                                     <button class="btn btn-sm btn-success fw-medium js-complete" data-bs-toggle="modal" data-bs-target="#markCompletedModal">Mark Completed</button>
                                                     <button class="btn btn-sm btn-light border js-edit" title="Edit PM Schedule" data-bs-toggle="modal" data-bs-target="#editPmModal"><i class="bi bi-pencil"></i></button>
                                                     {{-- FR-18: the PM screen can release the vehicle it put Under

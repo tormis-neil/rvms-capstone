@@ -166,9 +166,11 @@
                                     </td>
                                     <td>{{ $driver->vehicles->isNotEmpty() ? $driver->vehicles->map(fn ($v) => "{$v->plate_number} ({$v->type})")->implode(', ') : 'Unassigned' }}</td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Update License" data-bs-toggle="modal" data-bs-target="#updateLicenseModal"><i class="bi bi-arrow-clockwise"></i></button>
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
+                                            <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
+                                            <button class="btn btn-sm btn-light border" title="Update License" data-bs-toggle="modal" data-bs-target="#updateLicenseModal"><i class="bi bi-arrow-clockwise"></i></button>
+                                        </div>
                                     </td>
                                 </tr>
                                 @empty

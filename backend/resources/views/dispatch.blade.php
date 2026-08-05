@@ -85,12 +85,14 @@
                                         @endif
                                     </td>
                                     <td class="text-end">
-                                        @if ($d->isActive())
-                                        <button class="btn btn-sm btn-light border js-edit" title="Edit Dispatch" data-bs-toggle="modal" data-bs-target="#editDispatchModal"><i class="bi bi-pencil"></i></button>
-                                        <button class="btn btn-sm btn-primary fw-medium js-close" data-bs-toggle="modal" data-bs-target="#closeDispatchModal">Close Dispatch</button>
-                                        @else
-                                        <button class="btn btn-sm btn-light border js-view" data-bs-toggle="modal" data-bs-target="#viewDispatchModal"><i class="bi bi-eye"></i></button>
-                                        @endif
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            @if ($d->isActive())
+                                            <button class="btn btn-sm btn-light border js-edit" title="Edit Dispatch" data-bs-toggle="modal" data-bs-target="#editDispatchModal"><i class="bi bi-pencil"></i></button>
+                                            <button class="btn btn-sm btn-primary fw-medium js-close" data-bs-toggle="modal" data-bs-target="#closeDispatchModal">Close Dispatch</button>
+                                            @else
+                                            <button class="btn btn-sm btn-light border js-view" data-bs-toggle="modal" data-bs-target="#viewDispatchModal"><i class="bi bi-eye"></i></button>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                                 @empty

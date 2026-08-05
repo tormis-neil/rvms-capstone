@@ -1523,7 +1523,16 @@ Coverage: FR-01–FR-04 (R0/R1/R9; approval flow in R2), FR-05–FR-08 (R2), FR-
    status badge and the row buttons share one), which shifts every cell after REMARKS a column
    left and misplaces the action buttons when the table is scrolled sideways — the cell is split
    in `repairs.blade.php`, since the prototype's own header row is the authority.
-   `TableColumnAlignmentTest` guards every table page against this class of bug.
+   **Second (2026-08, lead-reported):** every ACTIONS cell places its buttons directly in a
+   `text-end` `<td>` with no wrapper and no gap utility, so a narrow column wraps the last
+   button onto its own line and right-aligns it underneath. Inspections surfaces it first
+   because "View Checklist" + "Review" are the longest labels, but all six table pages share
+   the markup and therefore the defect. Each action cell now wraps its buttons in
+   `<div class="d-flex gap-2 justify-content-end">` — one line, a uniform 8px gap, right
+   alignment preserved — applied to ALL six pages so the spacing is identical everywhere,
+   which a per-page fix would not achieve. The prototype's intent is plainly side-by-side; it
+   simply lacks the layout primitive. `TableColumnAlignmentTest` guards every table page
+   against both defects.
 10. **`layouts/app.blade.php` loads the Bootstrap bundle BEFORE `@yield('modals')`.** A modal
     partial may carry its own inline `<script>`, and that script must be able to reference
     `bootstrap` (Bootstrap 5 wires `data-bs-toggle` by delegation on `document`, so modal markup
