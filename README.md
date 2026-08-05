@@ -104,12 +104,14 @@ php artisan storage:link         # without this every damage photo 404s
 php artisan serve                # http://127.0.0.1:8000
 ```
 
-In two more terminals, for the full feature set:
+In one more terminal, for the time-driven alerts:
 
 ```bash
-php artisan queue:work           # sends the queued FCM pushes
 php artisan schedule:work        # stands in for cron during development
 ```
+
+FCM pushes need no worker — they are sent after the response, so nothing extra has to be
+running. On a deployed server a single scheduled task replaces `schedule:work` entirely.
 
 Sign in at <http://127.0.0.1:8000> as `bfp.admin@rvms.local` / `password`. See
 [`backend/README.md`](backend/README.md) for the complete account list, the API surface, and

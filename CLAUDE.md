@@ -38,7 +38,7 @@ php artisan schedule:work            # run the scheduler in the foreground (dev/
 php artisan rvms:recalculate-pm      # recompute PM Due Soon/Due statuses
 php artisan rvms:license-alerts      # fire license expiry notifications
 php artisan storage:link             # expose uploaded damage-report photos
-php artisan queue:work               # process queued FCM sends
+php artisan queue:work               # OPTIONAL — pushes go via ->afterResponse(); the scheduler drains the queue
 ```
 
 ---
@@ -68,10 +68,23 @@ entry, added once, that runs forever:
 ```
 
 The OS calls Laravel once a minute; Laravel decides which of its jobs are due
-(`rvms:recalculate-pm` 01:00, `rvms:pm-alerts` 01:15, `rvms:license-alerts` 06:00).
+(`rvms:recalculate-pm` 01:00, `rvms:pm-alerts` 01:15, `rvms:license-alerts` 06:00, plus a
+`queue:work --stop-when-empty` drain every minute).
 **Without this entry the time-driven alerts never fire on a real deployment** — the single
-easiest way to hand over a system that looks complete and silently isn't. `php artisan
-queue:work` must likewise be running (or supervised) for FCM pushes to leave the server.
+easiest way to hand over a system that looks complete and silently isn't.
+
+**That one entry is now the WHOLE requirement — no queue worker (2026-08, lead-reported).**
+FCM pushes are dispatched with `->afterResponse()`, so they leave the server with nothing
+running at all: Laravel sends them once the response has been flushed, in web and console
+contexts alike, so the scheduled licence and PM sweeps push too. A system whose
+notifications depend on someone remembering to keep `php artisan queue:work` open in a
+console window is a system that stops notifying the first time the machine reboots — which
+is precisely the failure a turnover cannot afford. The scheduled drain above is the safety
+net for anything that reaches the queue anyway (a normally-dispatched job, a retry), so a
+deployment can never accumulate a silent backlog. The trade is that an after-response push
+does not retry, so a transient Google failure costs that one banner; the stored
+`notifications` row is written synchronously and is what FR-21 actually guarantees, so the
+driver still sees the alert in their inbox.
 
 For development and demos, `php artisan schedule:work` in a spare terminal stands in for
 cron for the length of the session.
