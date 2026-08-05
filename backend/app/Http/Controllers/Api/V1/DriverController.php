@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\MaintenanceAlerts;
 use App\Services\RecordDeletion;
 use App\Http\Requests\StoreDriverRequest;
+use App\Http\Requests\ResetDriverPasswordRequest;
 use App\Http\Requests\UpdateDriverLicenseRequest;
 use App\Http\Requests\UpdateDriverRequest;
 use App\Http\Resources\DriverResource;
@@ -119,6 +120,23 @@ class DriverController extends Controller
         app(MaintenanceAlerts::class)->raiseForDriver($driver->fresh());
 
         return DriverResource::make($driver->fresh());
+    }
+
+    /**
+     * Set a new password for a driver (FR-04a, 2026-08).
+     *
+     * The action behind the login screen's "contact your administrator". Every
+     * existing token is revoked with it: if the reset was prompted by a lost or
+     * stolen handset, leaving the old bearer token alive would defeat the point.
+     */
+    public function resetPassword(ResetDriverPasswordRequest $request, User $driver)
+    {
+        $this->authorizeDriver($request, $driver);
+
+        $driver->update(['password' => $request->validated('password')]);
+        $driver->tokens()->delete();
+
+        return response()->json(['data' => ['reset' => true]]);
     }
 
     /**
