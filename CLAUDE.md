@@ -218,7 +218,7 @@ A few deliberate modeling decisions:
 
 ## ERD PLAN
 
-### Tables (13 domain tables + framework tables)
+### Tables (11 domain tables + framework tables)
 
 ```
 agencies ──┬─< users ─────────────┐
