@@ -122,7 +122,7 @@ class AuthRepository(
         // Same isolation as login: a driver must always be able to sign out,
         // even if releasing the device token fails.
         runCatching { PushTokenRegistrar.unregister() }
-        session.signOut()
+        session.revokeAndClear()
     }
 
     /**
