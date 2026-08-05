@@ -87,8 +87,20 @@ class SessionManager(
         _currentUser.value = user
     }
 
-    /** Best-effort token revoke on the server, then clear locally. */
-    suspend fun signOut() {
+    /**
+     * Best-effort token revoke on the server, then clear locally.
+     *
+     * **This is only HALF of signing out — call [AuthRepository.logout] instead.**
+     * Signing out must also release this handset from push, and that happens in
+     * the repository, while the bearer token is still valid.
+     *
+     * Deliberately NOT named `signOut()`: it was, and a call site reasonably
+     * reached for the obvious name, skipped the push release, and left
+     * `users.fcm_token` alive on the server — so a signed-out phone kept
+     * receiving alerts, and a shared agency handset showed the previous
+     * driver's. The name now says what it does rather than what a caller wants.
+     */
+    suspend fun revokeAndClear() {
         runCatching { api.logout() }
         tokenStore.clear()
         _currentUser.value = null

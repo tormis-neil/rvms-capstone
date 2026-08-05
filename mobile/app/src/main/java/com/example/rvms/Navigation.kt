@@ -78,8 +78,14 @@ fun MainNavigation() {
                             backStack.add(InspectionDetail(inspectionId))
                         },
                         onSignOut = {
-                            // Best-effort server token revoke + clear the local token.
-                            scope.launch { ServiceLocator.sessionManager.signOut() }
+                            // AuthRepository.logout() is the WHOLE sign-out: it releases
+                            // this handset from push before revoking the session, and only
+                            // it does. This called the session's own clear directly, which
+                            // skipped that release — `users.fcm_token` survived sign-out,
+                            // so the server kept pushing to a signed-out phone and a shared
+                            // agency handset showed the previous driver's alerts (found in
+                            // R10 manual testing).
+                            scope.launch { ServiceLocator.authRepository.logout() }
                             backStack.clear()
                             backStack.add(SignIn)
                         },
