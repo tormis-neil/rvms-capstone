@@ -59,7 +59,9 @@ class DoctorCommandTest extends TestCase
         $output = Artisan::output();
 
         $this->assertStringContainsString('schedule:run', $output);
-        $this->assertStringContainsString('NEVER', $output);
+        // One entry now covers alerts AND the queue drain, so the hint must say
+        // so — a handover that skips it loses both.
+        $this->assertStringContainsString('ONE entry', $output);
     }
 
     /** A wrong timezone dates every pre-8am record to the previous day. */
@@ -139,10 +141,33 @@ class DoctorCommandTest extends TestCase
             ->expectsOutputToContain('seeded demo password');
     }
 
-    /** A backlog is what "no queue worker is running" looks like from the database. */
-    public function test_a_large_undrained_queue_fails(): void
+    /**
+     * A STALE job is what "the scheduler is not running" looks like.
+     *
+     * Age rather than volume: pushes no longer need a worker, so a backlog is
+     * only alarming when it stops moving. One job stuck for minutes is a
+     * genuine fault; twenty queued this second are about to be drained.
+     */
+    public function test_a_job_stuck_in_the_queue_fails(): void
     {
         config(['queue.default' => 'database']);
+
+        DB::table('jobs')->insert([
+            'queue' => 'default', 'payload' => '{}', 'attempts' => 0,
+            'reserved_at' => null,
+            'available_at' => now()->subMinutes(30)->timestamp,
+            'created_at' => now()->subMinutes(30)->timestamp,
+        ]);
+
+        $this->artisan('rvms:doctor')
+            ->expectsOutputToContain('queued for over 5 minutes')
+            ->assertExitCode(1);
+    }
+
+    /** A queue that is merely busy must NOT fail — it drains on the next tick. */
+    public function test_a_freshly_queued_job_is_not_a_failure(): void
+    {
+        config(['queue.default' => 'database', 'app.debug' => false, 'app.timezone' => 'Asia/Manila']);
 
         foreach (range(1, 25) as $i) {
             DB::table('jobs')->insert([
@@ -151,9 +176,16 @@ class DoctorCommandTest extends TestCase
             ]);
         }
 
+        Artisan::call('rvms:doctor');
+
+        $this->assertStringNotContainsString('queued for over 5 minutes', Artisan::output());
+    }
+
+    /** The drain is what replaces `queue:work`, so it must be scheduled. */
+    public function test_the_queue_drain_is_scheduled(): void
+    {
         $this->artisan('rvms:doctor')
-            ->expectsOutputToContain('not draining')
-            ->assertExitCode(1);
+            ->expectsOutputToContain('queue:work');
     }
 
     /** A clean deployment passes with exit code 0. */

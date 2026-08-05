@@ -11,12 +11,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -228,7 +231,18 @@ fun NewDamageReportScreen(
                         contentAlignment = Alignment.Center,
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = if (hasPhoto) "✓" else "📷", fontSize = 24.sp)
+                            // A Material icon, not an emoji. Emoji are drawn by the
+                            // system font, so they change shape on every Android
+                            // version and OEM skin and ignore the theme tint — the
+                            // camera rendered as a flat glyph that matched nothing
+                            // else on screen. Every other icon in the app is a vector.
+                            Icon(
+                                imageVector = if (hasPhoto) Icons.Default.CheckCircle else Icons.Default.AddAPhoto,
+                                contentDescription = null,
+                                tint = if (hasPhoto) StatusOperational else TextSecondary,
+                                modifier = Modifier.size(24.dp),
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = if (hasPhoto) "Photo attached (tap to remove)" else "Tap to attach photo (optional)",
                                 style = MaterialTheme.typography.bodySmall,

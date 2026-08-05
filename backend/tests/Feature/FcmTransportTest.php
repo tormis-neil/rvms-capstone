@@ -96,9 +96,19 @@ class FcmTransportTest extends TestCase
         $this->assertSame('high', $payload['message']['android']['priority']);
     }
 
-    public function test_raising_a_notification_stores_a_row_and_queues_a_push(): void
+    /**
+     * The row is written NOW; the push leaves after the response.
+     *
+     * Deliberately asserts the transport rather than the queue. Pushes are
+     * dispatched with ->afterResponse() so a deployment needs no `queue:work`,
+     * which means `Queue::assertPushed` can no longer see them — it watches a
+     * queue the job never enters. Asserting the transport is the stronger test
+     * anyway: it proves the push was really delivered, not merely enqueued.
+     */
+    public function test_raising_a_notification_stores_a_row_and_pushes_after_the_response(): void
     {
-        Queue::fake();
+        $fake = new FakeFcmTransport;
+        $this->app->instance(FcmTransport::class, $fake);
 
         $notification = app(NotificationDispatcher::class)->send(
             $this->driver,
@@ -108,6 +118,7 @@ class FcmTransportTest extends TestCase
             ['plate' => 'ABC-1234'],
         );
 
+        // The record exists immediately — that is what FR-21 guarantees.
         $this->assertDatabaseHas('notifications', [
             'id' => $notification->id,
             'user_id' => $this->driver->id,
@@ -116,7 +127,34 @@ class FcmTransportTest extends TestCase
             'is_read' => false,
         ]);
 
-        Queue::assertPushed(SendFcmMessage::class, 1);
+        // …and the push has NOT gone yet, so no admin ever waits on Google.
+        $this->assertSame(0, $fake->count());
+
+        $this->app->terminate();
+
+        $this->assertSame(1, $fake->count());
+        $this->assertSame('device-abc', $fake->sent[0]->token);
+        $this->assertSame('Vehicle Status Updated', $fake->sent[0]->title);
+    }
+
+    /** No worker is running in this test — proof the handover needs none. */
+    public function test_the_push_needs_no_queue_worker(): void
+    {
+        $fake = new FakeFcmTransport;
+        $this->app->instance(FcmTransport::class, $fake);
+
+        app(NotificationDispatcher::class)->send(
+            $this->driver,
+            Notification::TYPE_PM_REMINDER,
+            'Preventive Maintenance',
+            'ABC-1234 — oil change due soon.',
+        );
+
+        $this->app->terminate();
+
+        $this->assertSame(1, $fake->count());
+        // Nothing was left sitting in the queue for a worker to find.
+        $this->assertDatabaseCount('jobs', 0);
     }
 
     /** A user with no registered device still gets the stored row. */

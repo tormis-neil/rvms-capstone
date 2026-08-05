@@ -38,7 +38,7 @@ php artisan schedule:work            # run the scheduler in the foreground (dev/
 php artisan rvms:recalculate-pm      # recompute PM Due Soon/Due statuses
 php artisan rvms:license-alerts      # fire license expiry notifications
 php artisan storage:link             # expose uploaded damage-report photos
-php artisan queue:work               # process queued FCM sends
+php artisan queue:work               # OPTIONAL — pushes go via ->afterResponse(); the scheduler drains the queue
 ```
 
 ---
@@ -68,10 +68,23 @@ entry, added once, that runs forever:
 ```
 
 The OS calls Laravel once a minute; Laravel decides which of its jobs are due
-(`rvms:recalculate-pm` 01:00, `rvms:pm-alerts` 01:15, `rvms:license-alerts` 06:00).
+(`rvms:recalculate-pm` 01:00, `rvms:pm-alerts` 01:15, `rvms:license-alerts` 06:00, plus a
+`queue:work --stop-when-empty` drain every minute).
 **Without this entry the time-driven alerts never fire on a real deployment** — the single
-easiest way to hand over a system that looks complete and silently isn't. `php artisan
-queue:work` must likewise be running (or supervised) for FCM pushes to leave the server.
+easiest way to hand over a system that looks complete and silently isn't.
+
+**That one entry is now the WHOLE requirement — no queue worker (2026-08, lead-reported).**
+FCM pushes are dispatched with `->afterResponse()`, so they leave the server with nothing
+running at all: Laravel sends them once the response has been flushed, in web and console
+contexts alike, so the scheduled licence and PM sweeps push too. A system whose
+notifications depend on someone remembering to keep `php artisan queue:work` open in a
+console window is a system that stops notifying the first time the machine reboots — which
+is precisely the failure a turnover cannot afford. The scheduled drain above is the safety
+net for anything that reaches the queue anyway (a normally-dispatched job, a retry), so a
+deployment can never accumulate a silent backlog. The trade is that an after-response push
+does not retry, so a transient Google failure costs that one banner; the stored
+`notifications` row is written synchronously and is what FR-21 actually guarantees, so the
+driver still sees the alert in their inbox.
 
 For development and demos, `php artisan schedule:work` in a spare terminal stands in for
 cron for the length of the session.
@@ -292,6 +305,7 @@ standard and not detailed below.
 | license_number | VARCHAR(50) | Yes | NULL | Driver license no. (FR-06). Null for admins. |
 | license_expiry_date | DATE | Yes | NULL | Driver license expiry; drives FR-08 monitoring. Null for admins. |
 | fcm_token | VARCHAR(255) | Yes | NULL | Firebase device token for push delivery (FR-21). |
+| deleted_at | TIMESTAMP | Yes | NULL | **Soft delete** (FR-06, extended 2026-08). Set when an admin deletes the driver; the record leaves every list, selection and login, while their inspections and damage reports are retained and still resolve their name (all such relations are `withTrashed()`). Cleared on restore. |
 | email_verified_at | TIMESTAMP | Yes | NULL | Framework field. |
 | remember_token | VARCHAR(100) | Yes | NULL | Framework field. |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
@@ -313,6 +327,7 @@ standard and not detailed below.
 | status_source | VARCHAR(100) | Yes | NULL | **Implementation-level addition, not in the manuscript's data dictionary** (design decision 9, 2026-07). Which module last set `status` (e.g. "PM Schedules", "Damage Review", "Dispatch Closed"); powers the status-change confirmation. Overwritten on each write, no history kept. No FR backs it. |
 | status_changed_at | DATETIME | Yes | NULL | **Implementation-level addition, not in the manuscript's data dictionary** (design decision 9, 2026-07). When `status` was last written. Paired with `status_source`. |
 | remarks | TEXT | Yes | NULL | **Implementation-level addition, not in the manuscript's data dictionary** (design decision 7 amendment, 2026-07). Optional note on the most recent manual status change via the Update Status modal; overwritten on each update, no history kept. No FR backs it. |
+| deleted_at | TIMESTAMP | Yes | NULL | **Soft delete** (FR-05, extended 2026-08). Set when an admin deletes the vehicle; it leaves every list and selection, while its inspections, damage reports, repairs, PM schedules and dispatches are retained and still resolve its plate. Cleared on restore. |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
 
 ### `inspection_checklist_items` — FR-09 (reference/seed catalog)
@@ -1510,7 +1525,16 @@ Coverage: FR-01–FR-04 (R0/R1/R9; approval flow in R2), FR-05–FR-08 (R2), FR-
    status badge and the row buttons share one), which shifts every cell after REMARKS a column
    left and misplaces the action buttons when the table is scrolled sideways — the cell is split
    in `repairs.blade.php`, since the prototype's own header row is the authority.
-   `TableColumnAlignmentTest` guards every table page against this class of bug.
+   **Second (2026-08, lead-reported):** every ACTIONS cell places its buttons directly in a
+   `text-end` `<td>` with no wrapper and no gap utility, so a narrow column wraps the last
+   button onto its own line and right-aligns it underneath. Inspections surfaces it first
+   because "View Checklist" + "Review" are the longest labels, but all six table pages share
+   the markup and therefore the defect. Each action cell now wraps its buttons in
+   `<div class="d-flex gap-2 justify-content-end">` — one line, a uniform 8px gap, right
+   alignment preserved — applied to ALL six pages so the spacing is identical everywhere,
+   which a per-page fix would not achieve. The prototype's intent is plainly side-by-side; it
+   simply lacks the layout primitive. `TableColumnAlignmentTest` guards every table page
+   against both defects.
 10. **`layouts/app.blade.php` loads the Bootstrap bundle BEFORE `@yield('modals')`.** A modal
     partial may carry its own inline `<script>`, and that script must be able to reference
     `bootstrap` (Bootstrap 5 wires `data-bs-toggle` by delegation on `document`, so modal markup

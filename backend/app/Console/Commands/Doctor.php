@@ -167,15 +167,21 @@ class Doctor extends Command
     }
 
     /**
-     * Pushes are queued, so with no worker they sit in `jobs` forever and the
-     * only symptom is a phone that never buzzes (FR-21).
+     * Pushes no longer need a worker — but the queue must still be draining.
+     *
+     * Notifications are dispatched after the response, so nothing has to be
+     * running for a driver's phone to buzz. Anything that does reach the queue
+     * is drained by the scheduled `queue:work --stop-when-empty`, which means a
+     * backlog no longer says "start a worker" — it says the SCHEDULER is not
+     * running, and that also means licence and PM alerts are dead. One symptom,
+     * a much more serious cause than before.
      */
     private function checkQueue(): void
     {
         $connection = config('queue.default');
 
         if ($connection === 'sync') {
-            $this->warning('QUEUE_CONNECTION=sync', 'Pushes send inline, so an admin waits on Google. Use `database` in deployment.');
+            $this->warning('QUEUE_CONNECTION=sync', 'Queued work runs inline. Use `database` in deployment so it stays off the request.');
 
             return;
         }
@@ -189,11 +195,23 @@ class Doctor extends Command
         $pending = DB::table('jobs')->count();
         $failed = Schema::hasTable('failed_jobs') ? DB::table('failed_jobs')->count() : 0;
 
-        // A backlog that is not draining is what "no worker is running" looks
-        // like from the database — the check a laptop cannot otherwise make.
-        $pending > 20
-            ? $this->failed("{$pending} jobs are queued and not draining", 'Is `php artisan queue:work` running (supervised) on this machine?')
-            : $this->pass('Queued jobs', (string) $pending);
+        // Age, not volume. A big backlog on a busy minute is normal and will be
+        // gone on the next tick; a SINGLE job older than a few minutes proves
+        // nothing is draining it. Counting was the weaker test — twenty fresh
+        // jobs passed while one stuck job failed silently.
+        $stale = DB::table('jobs')
+            ->where('available_at', '<', now()->subMinutes(5)->timestamp)
+            ->count();
+
+        if ($stale > 0) {
+            $this->failed(
+                "{$stale} job(s) have been queued for over 5 minutes",
+                'Nothing is draining the queue, which means the scheduler is not running — '
+                .'licence and PM alerts are not firing either. Check the scheduled task below.'
+            );
+        } else {
+            $this->pass('Queued jobs', $pending === 0 ? '0' : "{$pending} (all recent)");
+        }
 
         if ($failed > 0) {
             $this->warning("{$failed} failed job(s)", 'Inspect with `php artisan queue:failed`; clear with `php artisan queue:flush`.');
@@ -206,7 +224,7 @@ class Doctor extends Command
      */
     private function checkScheduler(): void
     {
-        $expected = ['rvms:recalculate-pm', 'rvms:pm-alerts', 'rvms:license-alerts'];
+        $expected = ['rvms:recalculate-pm', 'rvms:pm-alerts', 'rvms:license-alerts', 'queue:work'];
         $registered = collect(app()->make(Schedule::class)->events())
             ->map(fn ($event) => $event->command ?? '')
             ->implode(' ');
@@ -224,7 +242,8 @@ class Doctor extends Command
             'The scheduler only runs if the OS calls it. Confirm the deployment machine has: '.
             '`* * * * * cd '.base_path().' && php artisan schedule:run >> /dev/null 2>&1` '.
             '(Linux) or the equivalent Task Scheduler entry every 1 minute (Windows). '.
-            'Without it, licence and PM alerts NEVER fire.'
+            'This ONE entry is the whole requirement — it fires the licence and PM alerts AND '.
+            'drains the queue. Without it, none of them run.'
         );
     }
 

@@ -62,6 +62,7 @@ class AgencyIsolationSweepTest extends TestCase
         ]);
 
         $this->ids = [
+            'admin' => $bfpAdmin->id,
             'vehicle' => $vehicle->id,
             'driver' => $driver->id,
             'inspection' => Inspection::factory()->create([
@@ -97,14 +98,22 @@ class AgencyIsolationSweepTest extends TestCase
     public static function apiRoutes(): array
     {
         return [
+            // A colleague reset reaching into another agency would hand over an
+            // administrator account — the worst possible isolation failure here.
+            'reset admin password' => ['patchJson', '/api/v1/admins/{admin}/password', ['current_password' => 'password', 'password' => 'new-secret-123']],
             'show vehicle' => ['getJson', '/api/v1/vehicles/{vehicle}', []],
             'update vehicle' => ['putJson', '/api/v1/vehicles/{vehicle}', []],
             'vehicle status' => ['patchJson', '/api/v1/vehicles/{vehicle}/status', ['status' => 'Operational']],
+            'delete vehicle' => ['deleteJson', '/api/v1/vehicles/{vehicle}', []],
+            'restore vehicle' => ['patchJson', '/api/v1/vehicles/{vehicle}/restore', []],
             'show driver' => ['getJson', '/api/v1/drivers/{driver}', []],
             'update driver' => ['putJson', '/api/v1/drivers/{driver}', []],
             'approve driver' => ['patchJson', '/api/v1/drivers/{driver}/approve', []],
             'reject driver' => ['patchJson', '/api/v1/drivers/{driver}/reject', []],
             'driver license' => ['patchJson', '/api/v1/drivers/{driver}/license', ['license_expiry_date' => '2030-01-01']],
+            'reset driver password' => ['patchJson', '/api/v1/drivers/{driver}/password', ['password' => 'new-secret-123']],
+            'delete driver' => ['deleteJson', '/api/v1/drivers/{driver}', []],
+            'restore driver' => ['patchJson', '/api/v1/drivers/{driver}/restore', []],
             'show inspection' => ['getJson', '/api/v1/inspections/{inspection}', []],
             'review inspection' => ['patchJson', '/api/v1/inspections/{inspection}/review', []],
             'show damage report' => ['getJson', '/api/v1/damage-reports/{damage}', []],

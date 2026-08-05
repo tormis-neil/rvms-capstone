@@ -112,4 +112,41 @@ class TableColumnAlignmentTest extends TestCase
             );
         }
     }
+
+    /**
+     * Every ACTIONS cell keeps its buttons on one line (2026-08).
+     *
+     * A second prototype defect of the same family as the repairs header
+     * mismatch above: the action buttons sit in a `text-end` cell with no
+     * wrapper and no gap utility, so a narrow column wraps the last one onto
+     * its own line and right-aligns it underneath. Inspections showed it first
+     * because "View Checklist" + "Review" are the longest labels, but every
+     * table shares the markup and therefore the bug.
+     *
+     * One flex container fixes all of them and — the reason this test exists —
+     * makes the spacing identical on every page, which a per-page fix would
+     * not. Reports are excluded: they are printouts and carry no buttons.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('pages')]
+    public function test_action_buttons_never_wrap_onto_a_second_line(string $url): void
+    {
+        if (str_starts_with($url, '/reports')) {
+            $this->markTestSkipped('Printouts carry no action buttons.');
+        }
+
+        $html = $this->actingAs($this->admin)->get($url)->assertOk()->getContent();
+
+        preg_match_all('#<td class="text-end">(.*?)</td>#s', $html, $cells);
+
+        $withButtons = array_filter($cells[1], fn ($cell) => str_contains($cell, '<button'));
+        $this->assertNotEmpty($withButtons, "No action cell found on {$url}");
+
+        foreach ($withButtons as $cell) {
+            $this->assertStringContainsString(
+                'd-flex gap-2 justify-content-end',
+                $cell,
+                "An ACTIONS cell on {$url} has no flex wrapper, so its buttons will wrap on a narrow column."
+            );
+        }
+    }
 }

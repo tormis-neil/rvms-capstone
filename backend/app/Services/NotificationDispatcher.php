@@ -16,8 +16,23 @@ use Illuminate\Support\Collection;
  * a stored row and a push can never drift apart: the row is the record the bell
  * and the notifications page read, the push is best-effort delivery on top.
  *
- * Pushes are queued, never sent inline. An admin reviewing a damage report must
- * not wait on Google, and a Firebase outage must not fail the review.
+ * Pushes are never sent inline. An admin reviewing a damage report must not wait
+ * on Google, and a Firebase outage must not fail the review.
+ *
+ * They are dispatched **after the response** rather than onto the queue, so a
+ * deployed RVMS needs no `queue:work` process running to notify anyone. That
+ * matters at turnover: the agencies configure ONE scheduled task, and a system
+ * whose pushes depend on someone remembering to keep a console window open is a
+ * system that stops notifying the first time the machine reboots. The work still
+ * happens off the request — Laravel runs it once the response has been sent, in
+ * web and console contexts alike, so the scheduled licence and PM sweeps push
+ * too.
+ *
+ * The trade this makes: an after-response job does not retry, so a transient
+ * Google failure loses that one banner. Acceptable here, and only here, because
+ * the stored row above is written synchronously and is what FR-21 actually
+ * guarantees — the driver still sees the alert in their inbox. A dropped push
+ * costs a buzz, never a record.
  */
 class NotificationDispatcher
 {
@@ -49,7 +64,7 @@ class NotificationDispatcher
                     data: ['type' => $type, 'notification_id' => $notification->id] + $data,
                 ),
                 $recipient->id,
-            );
+            )->afterResponse();
         }
 
         return $notification;

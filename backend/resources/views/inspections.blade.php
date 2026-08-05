@@ -69,14 +69,16 @@
                                     </td>
                                     <td><span class="badge {{ $inspection->reviewBadgeClass() }} px-3 py-2 rounded-pill">{{ $inspection->review_status }}</span></td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>
-                                        @if ($inspection->review_status === \App\Models\Inspection::STATUS_PENDING)
-                                        <button class="btn btn-sm bg-navy text-white fw-medium" data-bs-toggle="modal" data-bs-target="#reviewInspectionModal">Review</button>
-                                        @else
-                                        {{-- Reviewed rows previously had no action at all; FR-18 lets any
-                                             module that shows the status also change it (design decision 9). --}}
-                                        <button class="btn btn-sm btn-light border js-status" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
-                                        @endif
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <button class="btn btn-sm btn-light border" data-bs-toggle="modal" data-bs-target="#viewChecklistModal">View Checklist</button>
+                                            @if ($inspection->review_status === \App\Models\Inspection::STATUS_PENDING)
+                                            <button class="btn btn-sm bg-navy text-white fw-medium" data-bs-toggle="modal" data-bs-target="#reviewInspectionModal">Review</button>
+                                            @else
+                                            {{-- Reviewed rows previously had no action at all; FR-18 lets any
+                                                 module that shows the status also change it (design decision 9). --}}
+                                            <button class="btn btn-sm btn-light border js-status" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                                 @empty
@@ -181,15 +183,17 @@
                                     </td>
                                     <td><span class="badge {{ $report->statusBadgeClass() }} px-3 py-2 rounded-pill">{{ $report->status }}</span></td>
                                     <td class="text-end">
-                                        @if ($report->status === \App\Models\DamageReport::STATUS_PENDING)
-                                        <button class="btn btn-sm btn-danger fw-medium" data-bs-toggle="modal" data-bs-target="#reviewDamageModal">Review & Assess</button>
-                                        @else
-                                        {{-- Reviewed rows previously showed static text with no action.
-                                             They now get the read-only detail view plus the shared status
-                                             control, matching the other screens (design decision 9). --}}
-                                        <button class="btn btn-sm btn-light border js-view" title="View Damage Report" data-bs-toggle="modal" data-bs-target="#viewDamageModal"><i class="bi bi-eye"></i></button>
-                                        <button class="btn btn-sm btn-light border js-status" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
-                                        @endif
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            @if ($report->status === \App\Models\DamageReport::STATUS_PENDING)
+                                            <button class="btn btn-sm btn-danger fw-medium" data-bs-toggle="modal" data-bs-target="#reviewDamageModal">Review & Assess</button>
+                                            @else
+                                            {{-- Reviewed rows previously showed static text with no action.
+                                                 They now get the read-only detail view plus the shared status
+                                                 control, matching the other screens (design decision 9). --}}
+                                            <button class="btn btn-sm btn-light border js-view" title="View Damage Report" data-bs-toggle="modal" data-bs-target="#viewDamageModal"><i class="bi bi-eye"></i></button>
+                                            <button class="btn btn-sm btn-light border js-status" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                                 @empty

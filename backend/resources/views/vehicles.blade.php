@@ -93,9 +93,18 @@
                                         <span class="badge status-badge {{ $vehicle->badgeClass() }} px-3 py-2 rounded-pill">{{ $vehicle->status }}</span>
                                     </td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewVehicleModal"><i class="bi bi-eye"></i></button>
+                                            <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editVehicleModal"><i class="bi bi-pencil"></i></button>
+                                            <button class="btn btn-sm btn-light border" title="Update Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>
+                                            {{-- Delete last: destructive actions sit furthest from the
+                                                 buttons an admin reaches for all day (FR-05, 2026-08). --}}
+                                            <button type="button" class="btn btn-sm btn-light border text-danger js-delete"
+                                                    title="Delete Vehicle"
+                                                    data-plate="{{ $vehicle->plate_number }}"
+                                                    data-detail="{{ $vehicle->type }} — {{ $vehicle->make }} {{ $vehicle->model }}"
+                                                    data-action="{{ route('vehicles.destroy', $vehicle) }}"><i class="bi bi-trash"></i></button>
+                                        </div>
                                     </td>
                                 </tr>
                                 @empty
@@ -109,9 +118,58 @@
                     @include('partials.table-footer', ['paginator' => $vehicles, 'label' => 'vehicles'])
                 </div>
 
+                {{-- Deleted Records — documented addition (FR-05, extended 2026-08).
+                     Shown only when something is deleted, so the page is unchanged
+                     from the prototype for an agency that never deletes anything.
+                     Built from the prototype's own card/table/badge conventions. --}}
+                @if ($deleted->isNotEmpty())
+                <div class="card border-0 shadow-sm rounded-3 mt-4">
+                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold mb-0">Deleted Vehicles</h6>
+                            <p class="small text-secondary mb-0">Their inspections, repairs and dispatch history are kept.</p>
+                        </div>
+                        <span class="badge bg-light text-secondary px-3 py-2 rounded-pill">{{ $deleted->count() }} deleted</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="py-3 text-secondary fw-semibold small">VEHICLE</th>
+                                    <th class="py-3 text-secondary fw-semibold small">DELETED</th>
+                                    <th class="py-3 text-secondary fw-semibold small text-end">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($deleted as $gone)
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">{{ $gone->plate_number }}</div>
+                                        <div class="small text-secondary">{{ $gone->type }} — {{ $gone->make }} {{ $gone->model }}</div>
+                                    </td>
+                                    <td class="text-secondary small">{{ $gone->deleted_at?->format('M j, Y g:i A') }}</td>
+                                    <td class="text-end">
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <form method="POST" action="{{ route('vehicles.restore', $gone->id) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="btn btn-sm btn-light border"><i class="bi bi-arrow-counterclockwise me-1"></i>Restore</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @endif
+
 @endsection
 
 @section('modals')
+    @include('partials.delete-confirm')
+
     <!-- Add Vehicle Modal -->
     <div class="modal fade" id="addVehicleModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -453,5 +511,17 @@
                 });
             });
         })();
+
+        // Delete buttons on every vehicle row (FR-05, extended 2026-08). The
+        // confirmation itself lives in partials/delete-confirm, shared with Drivers.
+        document.querySelectorAll('.js-delete').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                confirmDelete({
+                    what: btn.dataset.plate,
+                    detail: btn.dataset.detail,
+                    action: btn.dataset.action,
+                });
+            });
+        });
     </script>
 @endsection

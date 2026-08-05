@@ -106,4 +106,88 @@
                     </button>
                 </div>
 
+                {{-- Agency Administrators — documented addition (FR-04a, 2026-08).
+                     NOT a management module: administrator accounts stay provisioned
+                     (design decision 6), so there is no add, no edit and no delete
+                     here. One action only, and it is the one that stops a forgotten
+                     password locking an agency out of its own dashboard. Hidden for
+                     a sole administrator, who has nobody to reset and uses
+                     `php artisan rvms:reset-password` instead. --}}
+                @if ($colleagues->isNotEmpty())
+                <div class="card border-0 shadow-sm rounded-3 mt-4">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <h6 class="fw-bold mb-0">Agency Administrators</h6>
+                        <p class="small text-secondary mb-0">
+                            If a colleague is locked out, set a new password for them here and tell them directly.
+                        </p>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        @foreach ($colleagues as $colleague)
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div>
+                                <div class="fw-bold text-dark">{{ $colleague->name }}</div>
+                                <div class="small text-secondary">{{ $colleague->email }}</div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-light border js-reset-admin"
+                                    data-name="{{ $colleague->name }}"
+                                    data-action="{{ route('admins.password', $colleague) }}">
+                                <i class="bi bi-key me-1"></i>Reset Password
+                            </button>
+                        </li>
+                        @endforeach
+                    </ul>
+                </div>
+                @endif
+
+@endsection
+
+@section('modals')
+    {{-- Resetting a peer hands over an account with the same reach as your own,
+         so this dialog asks for YOUR password first — unlike a driver reset,
+         which is routine administration (FR-04a, 2026-08). --}}
+    <div class="modal fade" id="resetAdminModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-navy text-white">
+                    <h5 class="modal-title fw-bold">Reset Administrator Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" id="resetAdminForm">
+                    @csrf
+                    @method('PATCH')
+                    <div class="modal-body p-4">
+                        <div class="alert alert-light border small text-secondary">
+                            Setting a new password for <span class="fw-bold" id="raName">—</span>.
+                            Give it to them directly — the system does not send email.
+                        </div>
+                        <label class="form-label small fw-semibold">Your Current Password</label>
+                        <input type="password" name="current_password" class="form-control mb-3" required
+                               placeholder="Confirm it is you">
+                        <label class="form-label small fw-semibold">Their New Password</label>
+                        <input type="text" name="password" class="form-control" minlength="8" required
+                               placeholder="At least 8 characters">
+                        <div class="form-text">Shown as plain text so you can read it out accurately.</div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn bg-navy text-white fw-medium">Reset Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.js-reset-admin').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.getElementById('raName').textContent = btn.dataset.name;
+                document.getElementById('resetAdminForm').setAttribute('action', btn.dataset.action);
+                new bootstrap.Modal(document.getElementById('resetAdminModal')).show();
+            });
+        });
+    });
+</script>
 @endsection

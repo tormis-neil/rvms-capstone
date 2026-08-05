@@ -34,14 +34,18 @@ Two settings in `.env` matter more than they look:
 
 ## Running the full feature set
 
-Three processes, not one. The server alone gives you the screens; the other two are what make
-notifications actually arrive:
+Two processes in development, and **no queue worker**:
 
 ```bash
 php artisan serve             # the dashboard and the API
-php artisan queue:work        # sends the queued FCM pushes (FR-21)
 php artisan schedule:work     # dev stand-in for cron: licence + PM alerts
 ```
+
+FCM pushes need nothing running. They are dispatched with `->afterResponse()`, so Laravel
+sends them once the response has been flushed — off the request, so no admin ever waits on
+Google, but without a worker to supervise. That is deliberate: a system whose notifications
+depend on someone keeping a console window open stops notifying the first time the machine
+reboots, which a turnover cannot afford.
 
 **On a deployed server**, `schedule:work` is replaced by ONE crontab entry, added once:
 
@@ -50,9 +54,13 @@ php artisan schedule:work     # dev stand-in for cron: licence + PM alerts
 ```
 
 Windows: a Task Scheduler task running `php artisan schedule:run` every minute, starting in the
-backend folder. Without it the time-driven alerts (an expiring licence, a PM schedule coming
-due) never fire — the single easiest way to hand over a system that looks complete and silently
-isn't. `php artisan rvms:doctor` checks for exactly this class of omission.
+backend folder. **That single entry is the entire deployment requirement** — it fires the
+licence and PM alerts *and* runs a `queue:work --stop-when-empty` drain each minute, so
+anything that does reach the queue (a normally-dispatched job, a retry) can never pile up
+unnoticed. Without it, none of them run — the single easiest way to hand over a system that
+looks complete and silently isn't. `php artisan rvms:doctor` checks for exactly this class
+of omission, and now fails on a job that has been queued for more than five minutes, because
+one stuck job proves the scheduler is dead.
 
 ## Custom commands
 

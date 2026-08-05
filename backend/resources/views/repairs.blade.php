@@ -125,7 +125,7 @@
                                         @endif
                                     </td>
                                     <td class="text-end">
-                                        <div class="d-flex align-items-center justify-content-end gap-2">
+                                        <div class="d-flex gap-2 justify-content-end">
                                             @if ($repair->vehicle)
                                             <button class="btn btn-sm btn-light border js-edit" title="Edit Repair Log" data-bs-toggle="modal" data-bs-target="#editRepairModal"><i class="bi bi-pencil"></i></button>
                                             <button class="btn btn-sm btn-light border js-status" title="Update Vehicle Status" data-bs-toggle="modal" data-bs-target="#updateStatusModal"><i class="bi bi-arrow-repeat"></i></button>

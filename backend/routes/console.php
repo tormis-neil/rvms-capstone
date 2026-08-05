@@ -43,3 +43,22 @@ Schedule::command('rvms:license-alerts')
     ->dailyAt('06:00')
     ->withoutOverlapping()
     ->onOneServer();
+
+/*
+ | The safety net under FR-21's delivery, so a handover needs no queue worker.
+ |
+ | Pushes are dispatched after the response (NotificationDispatcher), which
+ | needs nothing running at all. This drains anything that reaches the queue
+ | anyway — a job dispatched normally, a future feature that queues something,
+ | or a retry — so a deployed RVMS never accumulates a silent backlog because
+ | nobody was told to keep `queue:work` open.
+ |
+ | --stop-when-empty is what makes it safe on a schedule: the worker exits once
+ | the queue is drained instead of living forever, so each tick is a short,
+ | bounded run rather than a process to supervise. --max-time bounds it further
+ | in case a job hangs on a slow Google call.
+ */
+Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=3')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onOneServer();

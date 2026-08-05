@@ -166,9 +166,24 @@
                                     </td>
                                     <td>{{ $driver->vehicles->isNotEmpty() ? $driver->vehicles->map(fn ($v) => "{$v->plate_number} ({$v->type})")->implode(', ') : 'Unassigned' }}</td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
-                                        <button class="btn btn-sm btn-light border" title="Update License" data-bs-toggle="modal" data-bs-target="#updateLicenseModal"><i class="bi bi-arrow-clockwise"></i></button>
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
+                                            <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
+                                            <button class="btn btn-sm btn-light border" title="Update License" data-bs-toggle="modal" data-bs-target="#updateLicenseModal"><i class="bi bi-arrow-clockwise"></i></button>
+                                            {{-- Reset Password (FR-04a, 2026-08): the action behind the
+                                                 login screen's "contact your administrator". --}}
+                                            <button type="button" class="btn btn-sm btn-light border js-reset"
+                                                    title="Reset Password"
+                                                    data-name="{{ $driver->name }}"
+                                                    data-action="{{ route('drivers.password', $driver) }}"><i class="bi bi-key"></i></button>
+                                            {{-- Delete last: destructive actions sit furthest from the
+                                                 buttons an admin reaches for all day (FR-06, 2026-08). --}}
+                                            <button type="button" class="btn btn-sm btn-light border text-danger js-delete"
+                                                    title="Delete Driver"
+                                                    data-name="{{ $driver->name }}"
+                                                    data-detail="{{ $driver->license_number ?? 'No licence on file' }}"
+                                                    data-action="{{ route('drivers.destroy', $driver) }}"><i class="bi bi-trash"></i></button>
+                                        </div>
                                     </td>
                                 </tr>
                                 @empty
@@ -182,9 +197,90 @@
                     @include('partials.table-footer', ['paginator' => $drivers, 'label' => 'drivers'])
                 </div>
 
+                {{-- Deleted Records — documented addition (FR-06, extended 2026-08).
+                     Hidden entirely when nothing is deleted, so the page matches the
+                     prototype for an agency that never deletes anyone. --}}
+                @if ($deleted->isNotEmpty())
+                <div class="card border-0 shadow-sm rounded-3 mt-4">
+                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold mb-0">Deleted Drivers</h6>
+                            <p class="small text-secondary mb-0">Their inspections and damage reports are kept and still show their name.</p>
+                        </div>
+                        <span class="badge bg-light text-secondary px-3 py-2 rounded-pill">{{ $deleted->count() }} deleted</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="py-3 text-secondary fw-semibold small">DRIVER</th>
+                                    <th class="py-3 text-secondary fw-semibold small">DELETED</th>
+                                    <th class="py-3 text-secondary fw-semibold small text-end">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($deleted as $gone)
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">{{ $gone->name }}</div>
+                                        <div class="small text-secondary font-monospace">{{ $gone->license_number ?? '—' }}</div>
+                                    </td>
+                                    <td class="text-secondary small">{{ $gone->deleted_at?->format('M j, Y g:i A') }}</td>
+                                    <td class="text-end">
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <form method="POST" action="{{ route('drivers.restore', $gone->id) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="btn btn-sm btn-light border"><i class="bi bi-arrow-counterclockwise me-1"></i>Restore</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @endif
+
 @endsection
 
 @section('modals')
+    @include('partials.delete-confirm')
+
+    {{-- Reset a driver's password (FR-04a, 2026-08). No confirmation box: the
+         admin types the password FOR someone else and reads it out, so a second
+         field confirms nothing they cannot already see. --}}
+    <div class="modal fade" id="resetPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-navy text-white">
+                    <h5 class="modal-title fw-bold">Reset Driver Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" id="resetPasswordForm">
+                    @csrf
+                    @method('PATCH')
+                    <div class="modal-body p-4">
+                        <div class="alert alert-light border small text-secondary">
+                            Setting a new password for <span class="fw-bold" id="rpName">—</span>.
+                            Give it to them directly — the system does not send email.
+                            Any phone they are signed in on will be signed out.
+                        </div>
+                        <label class="form-label small fw-semibold">New Password</label>
+                        <input type="text" name="password" class="form-control" minlength="8" required
+                               placeholder="At least 8 characters">
+                        <div class="form-text">Shown as plain text so you can read it out accurately.</div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn bg-navy text-white fw-medium">Reset Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Driver Modal -->
     <div class="modal fade" id="addDriverModal" tabindex="-1">
         <div class="modal-dialog">
@@ -498,5 +594,26 @@
         }
         document.getElementById('ulPlus5').addEventListener('click', () => addYears(5));
         document.getElementById('ulPlus10').addEventListener('click', () => addYears(10));
+
+        // Row actions added 2026-08: reset password (FR-04a) and delete (FR-06).
+        document.querySelectorAll('.js-reset').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.getElementById('rpName').textContent = btn.dataset.name;
+                document.getElementById('resetPasswordForm').setAttribute('action', btn.dataset.action);
+                new bootstrap.Modal(document.getElementById('resetPasswordModal')).show();
+            });
+        });
+
+        document.querySelectorAll('.js-delete').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                confirmDelete({
+                    what: btn.dataset.name,
+                    detail: btn.dataset.detail,
+                    note: 'Their inspections and damage reports are kept and still show their name. '
+                        + 'Any vehicle assigned to them becomes unassigned. You can restore them from Deleted Records below.',
+                    action: btn.dataset.action,
+                });
+            });
+        });
     </script>
 @endsection
