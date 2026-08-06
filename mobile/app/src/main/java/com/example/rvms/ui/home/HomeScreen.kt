@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.collectAsState
 import com.example.rvms.data.ServiceLocator
 import com.example.rvms.data.VehicleStatus
+import com.example.rvms.data.remote.dto.DamageDto
 import com.example.rvms.data.remote.dto.InspectionDto
 import com.example.rvms.data.remote.dto.VehicleDto
 import com.example.rvms.ui.common.ConnectionErrorCard
@@ -70,6 +71,7 @@ import kotlinx.coroutines.launch
 import com.example.rvms.theme.Background
 import com.example.rvms.theme.Gold
 import com.example.rvms.theme.NavyBlue
+import com.example.rvms.theme.StatusNotOperational
 import com.example.rvms.theme.StatusOperational
 import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
@@ -89,7 +91,7 @@ fun HomeScreen(
     // Driver session (FR-01) + assigned vehicle(s) (FR-07), both from the API.
     val currentUser by ServiceLocator.sessionManager.currentUser.collectAsState()
     var vehicles by remember { mutableStateOf<List<VehicleDto>>(emptyList()) }
-    var recentInspections by remember { mutableStateOf<List<InspectionDto>>(emptyList()) }
+    var recentActivity by remember { mutableStateOf<List<ActivityEntry>>(emptyList()) }
     var todaysInspection by remember { mutableStateOf<InspectionDto?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
     var loadError by remember { mutableStateOf<String?>(null) }
@@ -104,13 +106,13 @@ fun HomeScreen(
 
         val vehicleResult = ServiceLocator.vehicleRepository.myVehicles()
         val inspectionResult = ServiceLocator.inspectionRepository.history()
+        val damageResult = ServiceLocator.damageRepository.history()
 
         // Records are replaced only on success, so a dropped connection keeps
         // the last known fleet on screen instead of blanking it — with the
         // banner below saying so (R10 sub-task 1).
         vehicleResult.dataOrNull?.let { vehicles = it }
         inspectionResult.dataOrNull?.let { history ->
-            recentInspections = history.take(3)
             // Computed from the FULL history, not the three shown below. The
             // Recent Activity list is truncated for display; asking it whether
             // today's inspection exists would answer "no" for any driver whose
@@ -119,7 +121,19 @@ fun HomeScreen(
             todaysInspection = history.firstOrNull { it.inspectionDate == todayIso() }
         }
 
-        loadError = vehicleResult.errorOrNull ?: inspectionResult.errorOrNull
+        // Rebuilt only when BOTH reads succeeded, for the same reason the lists
+        // above are: merging a successful inspection load with a failed damage
+        // load would silently drop every damage row and look like the driver
+        // had never filed one.
+        val inspections = inspectionResult.dataOrNull
+        val damages = damageResult.dataOrNull
+        if (inspections != null && damages != null) {
+            recentActivity = buildRecentActivity(inspections, damages)
+        }
+
+        loadError = vehicleResult.errorOrNull
+            ?: inspectionResult.errorOrNull
+            ?: damageResult.errorOrNull
         loaded = true
     }
 
@@ -379,19 +393,27 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // Equal weights. The first card used to take 1.4f so its longer
+            // status subtitle would not wrap, but two cards of visibly
+            // different widths read as a layout accident rather than a
+            // deliberate emphasis (2026-08, lead-reported). The subtitles are
+            // now short enough that an even split fits both.
             QuickActionCard(
                 title = "Daily Inspection",
                 subtitle = todaysInspection
-                    ?.let { "Submitted ${formatIsoTime(it.submittedAt)}" }
-                    ?: "Not submitted today",
+                    ?.let { "Done ${formatIsoTime(it.submittedAt)}" }
+                    ?: "Not yet today",
                 icon = if (todaysInspection != null) Icons.Default.CheckCircle else Icons.Default.Checklist,
                 done = todaysInspection != null,
                 onClick = onNavigateToInspection,
-                modifier = Modifier.weight(1.4f),
+                modifier = Modifier.weight(1f),
             )
             QuickActionCard(
                 title = "Report Damage",
-                subtitle = "Something is wrong",
+                // "Something is wrong" was too vague and too casual for a
+                // government fleet record. This names the action in the
+                // module's own vocabulary (FR-11 "nature of damage").
+                subtitle = "Report a fault or damage",
                 icon = Icons.Default.ReportProblem,
                 done = false,
                 onClick = onNavigateToDamageReport,
@@ -401,8 +423,14 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Recent Activity — the driver's most recent inspection submissions
-        // (real data from GET /inspections). Empty for a fresh account.
+        // Recent Activity — the driver's own submissions, BOTH kinds, newest
+        // first (GET /inspections + GET /damage-reports).
+        //
+        // It listed inspections only, which made the heading a lie: a driver
+        // who filed a damage report an hour ago saw no trace of it and had no
+        // way to tell whether it had been sent (2026-08, lead-reported). The
+        // two are merged and re-sorted here rather than shown as two sections,
+        // because "what have I done recently" is one question.
         Text(
             text = "Recent Activity",
             style = MaterialTheme.typography.titleMedium,
@@ -412,25 +440,24 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        if (recentInspections.isEmpty()) {
+        if (recentActivity.isEmpty()) {
             Text(
                 text = "No recent activity yet.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
             )
         } else {
-            recentInspections.forEach { inspection ->
-                val issues = inspection.items.count { it.status == "Has Issue" }
+            recentActivity.forEach { entry ->
                 ActivityItem(
-                    title = "Daily Inspection Submitted",
-                    subtitle = if (issues == 0) "All items OK" else "$issues issue(s) found",
+                    title = entry.title,
+                    subtitle = entry.subtitle,
                     // Date AND time. A driver may submit more than once in a day
                     // (the Inspect tab offers "Submit Another"), and with only the
                     // date those rows rendered as three identical lines that read
                     // like a display bug rather than three real submissions.
-                    time = "${formatIsoDate(inspection.inspectionDate)} · ${formatIsoTime(inspection.submittedAt)}",
-                    icon = Icons.Default.Checklist,
-                    iconTint = NavyBlue,
+                    time = entry.timeLabel,
+                    icon = entry.icon,
+                    iconTint = entry.tint,
                 )
             }
         }
@@ -523,6 +550,64 @@ private fun QuickActionCard(
             }
         }
     }
+}
+
+/**
+ * One row of Recent Activity, whichever kind of submission produced it.
+ *
+ * A shared shape rather than two branches in the list, so an inspection and a
+ * damage report can be sorted against each other by time — which is the whole
+ * point of merging them.
+ */
+internal data class ActivityEntry(
+    val title: String,
+    val subtitle: String,
+    val timeLabel: String,
+    val icon: ImageVector,
+    val tint: Color,
+    /** ISO timestamp used only for ordering; never displayed. */
+    val sortKey: String,
+)
+
+/**
+ * The driver's three most recent submissions of either kind, newest first.
+ *
+ * Sorted on the raw ISO timestamps, which compare correctly as strings because
+ * the API emits a fixed-width UTC format. Records with no timestamp sort last
+ * rather than crashing the comparison.
+ */
+internal fun buildRecentActivity(
+    inspections: List<InspectionDto>,
+    damages: List<DamageDto>,
+): List<ActivityEntry> {
+    val inspectionEntries = inspections.map { inspection ->
+        val issues = inspection.items.count { it.status == "Has Issue" }
+        ActivityEntry(
+            title = "Daily Inspection Submitted",
+            subtitle = if (issues == 0) "All items OK" else "$issues issue(s) found",
+            timeLabel = "${formatIsoDate(inspection.inspectionDate)} · ${formatIsoTime(inspection.submittedAt)}",
+            icon = Icons.Default.Checklist,
+            tint = NavyBlue,
+            sortKey = inspection.submittedAt.orEmpty(),
+        )
+    }
+
+    val damageEntries = damages.map { damage ->
+        ActivityEntry(
+            title = "Damage Report Filed",
+            // The admin's review state is what the driver actually wants to
+            // know next — the report itself they already remember filing.
+            subtitle = damage.status,
+            timeLabel = "${formatIsoDate(damage.dateReported)} · ${formatIsoTime(damage.submittedAt)}",
+            icon = Icons.Default.ReportProblem,
+            tint = StatusNotOperational,
+            sortKey = damage.submittedAt.orEmpty(),
+        )
+    }
+
+    return (inspectionEntries + damageEntries)
+        .sortedByDescending { it.sortKey }
+        .take(3)
 }
 
 @Composable

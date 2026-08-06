@@ -177,6 +177,17 @@ A few deliberate modeling decisions:
      mission, location and time out, so the admin is directed to Dispatch Logs. Enforced
      server-side in `App\Services\VehicleStatusWriter` — the single gate every status write
      passes through — so it holds regardless of the UI or the caller (web or API).
+     **Owning the status means moving it too (2026-08, lead-reported).** Opening and closing
+     wrote it; EDITING an open dispatch did not, and the edit form carries `vehicle_id`. So
+     correcting "I dispatched the wrong truck" left the new vehicle out on a mission while still
+     reading Operational — contradicting the Vehicles page, the dashboard, the availability list
+     and the vehicle-status report at once — and stranded the old one as Dispatched with no
+     dispatch left to release it (not Operational, so it also vanished from the dispatch
+     dropdown). `App\Services\DispatchReassignment` now hands the status over inside the same
+     transaction, called from BOTH controllers so the two front doors cannot drift. A CLOSED
+     dispatch is exempt: its vehicle already took a return status on close, and re-marking it
+     Dispatched because someone corrected a historical record would put a parked vehicle back
+     out on a mission.
    - **Every status change is confirmed** through one uniform dialog
      (`partials/status-confirm`) showing the current status, WHERE it came from, and the new
      status. Status selects default to the vehicle's current status, so a change is always a
@@ -439,7 +450,7 @@ standard and not detailed below.
 | id | BIGINT UNSIGNED | No | auto | PK. |
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies (scoping). |
 | user_id | BIGINT UNSIGNED | No | — | FK → users (recipient). |
-| type | ENUM('PM_Reminder','Vehicle_Status_Update','New_Damage_Report','Inspection_Flagged','License_Expiring','License_Expired','PM_Due_Soon','PM_Due','New_Access_Request') | No | — | Notification category (FR-21; `New_Access_Request` → admins on driver self-registration, FR-03; `Inspection_Flagged` → admins when a submitted inspection reports one or more items as Has Issue, FR-09 → FR-21 — never on an all-OK submission). |
+| type | ENUM('PM_Reminder','Vehicle_Status_Update','New_Damage_Report','Inspection_Flagged','License_Expiring','License_Expired','PM_Due_Soon','PM_Due','New_Access_Request','Password_Reset') | No | — | Notification category (FR-21; `New_Access_Request` → admins on driver self-registration, FR-03; `Inspection_Flagged` → admins when a submitted inspection reports one or more items as Has Issue, FR-09 → FR-21 — never on an all-OK submission; `Password_Reset` → the AFFECTED user when someone else sets their password, FR-22 → FR-21 — never for the administrator who performed it, and never for a self-service change under FR-04). |
 | title | VARCHAR(255) | No | — | Short headline. |
 | message | TEXT | No | — | Body text. |
 | data | JSON | Yes | NULL | Reference payload (e.g., vehicle plate, link target). |
@@ -1183,7 +1194,9 @@ Prototype source: `web/pages/notifications.html` + the topbar bell dropdown pres
 
 Sub-tasks — Day 12 (storage + delivery — no screen wiring yet, so no checkpoints today):
   1. Widget extraction from `notifications.html` + the bell dropdown — recorded now, used Day 13.
-  2. `notifications` migration/model per the Data Dictionary (8-type enum incl. New_Access_Request).
+  2. `notifications` migration/model per the Data Dictionary (10-type enum incl. New_Access_Request,
+     Inspection_Flagged and Password_Reset — the last two added after R7, each by its own migration
+     so an existing database picks them up with plain `php artisan migrate`).
   3. APIs: `GET /notifications`, `PATCH /{id}/read`, `PATCH /read-all`, `POST /fcm-token` (driver
      device registration).
   4. `FcmService` — server-side PHP, Google HTTP v1, queued sends (faked in local testing).
@@ -1195,7 +1208,11 @@ Sub-tasks — Day 13 (triggers + screens):
      submission notifies nobody; project-lead approved 2026-07, FR-21 wording updated in Ch1/Ch3/Ch4);
      vehicle status change → the assigned driver (hooked into `VehicleStatusWriter` itself, so every
      module that writes a status notifies, and an idempotent re-write of the same value does not);
-     driver self-registration → ALL agency admins (New_Access_Request).
+     driver self-registration → ALL agency admins (New_Access_Request); **a password reset performed
+     by someone else → the AFFECTED user** (`Password_Reset`, FR-22 → FR-21, added 2026-08 — the
+     capability is not the risk, doing it unannounced is; a self-service change under FR-04 notifies
+     nobody, and `rvms:reset-password` is exempt because the person running it is normally recovering
+     their own account).
   7. Scheduled alerts: `rvms:license-alerts` (Expiring Soon/Expired → admins) + PM Due Soon/Due
      (→ admins, PM Reminder → drivers); both in the scheduler.
   8. Automated tests: trigger suite (FCM transport faked).

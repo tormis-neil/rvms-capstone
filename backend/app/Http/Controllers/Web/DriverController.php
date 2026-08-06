@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateDriverLicenseRequest;
 use App\Http\Requests\UpdateDriverRequest;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\NotificationDispatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -184,6 +185,8 @@ class DriverController extends Controller
 
         $driver->update(['password' => $validated['password']]);
         $driver->tokens()->delete();
+
+        app(NotificationDispatcher::class)->passwordWasReset($driver, $request->user());
 
         return back(fallback: route('drivers'))
             ->with('status', "Password reset for {$driver->name}. Give them the new password directly.");

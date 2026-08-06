@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ResetAdminPasswordRequest;
 use App\Models\User;
+use App\Services\NotificationDispatcher;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -44,6 +45,11 @@ class AdminController extends Controller
 
         $admin->update(['password' => $request->validated('password')]);
         $admin->tokens()->delete();
+
+        // Resetting a peer hands over an account with the same reach as your
+        // own. The confirmation guards WHO may do it; this makes sure it can
+        // never be done silently (FR-22).
+        app(NotificationDispatcher::class)->passwordWasReset($admin, $request->user());
 
         return response()->json(['data' => ['reset' => true]]);
     }

@@ -43,6 +43,14 @@ class VehicleStatusWriter
     public const SOURCE_DISPATCH_CLOSE = 'Dispatch Closed';
 
     /**
+     * An open dispatch was edited onto a DIFFERENT vehicle, so the one it used
+     * to name is released. Distinct from Dispatch Closed because nothing came
+     * back from a mission — the record was corrected — and the status
+     * confirmation dialog should not claim otherwise.
+     */
+    public const SOURCE_DISPATCH_EDIT = 'Dispatch Reassigned';
+
+    /**
      * Write a status from a module other than Dispatch.
      *
      * @param  array<string, mixed>  $extra  additional vehicle attributes. Pass
