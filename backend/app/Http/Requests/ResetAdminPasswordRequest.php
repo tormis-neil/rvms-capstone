@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Validator;
 
 /**
- * One administrator resets a colleague's password (FR-04a, 2026-08).
+ * One administrator resets a colleague's password (FR-22, 2026-08).
  *
  * This is the case that actually closes the lockout hole. An agency may have
  * several administrators — BFP ships with two by design — so a colleague can

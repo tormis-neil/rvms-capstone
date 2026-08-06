@@ -10,7 +10,7 @@ use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /**
- * Recovering a forgotten password without email (FR-04a, 2026-08).
+ * Recovering a forgotten password without email (FR-22, 2026-08).
  *
  * The system sends no mail, deliberately: SMTP credentials are one more thing
  * to configure at turnover and one more thing to fail silently, which is the

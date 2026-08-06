@@ -82,7 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject']);
         Route::patch('/drivers/{driver}/license', [DriverController::class, 'updateLicense']);
         // Soft delete + restore (FR-06, extended 2026-08).
-        // Password reset without email (FR-04a, 2026-08): the admin sets it and
+        // Password reset without email (FR-22, 2026-08): the admin sets it and
         // reads it out. The system sends no mail by design.
         Route::patch('/drivers/{driver}/password', [DriverController::class, 'resetPassword']);
         Route::delete('/drivers/{driver}', [DriverController::class, 'destroy']);

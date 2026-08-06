@@ -42,7 +42,7 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     Route::patch('/drivers/{driver}/license', [DriverController::class, 'updateLicense'])->name('drivers.license');
     Route::patch('/drivers/{driver}/approve', [DriverController::class, 'approve'])->name('drivers.approve');
     Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject'])->name('drivers.reject');
-    // Password reset + soft delete/restore (FR-04a, FR-06, 2026-08).
+    // Password reset + soft delete/restore (FR-22, FR-06, 2026-08).
     Route::patch('/drivers/{driver}/password', [DriverController::class, 'resetPassword'])->name('drivers.password');
     Route::delete('/drivers/{driver}', [DriverController::class, 'destroy'])->name('drivers.destroy');
     Route::patch('/drivers/{driver}/restore', [DriverController::class, 'restore'])->name('drivers.restore');
@@ -73,7 +73,7 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     // (design decision 7: no FR backs editing agency information).
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    // A colleague administrator's password (FR-04a, 2026-08) — the layer that
+    // A colleague administrator's password (FR-22, 2026-08) — the layer that
     // stops a forgotten password locking an agency out of its own dashboard.
     Route::patch('/admins/{admin}/password', [ProfileController::class, 'resetColleaguePassword'])->name('admins.password');
 

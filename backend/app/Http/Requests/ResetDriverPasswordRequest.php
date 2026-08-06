@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * An administrator sets a new password for one of their drivers (FR-04a, 2026-08).
+ * An administrator sets a new password for one of their drivers (FR-22, 2026-08).
  *
  * The routine half of "I forgot my password". A driver in the field has no way
  * to reset their own — the system sends no email, deliberately, because SMTP
