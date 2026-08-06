@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Models\User;
+use App\Services\NotificationDispatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -98,6 +99,11 @@ class ProfileController extends Controller
 
         $admin->update(['password' => $validated['password']]);
         $admin->tokens()->delete();
+
+        // Resetting a peer hands over an account with the same reach as your
+        // own. The confirmation above guards WHO may do it; this makes sure it
+        // can never be done silently (FR-22).
+        app(NotificationDispatcher::class)->passwordWasReset($admin, $request->user());
 
         return back()->with('status', "Password reset for {$admin->name}. Give them the new password directly.");
     }

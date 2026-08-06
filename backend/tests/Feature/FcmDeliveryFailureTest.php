@@ -352,4 +352,90 @@ class FcmDeliveryFailureTest extends TestCase
         $this->assertStringNotContainsString(str_repeat('a', 20), $masked);
         $this->assertStringContainsString('160 chars', $masked);
     }
+
+    /* ------------------- the after-response retry fallback ------------------ */
+
+    /**
+     * A push sent after the response has no retry machinery, so a transient
+     * Google failure used to cost that banner outright. On a slow connection
+     * that happened often enough to look like the system was unreliable, even
+     * though the inbox row was always correct (2026-08, lead-reported).
+     *
+     * It is now handed to the queue, which the scheduler drains every minute —
+     * so the fix needs nothing running that a deployment does not already have.
+     */
+    public function test_a_transient_failure_after_the_response_is_queued_for_retry(): void
+    {
+        $agency = Agency::factory()->create(['code' => 'BFP']);
+        $driver = User::factory()->driver()->create([
+            'agency_id' => $agency->id,
+            'fcm_token' => 'device-abc',
+        ]);
+
+        Http::fake([self::ENDPOINT => Http::response(['error' => ['status' => 'UNAVAILABLE']], 503)]);
+        $this->app->instance(FcmTransport::class, $this->transport);
+
+        Bus::fake();
+
+        // $this->job is null — exactly how an after-response run looks.
+        (new SendFcmMessage($this->push(), $driver->id))->handle($this->transport);
+
+        Bus::assertDispatched(SendFcmMessage::class);
+
+        // A transient outage is not a dead handset.
+        $this->assertSame('device-abc', $driver->fresh()->fcm_token);
+    }
+
+    /**
+     * The other half of the same rule: once the job IS on the queue, the
+     * retry belongs to $tries/$backoff. Re-dispatching there instead would
+     * spawn a fresh job on every attempt and never give up.
+     */
+    public function test_a_transient_failure_under_a_worker_rethrows_instead_of_requeueing(): void
+    {
+        $agency = Agency::factory()->create(['code' => 'BFP']);
+        $driver = User::factory()->driver()->create([
+            'agency_id' => $agency->id,
+            'fcm_token' => 'device-abc',
+        ]);
+
+        Http::fake([self::ENDPOINT => Http::response(['error' => ['status' => 'UNAVAILABLE']], 503)]);
+        $this->app->instance(FcmTransport::class, $this->transport);
+
+        Bus::fake();
+
+        $job = new SendFcmMessage($this->push(), $driver->id);
+        // Stand in for a queue worker having claimed the job.
+        $job->setJob(\Mockery::mock(\Illuminate\Contracts\Queue\Job::class));
+
+        try {
+            $job->handle($this->transport);
+            $this->fail('A transient failure under a worker should rethrow.');
+        } catch (RuntimeException $e) {
+            $this->assertStringContainsString('FCM send failed', $e->getMessage());
+        }
+
+        Bus::assertNotDispatched(SendFcmMessage::class);
+    }
+
+    /** A configuration fault must still fail fast rather than queue forever. */
+    public function test_a_configuration_fault_is_never_queued_for_retry(): void
+    {
+        $agency = Agency::factory()->create(['code' => 'BFP']);
+        $driver = User::factory()->driver()->create([
+            'agency_id' => $agency->id,
+            'fcm_token' => 'device-abc',
+        ]);
+
+        Http::fake([self::ENDPOINT => Http::response([
+            'error' => ['status' => 'PERMISSION_DENIED', 'message' => 'API disabled'],
+        ], 403)]);
+        $this->app->instance(FcmTransport::class, $this->transport);
+
+        Bus::fake();
+
+        (new SendFcmMessage($this->push(), $driver->id))->handle($this->transport);
+
+        Bus::assertNotDispatched(SendFcmMessage::class);
+    }
 }

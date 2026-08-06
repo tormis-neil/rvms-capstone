@@ -130,6 +130,9 @@ class WebNotificationPageTest extends TestCase
             Notification::TYPE_PM_DUE => route('pm'),
             Notification::TYPE_PM_REMINDER => route('pm'),
             Notification::TYPE_VEHICLE_STATUS_UPDATE => route('vehicles'),
+            // The profile page is where the recipient can immediately replace
+            // the password someone else just set for them (FR-22 → FR-04).
+            Notification::TYPE_PASSWORD_RESET => route('profile'),
         ];
 
         // Every type is covered — a new type must not slip through untested.
@@ -201,18 +204,51 @@ class WebNotificationPageTest extends TestCase
         }
     }
 
-    /** The prototype's bell lists Today and Yesterday only. */
-    public function test_the_bell_lists_today_and_yesterday_only(): void
+    /**
+     * The bug this replaces: the badge counted every unread notification while
+     * the list was filtered to the last two days, so an unread alert older than
+     * yesterday was counted but never shown — the bell read "1" over an empty
+     * dropdown (2026-08, lead-reported).
+     *
+     * The invariant is that a non-zero badge always has something behind it.
+     */
+    public function test_an_older_unread_notification_is_counted_and_shown(): void
     {
-        $this->notificationFor($this->admin, ['message' => 'Bell today']);
-        $this->notificationFor($this->admin, ['message' => 'Bell yesterday', 'created_at' => now()->subDay()]);
-        $this->notificationFor($this->admin, ['message' => 'Bell last week', 'created_at' => now()->subDays(6)]);
+        $this->notificationFor($this->admin, [
+            'message' => 'Bell last week',
+            'created_at' => now()->subDays(6),
+        ]);
 
         $html = $this->actingAs($this->admin)->get('/dashboard')->assertOk()->getContent();
 
-        $this->assertStringContainsString('Bell today', $html);
-        $this->assertStringContainsString('Bell yesterday', $html);
-        $this->assertStringNotContainsString('Bell last week', $html);
+        $this->assertStringContainsString('>1 new<', $html, 'The badge did not count the older unread alert.');
+        $this->assertStringContainsString('Bell last week', $html, 'The badge counted an alert the dropdown never rendered.');
+        $this->assertStringNotContainsString('No notifications yet.', $html);
+    }
+
+    /** Newest first, and capped so the dropdown cannot grow without bound. */
+    public function test_the_bell_shows_the_latest_ten_newest_first(): void
+    {
+        foreach (range(1, 12) as $i) {
+            $this->notificationFor($this->admin, [
+                'message' => "Bell alert {$i}",
+                'created_at' => now()->subMinutes(60 - $i),
+            ]);
+        }
+
+        $html = $this->actingAs($this->admin)->get('/dashboard')->assertOk()->getContent();
+
+        // 12 is newest, 3 is the tenth; 1 and 2 fall off the end.
+        $this->assertStringContainsString('Bell alert 12', $html);
+        $this->assertStringContainsString('Bell alert 3', $html);
+        $this->assertStringNotContainsString('Bell alert 1<', $html);
+        $this->assertStringNotContainsString('Bell alert 2<', $html);
+
+        $this->assertLessThan(
+            strpos($html, 'Bell alert 3'),
+            strpos($html, 'Bell alert 12'),
+            'The bell is not ordered newest first.',
+        );
     }
 
     public function test_the_bell_hides_its_badge_when_nothing_is_unread(): void

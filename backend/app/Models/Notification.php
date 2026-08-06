@@ -47,6 +47,12 @@ class Notification extends Model
 
     public const TYPE_NEW_ACCESS_REQUEST = 'New_Access_Request';
 
+    /**
+     * Someone else set your password (FR-22 → FR-21). Raised for the affected
+     * user, never for the administrator who performed the reset.
+     */
+    public const TYPE_PASSWORD_RESET = 'Password_Reset';
+
     public const TYPES = [
         self::TYPE_PM_REMINDER,
         self::TYPE_VEHICLE_STATUS_UPDATE,
@@ -57,6 +63,7 @@ class Notification extends Model
         self::TYPE_PM_DUE_SOON,
         self::TYPE_PM_DUE,
         self::TYPE_NEW_ACCESS_REQUEST,
+        self::TYPE_PASSWORD_RESET,
     ];
 
     /**
@@ -76,6 +83,9 @@ class Notification extends Model
         self::TYPE_PM_REMINDER => ['icon' => 'bi-wrench-adjustable', 'tone' => 'warning', 'route' => 'pm'],
         self::TYPE_NEW_ACCESS_REQUEST => ['icon' => 'bi-person-plus', 'tone' => 'primary', 'route' => 'drivers'],
         self::TYPE_VEHICLE_STATUS_UPDATE => ['icon' => 'bi-truck', 'tone' => 'primary', 'route' => 'vehicles'],
+        // Routed to the profile page, which is where the recipient can set a
+        // password of their own choosing straight away (FR-04).
+        self::TYPE_PASSWORD_RESET => ['icon' => 'bi-key', 'tone' => 'warning', 'route' => 'profile'],
     ];
 
     protected $fillable = [

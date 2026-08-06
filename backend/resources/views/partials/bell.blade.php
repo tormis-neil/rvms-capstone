@@ -2,11 +2,21 @@
     Topbar notification bell (FR-21).
 
     BLOCK B: the prototype's markup from web/pages/notifications.html with only
-    the hardcoded data replaced by live values. Two behaviours are the
-    prototype's own, kept deliberately:
-      - the dropdown lists TODAY and YESTERDAY only (agency.js renderBell filters
-        to those two groups); everything else lives on the full page;
-      - the count badge and the "N new" pill both show the UNREAD count.
+    the hardcoded data replaced by live values.
+
+    The badge and the list must describe the SAME set — the prototype's
+    agency.js renderBell derives both from one array, so its count could never
+    disagree with what it showed. An earlier version here split them: the badge
+    counted every unread notification while the list was filtered to the last
+    two days, so an unread alert older than yesterday was COUNTED but never
+    RENDERED. The bell then read "3" over an empty dropdown, and the admin had
+    to open the full page to find out what it meant (2026-08, lead-reported).
+
+    So the date filter is gone: the dropdown carries the latest ten
+    notifications whatever their age, which is also what a modern notification
+    bell does. A non-zero badge now always has something behind it, and the
+    Today / Yesterday / Earlier grouping still lives on the full page, which is
+    where the prototype put it anyway.
 
     Rows post to notifications.open, which marks the notification read and then
     redirects to the module it concerns — Block A's hardcoded .html hrefs 404ed.
@@ -19,7 +29,6 @@
 
     $bellItems = \App\Models\Notification::query()
         ->forUser(auth()->id())
-        ->whereDate('created_at', '>=', now()->subDay()->startOfDay())
         ->latest('created_at')
         ->latest('id')
         ->limit(10)

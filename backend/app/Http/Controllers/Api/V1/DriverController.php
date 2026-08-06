@@ -12,6 +12,7 @@ use App\Http\Requests\UpdateDriverRequest;
 use App\Http\Resources\DriverResource;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\NotificationDispatcher;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -135,6 +136,10 @@ class DriverController extends Controller
 
         $driver->update(['password' => $request->validated('password')]);
         $driver->tokens()->delete();
+
+        // The driver is told who changed it, so a login that suddenly stops
+        // working has an explanation rather than looking like a fault (FR-22).
+        app(NotificationDispatcher::class)->passwordWasReset($driver, $request->user());
 
         return response()->json(['data' => ['reset' => true]]);
     }

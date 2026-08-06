@@ -9,6 +9,7 @@ use App\Services\Fcm\FcmTransport;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Delivers one push off the request cycle (FR-21).
@@ -17,6 +18,17 @@ use Illuminate\Support\Facades\Log;
  * must not wait on, or fail because of, a slow FCM call. Transient failures
  * (429/5xx) throw and are retried with backoff; a rejected token is not a
  * failure and instead clears the stale token so the system stops trying.
+ *
+ * The job runs in two modes, and handle() behaves differently in each:
+ *
+ *  - **After the response** (how NotificationDispatcher sends it, so a
+ *    deployment needs no queue worker). There is no retry machinery here, so a
+ *    transient failure is handed to the QUEUE, which the scheduler drains every
+ *    minute. Late beats lost.
+ *  - **Under a worker** (the re-dispatched copy above, or anything queued
+ *    normally). Transient failures rethrow into the usual $tries/$backoff.
+ *
+ * `$this->job` is what tells them apart: it is set only by a queue worker.
  */
 class SendFcmMessage implements ShouldQueue
 {
@@ -71,6 +83,35 @@ class SendFcmMessage implements ShouldQueue
                 .$e->getMessage());
 
             $this->fail($e);
+
+            return;
+        } catch (Throwable $e) {
+            // A transient failure — Google was slow, unreachable, or rate
+            // limiting. Under a worker this is what $tries and $backoff are
+            // for, so rethrow and let them do their job.
+            if ($this->job !== null) {
+                throw $e;
+            }
+
+            // Running AFTER THE RESPONSE, where there is no retry machinery at
+            // all: the callback runs once and whatever it loses is lost. That
+            // was the accepted cost of needing no queue worker, and on a slow
+            // connection it is paid often enough to notice — the alert reaches
+            // the inbox while the banner never arrives (2026-08,
+            // lead-reported).
+            //
+            // So hand it to the queue instead of dropping it. The scheduler
+            // already drains that queue every minute (`queue:work
+            // --stop-when-empty` in routes/console.php), so the retry needs
+            // nothing running that a deployment does not already have. The
+            // re-dispatched copy runs under a worker, takes the branch above,
+            // and gets the normal three attempts with backoff.
+            //
+            // Worst case the push is a minute late instead of never. Nothing
+            // here can loop: a queued attempt always has $this->job set.
+            Log::warning('FCM push failed after the response; queued for retry. '.$e->getMessage());
+
+            self::dispatch($this->message, $this->userId);
 
             return;
         }

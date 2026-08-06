@@ -9,6 +9,7 @@ use App\Models\Dispatch;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Services\DispatchGuard;
+use App\Services\DispatchReassignment;
 use App\Services\VehicleStatusWriter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -79,12 +80,34 @@ class DispatchController extends Controller
 
     public function update(StoreDispatchRequest $request, Dispatch $dispatch): RedirectResponse
     {
-        $data = $request->validated();
-        if ($data['mission_type'] !== Dispatch::MISSION_OTHERS) {
-            $data['mission_other'] = null;
-        }
+        DB::transaction(function () use ($request, $dispatch) {
+            $data = $request->validated();
+            if ($data['mission_type'] !== Dispatch::MISSION_OTHERS) {
+                $data['mission_other'] = null;
+            }
 
-        $dispatch->update($data);
+            // The vehicle this dispatch names before the edit — captured here
+            // because after update() the old id is gone.
+            $previousVehicleId = (int) $dispatch->vehicle_id;
+
+            // Same locked re-check as store(): an edit can move this dispatch
+            // onto a vehicle or driver that another admin is claiming in the
+            // same instant. Ignores itself, so re-saving without changing the
+            // vehicle is never a clash with its own record.
+            if ($dispatch->isActive()) {
+                app(DispatchGuard::class)->assertFree(
+                    (int) $data['vehicle_id'],
+                    (int) $data['driver_id'],
+                    $dispatch->id,
+                );
+            }
+
+            $dispatch->update($data);
+
+            // Editing an open dispatch onto a different vehicle moves the
+            // Dispatched status with it (FR-18).
+            app(DispatchReassignment::class)->handOver($dispatch, $previousVehicleId);
+        });
 
         return redirect()->route('dispatch')->with('status', 'Dispatch updated.');
     }

@@ -87,6 +87,39 @@ class NotificationDispatcher
         );
     }
 
+    /**
+     * Tell someone that another person set their password (FR-22 → FR-21).
+     *
+     * Lives here, not in the four controllers that reset a password, so the
+     * wording cannot drift between the API and the dashboard — the same
+     * reasoning that put the dispatch refusal in DispatchGuard.
+     *
+     * Only ever raised for the AFFECTED user. Notifying the administrator who
+     * performed the reset would be telling them what they just did.
+     *
+     * Deliberately NOT raised by `rvms:reset-password`: that command is the
+     * fallback for an agency whose only administrator is locked out, so the
+     * person running it is standing at the server resetting their own account,
+     * and the alert would be addressed to whoever just typed it.
+     */
+    public function passwordWasReset(User $affected, User $actor): Notification
+    {
+        return $this->send(
+            $affected,
+            Notification::TYPE_PASSWORD_RESET,
+            'Password Reset',
+            sprintf(
+                'Your password was reset by %s on %s. If you did not request this, contact them immediately.',
+                $actor->name,
+                now()->format('M j, Y \a\t g:i A'),
+            ),
+            [
+                'actor_id' => $actor->id,
+                'actor_name' => $actor->name,
+            ],
+        );
+    }
+
     /** Every administrator of an agency — the audience for FR-21's admin alerts. */
     public function adminsOf(int $agencyId): Collection
     {

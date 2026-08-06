@@ -153,7 +153,21 @@
         </div>
     </div>
 
-    <!-- Forgot Password — contact-your-administrator modal (documented addition, plan R1.5) -->
+    {{--
+        Forgot Password — the recovery routes, spelled out (documented addition,
+        plan R1.5; rewritten 2026-08 for FR-22).
+
+        The original text said "contact your system administrator", which named
+        a role that does not exist: this dashboard is for AGENCY administrators,
+        and there is no super-administrator above them (design decision 6 —
+        admin accounts are provisioned, and inventing a super-admin role would
+        be a feature no requirement backs). So the advice pointed nowhere.
+
+        The link stays. It is the only place a locked-out administrator is told
+        what to do, and a login form with no way forward is a worse outcome than
+        slightly wrong wording. What it now names is the two paths that actually
+        exist, in the order someone should try them.
+    -->
     <div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -163,12 +177,29 @@
                 </div>
                 <div class="modal-body">
                     <p class="small mb-2">
-                        Password resets are handled by your system administrator.
+                        The system does not send password reset emails. Your password
+                        is reset for you, one of two ways:
                     </p>
+                    <ul class="small text-secondary mb-2 ps-3">
+                        <li class="mb-2">
+                            <span class="fw-semibold text-dark">Ask another administrator in your agency.</span>
+                            From their Profile page, under Agency Administrators, they
+                            can set a new password for your account.
+                        </li>
+                        <li class="mb-0">
+                            <span class="fw-semibold text-dark">If you are your agency's only administrator</span>,
+                            whoever maintains the server runs
+                            <code>php artisan rvms:reset-password</code> on it.
+                        </li>
+                    </ul>
                     <p class="small text-secondary mb-0">
-                        Please contact your agency's system administrator to have your
-                        password reset. You will receive your new sign-in credentials
-                        directly from them.
+                        You will receive the new password directly from them, and can
+                        change it yourself from your Profile page once signed in.
+                    </p>
+                    <p class="small text-secondary mb-0 mt-2">
+                        <span class="fw-semibold text-dark">Drivers:</span> contact your
+                        agency administrator, who can reset your password from the
+                        Drivers page.
                     </p>
                 </div>
                 <div class="modal-footer border-0">

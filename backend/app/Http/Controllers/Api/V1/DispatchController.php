@@ -10,6 +10,7 @@ use App\Http\Resources\VehicleResource;
 use App\Models\Dispatch;
 use App\Models\Vehicle;
 use App\Services\DispatchGuard;
+use App\Services\DispatchReassignment;
 use App\Services\VehicleStatusWriter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -73,15 +74,35 @@ class DispatchController extends Controller
 
     /**
      * PUT /dispatches/{id} — edit an open dispatch's details (FR-15).
+     *
+     * Moving an OPEN dispatch onto a different vehicle moves the Dispatched
+     * status with it (FR-18) — see DispatchReassignment for why that is not
+     * optional.
      */
     public function update(StoreDispatchRequest $request, Dispatch $dispatch)
     {
-        $data = $request->validated();
-        if ($data['mission_type'] !== Dispatch::MISSION_OTHERS) {
-            $data['mission_other'] = null;
-        }
+        DB::transaction(function () use ($request, $dispatch) {
+            $data = $request->validated();
+            if ($data['mission_type'] !== Dispatch::MISSION_OTHERS) {
+                $data['mission_other'] = null;
+            }
 
-        $dispatch->update($data);
+            $previousVehicleId = (int) $dispatch->vehicle_id;
+
+            // Same locked re-check as store(), ignoring this dispatch so
+            // re-saving it is never a clash with its own record.
+            if ($dispatch->isActive()) {
+                app(DispatchGuard::class)->assertFree(
+                    (int) $data['vehicle_id'],
+                    (int) $data['driver_id'],
+                    $dispatch->id,
+                );
+            }
+
+            $dispatch->update($data);
+
+            app(DispatchReassignment::class)->handOver($dispatch, $previousVehicleId);
+        });
 
         return DispatchResource::make($dispatch->fresh()->load(['vehicle', 'driver']));
     }

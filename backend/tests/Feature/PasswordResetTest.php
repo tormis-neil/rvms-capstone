@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Agency;
+use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -200,6 +201,86 @@ class PasswordResetTest extends TestCase
             'current_password' => 'password',
             'password' => 'x-new-password',
         ])->assertForbidden();
+    }
+
+    /* ------------------ the reset is never silent (FR-22 → FR-21) ---------- */
+
+    /**
+     * The capability is not the risk; doing it unannounced is. A reset now
+     * lands in the affected user's own inbox naming who performed it — the
+     * accountability trail every comparable system leaves (2026-08).
+     */
+    public function test_a_driver_is_told_who_reset_their_password(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        $this->patchJson("/api/v1/drivers/{$this->driver->id}/password", ['password' => 'new-secret-123'])
+            ->assertOk();
+
+        $notification = Notification::query()
+            ->withoutGlobalScopes()
+            ->where('user_id', $this->driver->id)
+            ->where('type', Notification::TYPE_PASSWORD_RESET)
+            ->first();
+
+        $this->assertNotNull($notification, 'The driver was not told their password had been reset.');
+        $this->assertStringContainsString($this->admin->name, $notification->message);
+    }
+
+    public function test_a_colleague_is_told_who_reset_their_password(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        $this->patchJson("/api/v1/admins/{$this->colleague->id}/password", [
+            'current_password' => 'password',
+            'password' => 'colleague-new-123',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $this->colleague->id,
+            'type' => Notification::TYPE_PASSWORD_RESET,
+        ]);
+    }
+
+    /** Telling the administrator what they just did would be noise. */
+    public function test_the_administrator_who_reset_it_is_not_notified(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        $this->patchJson("/api/v1/drivers/{$this->driver->id}/password", ['password' => 'new-secret-123']);
+
+        $this->assertDatabaseMissing('notifications', [
+            'user_id' => $this->admin->id,
+            'type' => Notification::TYPE_PASSWORD_RESET,
+        ]);
+    }
+
+    /** FR-04 is a self-service edit — nobody needs telling what they did themselves. */
+    public function test_changing_your_own_password_notifies_nobody(): void
+    {
+        Sanctum::actingAs($this->driver);
+
+        $this->patchJson('/api/v1/me/profile', [
+            'password' => 'my-own-new-123',
+            'password_confirmation' => 'my-own-new-123',
+        ])->assertOk();
+
+        $this->assertDatabaseMissing('notifications', [
+            'type' => Notification::TYPE_PASSWORD_RESET,
+        ]);
+    }
+
+    public function test_the_dashboard_reset_notifies_too(): void
+    {
+        $this->actingAs($this->admin)
+            ->from('/drivers')
+            ->patch(route('drivers.password', $this->driver), ['password' => 'new-secret-123'])
+            ->assertRedirect('/drivers');
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $this->driver->id,
+            'type' => Notification::TYPE_PASSWORD_RESET,
+        ]);
     }
 
     /* -------------------- 3. the console fallback ------------------------- */
