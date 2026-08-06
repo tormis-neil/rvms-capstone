@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 use function Laravel\Prompts\password as promptPassword;
 
 /**
- * The last resort when nobody can sign in (FR-04a, 2026-08).
+ * The last resort when nobody can sign in (FR-22, 2026-08).
  *
  * Two of the three recovery paths are in the dashboard: an administrator resets
  * a driver, and administrators reset each other. This exists for the case

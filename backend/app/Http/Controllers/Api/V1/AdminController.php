@@ -10,7 +10,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * An agency's administrators, and the one action they can take on each other
- * (FR-04a, 2026-08).
+ * (FR-22, 2026-08).
  *
  * Deliberately NOT a management module. Administrator accounts are provisioned
  * (design decision 6) — there is no create, no edit and no delete here, and

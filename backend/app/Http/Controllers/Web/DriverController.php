@@ -168,7 +168,7 @@ class DriverController extends Controller
     }
 
     /**
-     * Set a new password for a driver (FR-04a, 2026-08).
+     * Set a new password for a driver (FR-22, 2026-08).
      *
      * The action behind "contact your administrator" on the login screen. The
      * admin types it and reads it out — no confirmation box, because they can

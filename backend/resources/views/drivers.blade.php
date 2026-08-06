@@ -170,7 +170,7 @@
                                             <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
                                             <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
                                             <button class="btn btn-sm btn-light border" title="Update License" data-bs-toggle="modal" data-bs-target="#updateLicenseModal"><i class="bi bi-arrow-clockwise"></i></button>
-                                            {{-- Reset Password (FR-04a, 2026-08): the action behind the
+                                            {{-- Reset Password (FR-22, 2026-08): the action behind the
                                                  login screen's "contact your administrator". --}}
                                             <button type="button" class="btn btn-sm btn-light border js-reset"
                                                     title="Reset Password"
@@ -248,7 +248,7 @@
 @section('modals')
     @include('partials.delete-confirm')
 
-    {{-- Reset a driver's password (FR-04a, 2026-08). No confirmation box: the
+    {{-- Reset a driver's password (FR-22, 2026-08). No confirmation box: the
          admin types the password FOR someone else and reads it out, so a second
          field confirms nothing they cannot already see. --}}
     <div class="modal fade" id="resetPasswordModal" tabindex="-1">
@@ -595,7 +595,7 @@
         document.getElementById('ulPlus5').addEventListener('click', () => addYears(5));
         document.getElementById('ulPlus10').addEventListener('click', () => addYears(10));
 
-        // Row actions added 2026-08: reset password (FR-04a) and delete (FR-06).
+        // Row actions added 2026-08: reset password (FR-22) and delete (FR-06).
         document.querySelectorAll('.js-reset').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 document.getElementById('rpName').textContent = btn.dataset.name;

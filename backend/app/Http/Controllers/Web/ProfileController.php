@@ -31,7 +31,7 @@ class ProfileController extends Controller
         return view('profile', [
             'user' => $request->user()->load('agency'),
             // Colleagues, so a locked-out administrator can be put back in
-            // without a developer touching the database (FR-04a, 2026-08).
+            // without a developer touching the database (FR-22, 2026-08).
             // A list and one action — administrator accounts stay provisioned.
             'colleagues' => User::query()
                 ->where('agency_id', $request->user()->agency_id)
@@ -71,7 +71,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Reset a colleague administrator's password (FR-04a, 2026-08).
+     * Reset a colleague administrator's password (FR-22, 2026-08).
      *
      * Demands the acting admin's OWN password first. Resetting a peer hands
      * over an account with the same reach as your own, so an unattended

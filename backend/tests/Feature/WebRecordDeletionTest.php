@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 /**
- * The dashboard half of delete, restore and password reset (FR-04a, FR-05,
+ * The dashboard half of delete, restore and password reset (FR-22, FR-05,
  * FR-06 — 2026-08).
  *
  * The API suites prove the rules; this proves an administrator can actually

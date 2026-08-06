@@ -123,7 +123,7 @@ class DriverController extends Controller
     }
 
     /**
-     * Set a new password for a driver (FR-04a, 2026-08).
+     * Set a new password for a driver (FR-22, 2026-08).
      *
      * The action behind the login screen's "contact your administrator". Every
      * existing token is revoked with it: if the reset was prompted by a lost or

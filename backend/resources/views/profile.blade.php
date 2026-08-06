@@ -106,7 +106,7 @@
                     </button>
                 </div>
 
-                {{-- Agency Administrators — documented addition (FR-04a, 2026-08).
+                {{-- Agency Administrators — documented addition (FR-22, 2026-08).
                      NOT a management module: administrator accounts stay provisioned
                      (design decision 6), so there is no add, no edit and no delete
                      here. One action only, and it is the one that stops a forgotten
@@ -144,7 +144,7 @@
 @section('modals')
     {{-- Resetting a peer hands over an account with the same reach as your own,
          so this dialog asks for YOUR password first — unlike a driver reset,
-         which is routine administration (FR-04a, 2026-08). --}}
+         which is routine administration (FR-22, 2026-08). --}}
     <div class="modal fade" id="resetAdminModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
