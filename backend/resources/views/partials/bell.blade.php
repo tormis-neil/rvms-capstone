@@ -18,6 +18,14 @@
     Today / Yesterday / Earlier grouping still lives on the full page, which is
     where the prototype put it anyway.
 
+    Unread rows carry the blue dot and the tinted background, exactly as the
+    notifications page renders them. The prototype's bell has neither, but that
+    is because its demo data has no read/unread state at all (agency.js styles
+    every row identically) — the same reason the full page already added them.
+    Without it the badge said "3 new" over ten identically-styled rows, so the
+    one thing the count promised was the one thing the list would not show
+    (2026-08, lead-reported).
+
     Rows post to notifications.open, which marks the notification read and then
     redirects to the module it concerns — Block A's hardcoded .html hrefs 404ed.
 --}}
@@ -54,10 +62,10 @@
                  like the prototype's <a> row. --}}
             <form method="POST" action="{{ route('notifications.open', $notification) }}">
                 @csrf
-                <button type="submit" class="dropdown-item notif-item d-flex align-items-start gap-2 py-2 border-bottom text-start w-100 border-0 bg-transparent">
+                <button type="submit" class="dropdown-item notif-item d-flex align-items-start gap-2 py-2 border-bottom text-start w-100 border-0 {{ $notification->is_read ? 'bg-transparent' : 'bg-light' }}">
                     <span class="notif-icon rounded-circle bg-{{ $notification->tone() }} bg-opacity-10 text-{{ $notification->tone() }} d-inline-flex justify-content-center align-items-center"><i class="bi {{ $notification->icon() }}"></i></span>
                     <span>
-                        <span class="small fw-bold d-block">{{ $notification->title }}</span>
+                        <span class="small fw-bold d-block">@unless ($notification->is_read)<i class="bi bi-circle-fill text-primary me-2" style="font-size: 0.4rem; vertical-align: middle;"></i>@endunless{{ $notification->title }}</span>
                         <span class="small text-secondary d-block">{{ $notification->message }}</span>
                         <span class="text-secondary d-block" style="font-size: 0.7rem;">{{ $notification->group() }}, {{ $notification->timeLabel() }}</span>
                     </span>
