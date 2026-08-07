@@ -251,6 +251,52 @@ class WebNotificationPageTest extends TestCase
         );
     }
 
+    /**
+     * The badge promises "N new"; the rows have to show WHICH. Without this the
+     * dropdown was ten identically-styled lines under a count that meant
+     * nothing (2026-08, lead-reported). Mirrors the notifications page, which
+     * already marks unread rows for exactly the same reason.
+     */
+    public function test_the_bell_marks_which_rows_are_unread(): void
+    {
+        $this->notificationFor($this->admin, ['message' => 'Bell unread']);
+        $this->notificationFor($this->admin, [
+            'message' => 'Bell already read',
+            'is_read' => true,
+            'read_at' => now(),
+        ]);
+
+        $html = $this->actingAs($this->admin)->get('/dashboard')->assertOk()->getContent();
+
+        $bell = $this->bellMarkup($html);
+
+        $this->assertStringContainsString('bi-circle-fill text-primary', $bell, 'No unread dot in the bell.');
+        // One dot, for the one unread row — not one per row.
+        $this->assertSame(1, substr_count($bell, 'bi-circle-fill text-primary'));
+        $this->assertStringContainsString('bg-light', $bell, 'The unread row is not tinted.');
+    }
+
+    /** Everything already read renders no dots at all. */
+    public function test_the_bell_marks_nothing_when_everything_is_read(): void
+    {
+        $this->notificationFor($this->admin, ['is_read' => true, 'read_at' => now()]);
+
+        $bell = $this->bellMarkup($this->actingAs($this->admin)->get('/dashboard')->assertOk()->getContent());
+
+        $this->assertStringNotContainsString('bi-circle-fill text-primary', $bell);
+    }
+
+    /** Just the dropdown, so page markup cannot satisfy a bell assertion. */
+    private function bellMarkup(string $html): string
+    {
+        $start = strpos($html, 'js-bell-list');
+        $this->assertNotFalse($start, 'The bell dropdown is not on the page.');
+
+        $end = strpos($html, 'View All Notifications', $start);
+
+        return substr($html, $start, $end - $start);
+    }
+
     public function test_the_bell_hides_its_badge_when_nothing_is_unread(): void
     {
         $this->notificationFor($this->admin, ['is_read' => true, 'read_at' => now()]);
