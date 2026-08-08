@@ -5,6 +5,9 @@
 > workflows, and enumerations. Never invent features, tables, columns, or statuses that
 > it does not justify. The prototype lives in `web/` (static Bootstrap dashboard) and
 > `mobile/` (Jetpack Compose driver app); `skills/rvms-prototype-plan.md` details workflows.
+> Figure, ERD and data-dictionary work deferred out of the 2026-08 audit is parked in
+> `skills/rvms-deferred-manuscript-work.md` — read it before touching any diagram or the
+> Chapter 4 data dictionary, so the same findings are not investigated twice.
 
 ---
 
