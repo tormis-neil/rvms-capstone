@@ -1,0 +1,364 @@
+# Manuscript ↔ System Audit — Findings and Disposition (2026-08)
+
+> **Result: 0 system bugs.** Every capability the manuscript claims, the code
+> implements. Every enumerated list matches the code word for word. All findings
+> below are documentation that fell behind the code, concentrated in Chapter 1.
+>
+> **What was audited.** Chapters 1–4 of the .docx manuscript against the repo's
+> source of truth, the four diagrams (.drawio), the migrations, the routes, the
+> controllers, the Blade pages, the mobile screens, and the test suite.
+>
+> **Method.** Two directions. *Derivation* — does Chapter 4 follow from Chapters
+> 1–3? *Implementation* — does the code match Chapter 4? Organised around the
+> four objectives, per the capstone adviser's guidance ("follow the objectives"),
+> so every finding traces to something the study set out to do.
+
+---
+
+## Scoreboard
+
+| Area | Findings | System bugs |
+|---|---|---|
+| Chapter 1 — Introduction | 8 | 0 |
+| Chapter 2 — RRL/RRS | 1 (optional) | 0 |
+| Chapter 3 — Technical Background | 2 (optional) | 0 |
+| Chapter 4 — Methodology | 6 | 0 |
+| Diagrams (Figures 2–5) | 4 | 0 |
+| Repo source of truth | 2 — **already fixed** | 0 |
+| **Total** | **23** | **0** |
+
+**Verified clean, no action:** all 22 FRs implemented · all 5 NFRs · 15 of 15
+enumeration groups · 6 of 8 Chapter 3 version claims · every field named in
+FR-05/FR-06 exists as a column · Figures 4 and 5 balance one-to-one on their
+eight processes/functions.
+
+---
+
+## PART 1 — CHAPTER 1 (Introduction)
+
+Chapter 1 is where nearly everything landed. Three capabilities were added to
+the system after Chapter 1 was written and never made it back into it — the
+exact inversion the project lead identified: **Chapter 4 must derive from
+Chapter 1, not run ahead of it.**
+
+### 1.1 — Three capabilities missing from Scope ¶1 🔴
+
+`delete`, `remove`, `restore` → **0 matches** in all of Chapter 1.
+`profile`, `own name`, `own account` → **0 matches**.
+`password` → **1 match**, and only inside the Limitations sentence.
+
+Yet FR-04 (self-service profile), FR-05/FR-06 (delete + restore) and FR-22
+(password recovery) are all fully implemented and tested.
+
+**Fix — Chapter 1, Scope and Limitations, FIRST paragraph** (the inclusions
+paragraph). After the sentence ending *"…approaching and expired driver
+licenses."*, add these three sentences:
+
+> Agency Administrators will also be able to remove vehicle and driver records
+> that are no longer in service and to restore them if removed in error; a
+> removed record leaves all lists and selections while the inspections, damage
+> reports, repairs, preventive maintenance schedules, and dispatch records
+> attached to it are retained, and a vehicle or driver currently out on an active
+> dispatch cannot be removed.
+
+> Authorized Drivers and Agency Administrators will also be able to update their
+> own name, email address, and password without administrator approval.
+
+> Agency Administrators will also be able to set a new password for an Authorized
+> Driver of their agency and for a fellow Agency Administrator after confirming
+> their own password, so that an account holder who can no longer sign in can be
+> restored to access.
+
+### 1.2 — Typos 🟠
+
+| # | Section | Find | Replace |
+|---|---|---|---|
+| a | Objectives | `Specifically;` | `Specifically:` |
+| b | Limitations | `will not send electronic main` | `will not send electronic mail` |
+| c | Limitations | `a recovery common run on the server` | `a recovery command run on the server` |
+| d | Limitations | `such as the BFPs "Serviceable"` | `such as the BFP's "Serviceable"` |
+
+(b) and (c) are the ones to fix first — they are in a sentence about password
+recovery that a panel is likely to read closely.
+
+### 1.3 — The GPS/fuel-consumption sentence 🟠
+
+Three problems in one place: the exclusion list closes at "or" and then has
+", and fuel consumption monitoring" tacked on after it; "centered" should be
+"entered"; and one sentence was split into two, losing the semicolon that made
+the second half explain the first.
+
+**DELETE both of these sentences:**
+
+> The system will not include GPS tracking, GIS mapping, route navigation or
+> optimization, IoT-based vehicle diagnostics, telematics integration, or
+> automated dispatch recommendation features, and fuel consumption monitoring.
+> Odometer readings are centered manually by the Agency Administrator from the
+> vehicle's own odometer and are not captured automatically through any device
+> integration.
+
+**TYPE this single sentence in their place:**
+
+> The system will not include GPS tracking, GIS mapping, route navigation, route
+> optimization, IoT-based vehicle diagnostics, telematics integration, fuel
+> consumption monitoring, or automated dispatch recommendation features;
+> odometer readings are entered manually by the Agency Administrator from the
+> vehicle's own odometer and are not captured automatically through any device
+> integration.
+
+### 1.4 — Stray conjunction in the dispatch scope sentence 🟡
+
+| Find | Replace |
+|---|---|
+| `Administrative Travel, or Others), location, and date and time out, and an optional` | `Administrative Travel, or Others), location, date and time out, and an optional` |
+
+### 1.5 — RVMS acronym never introduced 🟡
+
+Chapter 1 writes the full name every time, so the abbreviation used later is
+never defined.
+
+| Find | Replace |
+|---|---|
+| `the development of the Rescue Vehicle Management System, a two-platform` | `the development of the Rescue Vehicle Management System (RVMS), a two-platform` |
+
+---
+
+## PART 2 — CHAPTER 2 (RRL/RRS)
+
+### 2.1 — BLOWBAGETS never named ⚪ optional
+
+`BLOWBAGETS` appears **0 times** in Chapter 2, though FR-09 is built entirely
+around it and it is the system's most distinctive feature.
+
+**This is defensible as written.** BLOWBAGETS is a local Philippine practice
+rather than something in international fleet-management literature, and Chapter
+2's closing paragraph already carries the argument: *"the reviewed systems do not
+adequately address the specific… inspection procedures… observed among rescue
+vehicle agencies in Calbayog City."*
+
+**Optional strengthening** — one sentence in that closing paragraph:
+
+> In particular, none of the reviewed systems digitize a standardized
+> pre-operation safety checklist such as the BLOWBAGETS protocol already
+> practiced by the Bureau of Fire Protection.
+
+Chapter 2 is otherwise sound: it names the gap and lists exactly the modules
+built, and its remarks on costly telematics hardware justify the Chapter 1
+exclusions of GPS/telematics.
+
+---
+
+## PART 3 — CHAPTER 3 (Technical Background)
+
+**Verified correct, no action:**
+
+| Claim | Actual | |
+|---|---|---|
+| Laravel 11 (PHP 8.2+) | `laravel/framework ^11.31`, PHP 8.5.5 | ✅ |
+| MySQL 8.0+ | MySQL Community Server **8.0.43** | ✅ |
+| Bootstrap 5.3+ | `bootstrap@5.3.3` | ✅ |
+| Android 8.0 (Oreo)+ | `minSdk = 26` | ✅ NFR-05 proven |
+| Firebase Android SDK 32.0.0+ | Firebase BOM 34.4.0 | ✅ |
+
+**XAMPP is correctly absent** from Chapter 3 (0 mentions). It is an installation
+bundle, not a technology the system depends on, so migrating from it to
+standalone PHP + MySQL 8 (2026-08) requires no manuscript change.
+
+### 3.1 — Two version rows are years out of date ⚪ optional
+
+Neither is false — both say "+" — but they understate the project.
+
+| Find | Replace |
+|---|---|
+| `Kotlin 1.9+` | `Kotlin 2.x (2.3.20)` |
+| `Compose BOM 2024.09.00+` | `Compose BOM 2026.03.01` |
+
+---
+
+## PART 4 — CHAPTER 4 (Methodology)
+
+### 4.1 — A whole paragraph is missing 🔴
+
+The repo has a paragraph mapping the Prototyping Model onto the Chapter 3
+Schedule of Activities; the .docx does not. It is what ties the methodology back
+to the Gantt chart.
+
+**WHERE:** after the paragraph ending *"…reducing the risk of implementing
+features that do not align with actual agency operations."*, before the
+**Requirements Analysis** heading.
+
+**INSERT:**
+
+> Following this model, the development of the Rescue Vehicle Management System
+> was organized into the phases reflected in the project's Schedule of Activities
+> presented in Chapter 3. The Planning and Data Gathering phase corresponds to
+> the requirements analysis phase, during which the proponents conducted
+> interviews, reviewed existing records and forms, and analyzed the operational
+> workflows of the participating agencies. The Prototype Design, Evaluation, and
+> Refinement phase corresponds to prototype design and validation, in which the
+> system architecture and an interactive prototype were designed and are being
+> evaluated by the client agencies and the capstone adviser, whose feedback is
+> used to refine the requirements and the prototype before development. The
+> System Development and Implementation phase corresponds to the construction and
+> integration of the system modules, while the Testing and Deployment phase covers
+> unit, integration, and user acceptance testing, pilot testing, and the
+> finalization of the system. The sections that follow present the outputs of the
+> requirements analysis and design phases of this process.
+
+### 4.2 — FR-06 contradicts itself 🔴
+
+Its opening lists only three verbs, but its own next two sentences describe
+deletion and restoration. FR-05 (vehicles) has the full list; FR-06 does not.
+
+| Find | Replace |
+|---|---|
+| `Enables Agency Administrators to add, update, and view driver records` | `Enables Agency Administrators to add, update, view, delete, and restore driver records` |
+
+### 4.3 — FR-15 missing preposition 🟡
+
+| Find | Replace |
+|---|---|
+| `location, and date and time out, and an optional odometer reading time out` | `location, date and time out, and an optional odometer reading at time out` |
+
+### 4.4 — FR-16 wording 🟡
+
+**Replace the whole description with:**
+
+> Allows Agency Administrators to close a dispatch by logging the date and time
+> in, an optional odometer reading at time in, and the vehicle's return status
+> (Operational, Not Operational, or Under Preventive Maintenance); the vehicle's
+> current mileage is updated from the time-in odometer reading.
+
+### 4.5 — FR-22 missing "to" 🟡
+
+| Find | Replace |
+|---|---|
+| `sign in, and set a new password for a fellow` | `sign in, and to set a new password for a fellow` |
+
+### 4.6 — System Architecture narrative lists dispatch twice 🟡
+
+| Find | Replace |
+|---|---|
+| `dispatch logs, repair histories, preventive maintenance schedules, and dispatch records from which the system's reports are generated` | `dispatch logs, repair histories, and preventive maintenance schedules — the records from which the system's reports are generated` |
+
+### 4.7 — Optional: soft delete in the Table 3 narrative ⚪
+
+The repo's version of the Table 3 narrative carries a clause the .docx lacks:
+*"…including the removal and restoration of records that are no longer in service
+while preserving the maintenance and dispatch history attached to them."*
+Worth adding to the .docx, since soft delete is a real capability the narrative
+should mention.
+
+---
+
+## PART 5 — DIAGRAMS
+
+⏸️ **Deferred by the project lead** to after testing and troubleshooting, and
+partly gated on the capstone instructor's pending format update.
+
+Full detail, including exact edits and the ERD/data-dictionary scope, is in
+**`skills/rvms-deferred-manuscript-work.md`**. Summary:
+
+| # | Figure | Change |
+|---|---|---|
+| A1 | 2 — System Architecture | `TRIGGGER` → `TRIGGER` |
+| A2 | 3 — Context Diagram | `Recods` → `Records` |
+| A3 | 5 — FDD | add `PASSWORD RECOVERY` under USER MANAGEMENT (FR-22 has no leaf) |
+| A4 | 5 — FDD | add notification list management (FR-21's mark-read / clear have no leaf) |
+| A5 | 4 — DFD | **no change** — 8 stores vs 11 tables is defensible; reasoning recorded |
+
+⚠️ Every diagram change needs the figure **re-exported and re-pasted** into the
+.docx. The manuscript holds flattened images.
+
+---
+
+## PART 6 — ALREADY FIXED (no action needed)
+
+### Repo source of truth — corrected during the audit
+
+Drift ran both ways. Two places where the .docx was ahead of the repo, now
+matched (commit `8090d24`):
+
+- the Table 3 narrative omitted password recovery from the access requirements;
+- it omitted "inspections with flagged items" from the notification list.
+
+### Decisions recorded
+
+- **`deleted_at` IS documented** in the Chapter 4 data dictionary (lead-decided).
+  A column is documented when a requirement made it necessary; FR-05/FR-06
+  require deletion and restoration. Same rule that put the dispatch odometer
+  columns in.
+- **`vehicles.remarks`, `status_source`, `status_changed_at` stay OUT** — no FR
+  backs them (design decisions 7 and 9).
+- **DFD stays at 8 data stores** — agency is a scoping attribute, not a store.
+
+---
+
+## PART 7 — WHAT WAS VERIFIED CLEAN
+
+Recorded so it is not re-investigated.
+
+**All four objectives met**, each traced Ch1 → Ch2 → Ch3 → Ch4 → diagrams → code
+→ tests.
+
+**Every enumeration matches the code exactly** — 15 of 15 groups:
+
+| Group | |
+|---|---|
+| BLOWBAGETS standard items | ✅ 12/12, exact names and order |
+| BLOWBAGETS BFP-only items | ✅ 2/2 (Hydraulic System, Fire Pump) |
+| Vehicle statuses | ✅ 4/4 |
+| Return statuses | ✅ 3/3 (correctly excludes Dispatched) |
+| Mission types | ✅ 6/6 |
+| Repair sources | ✅ 3/3 |
+| PM types / PM statuses | ✅ 2/2 and 4/4 |
+| Inspection item / review statuses | ✅ 2/2 and 2/2 |
+| Agencies | ✅ 4/4 |
+| Report types | ✅ 6/6 |
+| Dashboard counters | ✅ 8/8 |
+| Browsers (NFR-05) | ✅ 3/3 |
+
+*(Account statuses read 2/3 only because the value `rejected` belongs in the data
+dictionary rather than prose — the manuscript correctly describes the action,
+"approves or rejects".)*
+
+**Other verified facts:** every field named in FR-05/FR-06 exists as a column ·
+FR-20's "generated by / generated on" stamp is implemented
+(`reports.blade.php:120-121`) · PM never auto-renews, as Chapter 1 promises ·
+Figures 4 and 5 correspond one-to-one across all eight processes/functions.
+
+---
+
+## EXECUTION CHECKLIST
+
+Chapter 1 first — it holds the only 🔴 items and they are all in one paragraph.
+
+**Chapter 1**
+- [ ] 1.1 — add three sentences to Scope ¶1 🔴
+- [ ] 1.2a — `Specifically;` → `Specifically:`
+- [ ] 1.2b — `electronic main` → `electronic mail`
+- [ ] 1.2c — `recovery common` → `recovery command`
+- [ ] 1.2d — `BFPs` → `BFP's`
+- [ ] 1.3 — replace the GPS/odometer sentences
+- [ ] 1.4 — remove the stray `and`
+- [ ] 1.5 — introduce `(RVMS)`
+
+**Chapter 3**
+- [ ] 3.1 — Kotlin and Compose versions *(optional)*
+
+**Chapter 4**
+- [ ] 4.1 — insert the methodology paragraph 🔴
+- [ ] 4.2 — FR-06 verb list 🔴
+- [ ] 4.3 — FR-15
+- [ ] 4.4 — FR-16
+- [ ] 4.5 — FR-22
+- [ ] 4.6 — System Architecture narrative
+- [ ] 4.7 — soft delete in the Table 3 narrative *(optional)*
+
+**Chapter 2**
+- [ ] 2.1 — BLOWBAGETS sentence *(optional)*
+
+**Deferred** — see `rvms-deferred-manuscript-work.md`
+- [ ] Diagrams, ERD, data dictionary
+
+**Code:** nothing. The system passed clean.

@@ -219,21 +219,26 @@ below. **11 domain tables**, column counts including `id` and timestamps:
 | `dispatches` | 14 | includes `odometer_out`, `odometer_in` |
 | `notifications` | 10 | `type` is a **10-value** enum |
 
-### 🔴 Decision required before writing this section
+### ✅ DECIDED (2026-08, project lead): `deleted_at` IS in the manuscript
 
-**Do `users.deleted_at` and `vehicles.deleted_at` go into the manuscript's data
-dictionary?**
+`users.deleted_at` and `vehicles.deleted_at` are documented in the Chapter 4
+data dictionary as ordinary columns.
 
-The argument for **yes**: FR-05 and FR-06 describe deletion and restoration as
-requirements. A column that implements a stated requirement belongs in the data
-dictionary — the same reasoning that put `dispatches.odometer_out` /
-`odometer_in` in (design decision 8), since FR-15/FR-16 name them.
+The rule this follows: **a column is documented when a functional requirement
+made it necessary, and left out when it exists only for the code's own
+convenience.** FR-05 and FR-06 state that administrators may delete and restore
+vehicle and driver records; that is impossible without a column marking which
+records are deleted, so the requirement is what put it there. Identical
+reasoning to `dispatches.odometer_out` / `odometer_in` (design decision 8),
+which are in the manuscript because FR-15 and FR-16 name odometer readings — and
+the opposite of the three columns below, which no requirement asked for.
 
-The argument for **no**: none. Soft delete is requirement-backed, unlike the
-three columns below.
+Both are `TIMESTAMP`, nullable, default NULL. Suggested descriptions:
 
-**Recommendation: include both.** They are the only schema additions from the
-2026-08 work that an FR actually requires.
+| Table | Column | Description |
+|---|---|---|
+| `users` | `deleted_at` | Set when an Agency Administrator deletes the driver; the record leaves every list, selection and login while the inspections and damage reports they submitted are retained and still identify them. Cleared on restore. |
+| `vehicles` | `deleted_at` | Set when an Agency Administrator deletes the vehicle; it leaves every list and selection while its inspections, damage reports, repairs, preventive maintenance schedules and dispatches are retained and still resolve its plate number. Cleared on restore. |
 
 ### Columns deliberately EXCLUDED from the manuscript
 
@@ -287,7 +292,8 @@ Work top to bottom; each line is independently completable.
 - [ ] **A6** — run the context↔DFD balance check
 - [ ] **Re-export Figures 2, 3 and 5** and re-paste into the .docx ⚠️
 - [ ] **B** — draw the ERD; replace the `ERD heree……….` placeholder
-- [ ] **C** — decide on `deleted_at`; build the data dictionary from `CLAUDE.md`
+- [ ] **C** — build the data dictionary from `CLAUDE.md`; include `deleted_at` on
+      `users` and `vehicles` (decided — see Part C)
 - [ ] **C** — confirm the three excluded columns are absent
 - [ ] **C** — check `notifications.type` lists all ten values
 - [ ] Apply the capstone instructor's format update once received
