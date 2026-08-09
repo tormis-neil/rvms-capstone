@@ -525,5 +525,8 @@ IF THE APP LOSES THE SERVER:
 - Tiers 1 (deployed) and 2 (laptop hotspot) are documented separately. This tier
   needs no internet and no code changes — it works with the app exactly as it is
   today, which is why it is the fallback that cannot be taken away.
-- The demo script itself — what to show, in what order, who does what — is a
-  separate document. This one only covers **getting the system running**.
+- **This document only covers getting the system running.** Once both logins
+  work, go to **`rvms-demo-script.md`** for what to actually show — the running
+  order, who does what, and the expected result of every step. That script is
+  shared by all three tiers; the only things that differ here are that the phone
+  is tethered by the cable, and that push banners need the phone's mobile data.
