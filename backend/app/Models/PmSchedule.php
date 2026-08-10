@@ -40,6 +40,7 @@ class PmSchedule extends Model
         'status',
         'date_serviced',
         'completion_repair_source',
+        'completion_external_shop_name',
         'completion_parts_replaced',
         'completion_remarks',
     ];

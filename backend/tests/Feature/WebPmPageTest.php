@@ -95,4 +95,53 @@ class WebPmPageTest extends TestCase
     {
         $this->get('/pm')->assertRedirect(route('login'));
     }
+
+    /**
+     * The External Shop Name field, matching Repair Logs. PM completion recorded
+     * the source but never which outside shop did the work (2026-08).
+     */
+    public function test_the_complete_modal_offers_the_external_shop_name_field(): void
+    {
+        $html = $this->actingAs($this->admin)->get('/pm')->assertOk()->getContent();
+
+        $this->assertStringContainsString('completion_external_shop_name', $html);
+        // Hidden until External Repair Shop is chosen, the same way repairs does it.
+        $this->assertStringContainsString('js-shop-wrap', $html);
+        $this->assertStringContainsString('bindShopToggle', $html);
+    }
+
+    public function test_completing_through_the_page_stores_the_shop_name(): void
+    {
+        $schedule = PmSchedule::factory()->create([
+            'agency_id' => $this->agency->id,
+            'vehicle_id' => Vehicle::factory()->create(['agency_id' => $this->agency->id])->id,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->from('/pm')
+            ->patch(route('pm.complete', $schedule), [
+                'date_serviced' => now()->toDateString(),
+                'completion_repair_source' => RepairLog::SOURCE_EXTERNAL,
+                'completion_external_shop_name' => 'Calbayog Diesel Works',
+            ])
+            ->assertRedirect('/pm');
+
+        $this->assertSame('Calbayog Diesel Works', $schedule->fresh()->completion_external_shop_name);
+    }
+
+    public function test_the_page_refuses_an_external_completion_with_no_shop_name(): void
+    {
+        $schedule = PmSchedule::factory()->create([
+            'agency_id' => $this->agency->id,
+            'vehicle_id' => Vehicle::factory()->create(['agency_id' => $this->agency->id])->id,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->from('/pm')
+            ->patch(route('pm.complete', $schedule), [
+                'date_serviced' => now()->toDateString(),
+                'completion_repair_source' => RepairLog::SOURCE_EXTERNAL,
+            ])
+            ->assertSessionHasErrors('completion_external_shop_name');
+    }
 }

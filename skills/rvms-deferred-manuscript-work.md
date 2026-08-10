@@ -215,7 +215,7 @@ below. **11 domain tables**, column counts including `id` and timestamps:
 | `inspection_items` | 5 | no timestamps |
 | `damage_reports` | 12 | |
 | `repair_logs` | 12 | |
-| `pm_schedules` | 17 | two configurable threshold columns |
+| `pm_schedules` | 18 | two configurable threshold columns; includes `completion_external_shop_name` (added 2026-08 — FR-14) |
 | `dispatches` | 14 | includes `odometer_out`, `odometer_in` |
 | `notifications` | 10 | `type` is a **10-value** enum |
 

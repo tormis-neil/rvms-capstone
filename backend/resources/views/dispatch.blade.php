@@ -135,7 +135,12 @@
                             <label class="form-label fw-semibold">Driver</label>
                             <select class="form-select js-nd-driver" name="driver_id" required>
                                 @foreach ($drivers as $driver)
-                                <option value="{{ $driver->id }}">{{ $driver->name }}</option>
+                                {{-- The plates this driver is primary for, among the vehicles
+                                     actually dispatchable right now, so the reverse fill below
+                                     never offers a truck that is out or under maintenance. --}}
+                                <option value="{{ $driver->id }}"
+                                        data-vehicle-ids="{{ $vehicles->where('assigned_driver_id', $driver->id)->pluck('id')->implode(',') }}"
+                                        data-vehicle-plates="{{ $vehicles->where('assigned_driver_id', $driver->id)->pluck('plate_number')->implode(', ') }}">{{ $driver->name }}</option>
                                 @endforeach
                             </select>
                             <div class="form-text js-nd-driver-hint"></div>
@@ -374,7 +379,34 @@
                 }
             };
 
+            // And the same help in reverse (2026-08, lead-reported): picking the
+            // driver first left the admin hunting for their truck.
+            //
+            // It cannot always auto-select, because a driver may be the primary
+            // driver of MORE THAN ONE vehicle (Ch4 ERD, design decision 7). With
+            // exactly one dispatchable vehicle the choice is unambiguous and is
+            // filled in; with several, silently picking one would put a truck on
+            // a mission the admin never chose, so it names them and leaves the
+            // decision alone.
+            const syncVehicle = () => {
+                const option = driverSelect.selectedOptions[0];
+                if (!option) return;
+
+                const ids = (option.dataset.vehicleIds || '').split(',').filter(Boolean);
+                const plates = option.dataset.vehiclePlates || '';
+
+                if (ids.length === 1 && [...vehicleSelect.options].some(o => o.value === ids[0])) {
+                    vehicleSelect.value = ids[0];
+                    hint.textContent = 'Vehicle assigned to this driver. You may choose another.';
+                } else if (ids.length > 1) {
+                    hint.textContent = 'This driver is assigned to ' + plates + '. Choose one above.';
+                } else {
+                    hint.textContent = 'This driver has no operational vehicle assigned. You may choose any.';
+                }
+            };
+
             vehicleSelect.addEventListener('change', syncDriver);
+            driverSelect.addEventListener('change', syncVehicle);
             newDispatchModal.addEventListener('show.bs.modal', syncDriver);
         })();
         const editModal = document.getElementById('editDispatchModal');
