@@ -30,9 +30,43 @@ cd mobile
 ./gradlew test               # unit tests
 ```
 
+**`ERROR: JAVA_HOME is set to an invalid directory`** — Gradle is pointed at a
+JDK that is not there, usually because Android Studio was installed to a
+different folder than the one the variable names. Point it at the JDK that ships
+inside your own Android Studio install and re-run, e.g.:
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio1\jbr"
+```
+
+That lasts for the open terminal only. To make it permanent: Windows key →
+`environment variables` → Environment Variables → New, `JAVA_HOME`, with the
+path to the `jbr` folder.
+
+**No Android Studio at all?** GitHub Actions builds the APK on every push to
+`main` (`.github/workflows/android-build.yml`) and publishes it as a direct
+download under the `apk-latest` release. Nothing needs to be installed locally.
+
 ## Connecting to the backend
 
-The base URL lives in one place — `BASE_URL` in `data/remote/ApiClient.kt`.
+**The server address is chosen in the app, not compiled into it** (2026-08).
+At the bottom of the sign-in screen a line reads `Server: …` — tap it and type
+an address. It is saved, so it survives restarts.
+
+```
+deployed    https://your-site
+hotspot     192.168.137.1:8000     (the laptop's own Wi-Fi)
+USB cable   127.0.0.1:8000         (with adb reverse tcp:8000 tcp:8000)
+```
+
+Type the origin only — the app adds `/api/v1/`, and strips it if you paste it
+anyway. A missing `http://` is added for you. **Reset** in the same dialog goes
+back to the USB-cable default, which is what a fresh install starts on.
+
+`BASE_URL` in `data/remote/ApiClient.kt` is now only a placeholder Retrofit
+needs at build time; `ServerUrlInterceptor` rewrites the scheme, host and port
+on every request from `ServerUrlStore`. Changing that constant no longer changes
+where the app talks to.
 
 **Real phone over USB (the method used in testing).** No Wi-Fi, no IP address, no firewall
 changes: `adb reverse` forwards the phone's own `127.0.0.1:8000` through the cable to the
