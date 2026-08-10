@@ -33,7 +33,14 @@ fun MainNavigation() {
                 entry<Splash> {
                     SplashScreen(
                         // Verify a saved token against /me; route accordingly (FR-01).
-                        checkSession = { ServiceLocator.sessionManager.bootstrap() },
+                        checkSession = {
+                            // The saved server address must be in memory before
+                            // the first request goes out, or a cold start would
+                            // hit the built-in default instead of wherever the
+                            // app was last pointed (2026-08).
+                            ServiceLocator.serverUrlStore.prime()
+                            ServiceLocator.sessionManager.bootstrap()
+                        },
                         onSplashFinished = { authenticated ->
                             backStack.clear()
                             backStack.add(if (authenticated) Home else SignIn)

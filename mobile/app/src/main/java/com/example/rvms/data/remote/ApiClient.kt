@@ -10,17 +10,23 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 /**
  * Builds the one [ApiService] the whole app uses.
  *
- * Base URL is a single constant: the lead's real-phone-over-USB setup reaches
- * the laptop's Laravel server through `adb reverse tcp:8000 tcp:8000`, so the
- * phone's own 127.0.0.1:8000 points at the server. An emulator would instead
- * use 10.0.2.2 (its alias for the host) — switch the one line below.
+ * The base URL below is a PLACEHOLDER, not the address the app talks to.
+ * Retrofit needs one at build time; [ServerUrlInterceptor] rewrites the scheme,
+ * host and port on every request from whatever
+ * [com.example.rvms.data.ServerUrlStore] currently holds. That is what lets one
+ * APK serve a deployed site, a laptop on a hotspot, and a laptop on a USB cable
+ * without being rebuilt (2026-08).
  *
  * The JSON config ignores unknown keys (the API may add fields) and omits
  * nulls when encoding request bodies.
  */
 object ApiClient {
 
-    // Real phone via USB (adb reverse). Emulator: use "http://10.0.2.2:8000/api/v1/".
+    /**
+     * Placeholder only — the host and port are replaced per request. The PATH
+     * is real and is what every endpoint hangs off, so it must stay in step
+     * with ServerUrlStore.API_PREFIX.
+     */
     const val BASE_URL = "http://127.0.0.1:8000/api/v1/"
 
     val json: Json = Json {
@@ -29,10 +35,13 @@ object ApiClient {
     }
 
     /**
-     * @param tokenProvider returns the current bearer token (TokenStore.cachedToken),
-     *        or null before sign-in.
+     * @param tokenProvider returns the current bearer token, or null before sign-in.
+     * @param originProvider returns the server origin to send this request to.
      */
-    fun create(tokenProvider: () -> String?): ApiService {
+    fun create(
+        tokenProvider: () -> String?,
+        originProvider: () -> String = { "http://127.0.0.1:8000" },
+    ): ApiService {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
             // Level.BODY prints request headers too, and one of them is
@@ -44,6 +53,8 @@ object ApiClient {
         }
 
         val client = OkHttpClient.Builder()
+            // Address first: everything after it should see the real target.
+            .addInterceptor(ServerUrlInterceptor(originProvider))
             .addInterceptor(AuthInterceptor(tokenProvider))
             .addInterceptor(logging)
             .build()

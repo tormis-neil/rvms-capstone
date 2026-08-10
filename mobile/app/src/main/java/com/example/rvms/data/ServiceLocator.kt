@@ -20,6 +20,10 @@ object ServiceLocator {
     lateinit var tokenStore: TokenStore
         private set
 
+    /** Which server the app talks to — switchable at runtime (2026-08). */
+    lateinit var serverUrlStore: ServerUrlStore
+        private set
+
     lateinit var api: ApiService
         private set
 
@@ -41,9 +45,21 @@ object ServiceLocator {
     lateinit var notificationRepository: NotificationRepository
         private set
 
+    /**
+     * The current server address, or the built-in default when the locator has
+     * not been initialised — which is the case inside a Compose @Preview, where
+     * touching a lateinit property would throw at composition time.
+     */
+    fun serverOriginOrDefault(): String =
+        if (::serverUrlStore.isInitialized) serverUrlStore.cachedOrigin else ServerUrlStore.DEFAULT_ORIGIN
+
     fun init(context: Context) {
         tokenStore = TokenStore(context.applicationContext)
-        api = ApiClient.create { tokenStore.cachedToken }
+        serverUrlStore = ServerUrlStore(context.applicationContext)
+        api = ApiClient.create(
+            tokenProvider = { tokenStore.cachedToken },
+            originProvider = { serverUrlStore.cachedOrigin },
+        )
         sessionManager = SessionManager(api, tokenStore)
         authRepository = AuthRepository(api, sessionManager)
         vehicleRepository = VehicleRepository(api)

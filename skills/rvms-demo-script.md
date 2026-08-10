@@ -17,7 +17,7 @@
 > | Tier | Runbook |
 > |---|---|
 > | 1 — Deployed | *(to be written)* |
-> | 2 — Laptop hotspot | *(to be written)* |
+> | 2 — Laptop hotspot | `rvms-demo-tier2-hotspot.md` |
 > | 3 — USB cable | `rvms-demo-tier3-usb.md` |
 
 ---
