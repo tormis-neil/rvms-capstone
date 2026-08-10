@@ -13,11 +13,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import com.example.rvms.R
 import com.example.rvms.data.LoginResult
 import com.example.rvms.data.ServiceLocator
+import com.example.rvms.data.ServerUrlStore
 import com.example.rvms.theme.ErrorRed
 import com.example.rvms.theme.NavyBlue
 import com.example.rvms.theme.RVMSTheme
@@ -54,6 +57,8 @@ fun SignInScreen(
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
+    var showServerDialog by remember { mutableStateOf(false) }
+    var serverOrigin by remember { mutableStateOf(ServiceLocator.serverOriginOrDefault()) }
     val scope = rememberCoroutineScope()
 
     Column(
@@ -194,7 +199,106 @@ fun SignInScreen(
                 modifier = Modifier.clickable { onNavigateToSignUp() },
             )
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Which server this app talks to (2026-08). Deliberately small and at
+        // the very bottom: a driver never touches it, but it is the difference
+        // between switching demo tiers in twenty seconds and rebuilding the APK
+        // in front of the room.
+        Text(
+            text = "Server: $serverOrigin",
+            color = TextSecondary,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showServerDialog = true },
+            textAlign = TextAlign.Center,
+        )
     }
+
+    if (showServerDialog) {
+        ServerAddressDialog(
+            current = serverOrigin,
+            onDismiss = { showServerDialog = false },
+            onSave = { typed ->
+                scope.launch {
+                    val saved = ServiceLocator.serverUrlStore.save(typed)
+                    if (saved != null) {
+                        serverOrigin = saved
+                        error = null
+                        showServerDialog = false
+                    }
+                }
+            },
+            onReset = {
+                scope.launch {
+                    ServiceLocator.serverUrlStore.reset()
+                    serverOrigin = ServiceLocator.serverUrlStore.cachedOrigin
+                    showServerDialog = false
+                }
+            },
+        )
+    }
+}
+
+/**
+ * Where to type the server address.
+ *
+ * Accepts what somebody would actually type in a hurry — a bare
+ * `192.168.1.15:8000` becomes `http://192.168.1.15:8000` — and refuses only
+ * what cannot be parsed at all, leaving the previous address in place rather
+ * than stranding the app on nothing.
+ */
+@Composable
+private fun ServerAddressDialog(
+    current: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit,
+    onReset: () -> Unit,
+) {
+    var text by remember { mutableStateOf(current) }
+    val invalid = ServerUrlStore.normalize(text) == null
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Server address") },
+        text = {
+            Column {
+                Text(
+                    text = "Where this app looks for the RVMS server.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    singleLine = true,
+                    isError = invalid && text.isNotBlank(),
+                    label = { Text("Address") },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Deployed:  https://your-site\n" +
+                        "Wi-Fi hotspot:  http://192.168.1.15:8000\n" +
+                        "USB cable:  http://127.0.0.1:8000",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(text) }, enabled = !invalid) { Text("Save") }
+        },
+        dismissButton = {
+            Row {
+                TextButton(onClick = onReset) { Text("Reset") }
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+            }
+        },
+    )
 }
 
 @Preview(showBackground = true)

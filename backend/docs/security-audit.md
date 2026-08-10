@@ -90,3 +90,31 @@ Penetration of the *deployed* environment (server OS, MySQL exposure, HTTPS/TLS 
 the system is not yet deployed; those checks belong to the deployment day, and `rvms:doctor`
 carries the software-side half of them. Physical device security of shared handsets is a
 procedural matter for the agencies, noted in the manuscript's scope.
+
+---
+
+## Accepted risk — cleartext HTTP to a local server (2026-08)
+
+`network_security_config.xml` previously permitted cleartext only to
+`127.0.0.1`, `10.0.2.2` and `localhost`. It now permits it generally, because
+the server address became switchable at runtime so one APK could serve all
+three demo tiers, and a laptop's LAN address differs at every venue. Android's
+network security config matches domains, not ranges, so the hotspot tier could
+not be allow-listed in advance — it failed with "cannot reach the server"
+against a server that was running.
+
+**What it costs:** traffic to a local server is unencrypted and readable by
+anyone already on that network.
+
+**Why it is accepted:** the network in question is a hotspot the laptop creates
+for the demo, with one phone on it, in the same room. The alternative — a
+self-signed certificate the handset must be told to trust — is more to configure
+and more to fail, for a threat model of one laptop and one phone.
+
+**Where NFR-02 is actually met:** the deployed configuration is HTTPS and never
+uses this exemption. A production APK pointed at an `https://` origin encrypts
+everything; the exemption only ever applies when someone has deliberately typed
+a plain-HTTP address.
+
+**If this were shipped beyond the capstone**, the fix is to permit cleartext
+only in a debug build variant and require HTTPS in release.
