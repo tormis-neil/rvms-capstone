@@ -423,6 +423,7 @@ standard and not detailed below.
 | status | ENUM('Upcoming','Due Soon','Due','Completed') | No | 'Upcoming' | Recalculated by scheduled job; SoT values Due Soon/Due/Completed + prototype 'Upcoming'. |
 | date_serviced | DATE | Yes | NULL | Completion: date serviced (FR-14). |
 | completion_repair_source | ENUM('Internal Office','GSO Motorpool','External Repair Shop') | Yes | NULL | Completion: repair source (FR-14). |
+| completion_external_shop_name | VARCHAR(255) | Yes | NULL | Completion: shop name when `completion_repair_source` = External Repair Shop (FR-14, 2026-08). Mirrors `repair_logs.external_shop_name` — the two modules record the same fact from the same three sources, so both name the shop. Required by the form request only for the External source; the other two are in-house. |
 | completion_parts_replaced | TEXT | Yes | NULL | Completion: parts replaced (FR-14). |
 | completion_remarks | TEXT | Yes | NULL | Completion: remarks (FR-14). |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |

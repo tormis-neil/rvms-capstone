@@ -117,7 +117,15 @@
                                             </td>
                                             <td><div class="fw-semibold text-dark">{{ $pm->service_target }}</div></td>
                                             <td><div class="fw-medium text-dark">{{ $pm->date_serviced?->format('M j, Y') ?? '—' }}</div></td>
-                                            <td><span class="badge bg-light text-dark border">{{ $pm->completion_repair_source ?? '—' }}</span></td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border">{{ $pm->completion_repair_source ?? '—' }}</span>
+                                                {{-- Naming the shop under the source, exactly as the
+                                                     Repair Logs table does — a record that says an
+                                                     outside shop did the work has to say which. --}}
+                                                @if ($pm->completion_external_shop_name)
+                                                <div class="small text-secondary mt-1">{{ $pm->completion_external_shop_name }}</div>
+                                                @endif
+                                            </td>
                                             <td><div class="fw-medium text-dark">{{ $pm->completion_parts_replaced ?? '—' }}</div></td>
                                             <td><span class="badge bg-secondary px-3 py-2 rounded-pill">Completed</span></td>
                                         </tr>
@@ -225,11 +233,20 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Repair Source</label>
-                            <select class="form-select" name="completion_repair_source">
+                            <select class="form-select js-source" name="completion_repair_source">
                                 @foreach (\App\Models\RepairLog::SOURCES as $source)
                                 <option value="{{ $source }}">{{ $source }}</option>
                                 @endforeach
                             </select>
+                        </div>
+                        {{-- Revealed only for External Repair Shop, and required then — the
+                             same field and the same rule Repair Logs has carried since R4.
+                             PM completion records the same fact from the same three sources,
+                             so recording the source without the shop name left an outside
+                             service naming no one (2026-08, lead-reported). --}}
+                        <div class="mb-3 js-shop-wrap" style="display:none;">
+                            <label class="form-label fw-semibold">External Shop Name</label>
+                            <input type="text" class="form-control" name="completion_external_shop_name" placeholder="Name of the external repair shop">
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Parts Replaced</label>
@@ -324,6 +341,18 @@
         const completePmTemplate = @json(route('pm.complete', ['pmSchedule' => '__ID__']));
         const editPmTemplate = @json(route('pm.update', ['pmSchedule' => '__ID__']));
 
+        // External Shop Name appears only for External Repair Shop. Same
+        // function, same class names as repairs.blade.php, so the two pages
+        // cannot drift apart in how they reveal the field.
+        function bindShopToggle(root) {
+            const source = root.querySelector('.js-source');
+            const wrap = root.querySelector('.js-shop-wrap');
+            if (!source || !wrap) return;
+            const sync = () => { wrap.style.display = source.value === 'External Repair Shop' ? '' : 'none'; };
+            source.addEventListener('change', sync);
+            sync();
+        }
+
         // Show the mileage-based or time-based fields for a modal's PM Type select.
         function bindTypeToggle(root) {
             const select = root.querySelector('.js-pm-type');
@@ -344,7 +373,9 @@
         bindTypeToggle(editModal);
 
         // Mark Completed — set the per-row action.
-        document.getElementById('markCompletedModal').addEventListener('show.bs.modal', event => {
+        const markCompletedModal = document.getElementById('markCompletedModal');
+        bindShopToggle(markCompletedModal);
+        markCompletedModal.addEventListener('show.bs.modal', event => {
             const row = event.relatedTarget && event.relatedTarget.closest('tr');
             if (!row) return;
             document.getElementById('completePmForm').action = completePmTemplate.replace('__ID__', row.dataset.id);

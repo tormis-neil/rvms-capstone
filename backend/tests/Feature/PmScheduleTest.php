@@ -111,6 +111,77 @@ class PmScheduleTest extends TestCase
         $this->assertSame(1, PmSchedule::withoutGlobalScopes()->count());
     }
 
+    /* ------------- completion names the external shop (FR-14) -------------- */
+
+    /**
+     * Repair Logs has asked which shop did the work since R4; PM completion did
+     * not, so an oil change sent outside recorded "External Repair Shop" and
+     * nothing more (2026-08, lead-reported). Two modules recording the same
+     * fact from the same three sources must record the same amount of it.
+     */
+    public function test_completion_records_the_external_shop_name(): void
+    {
+        [$agency, $admin, $vehicle] = $this->adminWithVehicle();
+        $schedule = PmSchedule::factory()->create(['agency_id' => $agency->id, 'vehicle_id' => $vehicle->id]);
+        Sanctum::actingAs($admin);
+
+        $this->patchJson("/api/v1/pm-schedules/{$schedule->id}/complete", [
+            'date_serviced' => now()->toDateString(),
+            'completion_repair_source' => RepairLog::SOURCE_EXTERNAL,
+            'completion_external_shop_name' => 'Calbayog Diesel Works',
+            'completion_parts_replaced' => 'Engine oil, oil filter',
+        ])->assertOk()->assertJsonPath('data.completion_external_shop_name', 'Calbayog Diesel Works');
+
+        $this->assertSame('Calbayog Diesel Works', $schedule->fresh()->completion_external_shop_name);
+    }
+
+    public function test_an_external_completion_without_a_shop_name_is_refused(): void
+    {
+        [$agency, $admin, $vehicle] = $this->adminWithVehicle();
+        $schedule = PmSchedule::factory()->create(['agency_id' => $agency->id, 'vehicle_id' => $vehicle->id]);
+        Sanctum::actingAs($admin);
+
+        $this->patchJson("/api/v1/pm-schedules/{$schedule->id}/complete", [
+            'date_serviced' => now()->toDateString(),
+            'completion_repair_source' => RepairLog::SOURCE_EXTERNAL,
+        ])->assertStatus(422)->assertJsonValidationErrors('completion_external_shop_name');
+
+        $this->assertNotSame(PmSchedule::STATUS_COMPLETED, $schedule->fresh()->status);
+    }
+
+    /** The other two sources are in-house — no shop to name. */
+    public function test_an_internal_completion_needs_no_shop_name(): void
+    {
+        [$agency, $admin, $vehicle] = $this->adminWithVehicle();
+        $schedule = PmSchedule::factory()->create(['agency_id' => $agency->id, 'vehicle_id' => $vehicle->id]);
+        Sanctum::actingAs($admin);
+
+        $this->patchJson("/api/v1/pm-schedules/{$schedule->id}/complete", [
+            'date_serviced' => now()->toDateString(),
+            'completion_repair_source' => RepairLog::SOURCE_GSO,
+        ])->assertOk();
+
+        $this->assertNull($schedule->fresh()->completion_external_shop_name);
+    }
+
+    /** Identical wording to Repair Logs, so the two pages cannot drift. */
+    public function test_the_shop_name_refusal_matches_the_repair_log_wording(): void
+    {
+        [$agency, $admin, $vehicle] = $this->adminWithVehicle();
+        $schedule = PmSchedule::factory()->create(['agency_id' => $agency->id, 'vehicle_id' => $vehicle->id]);
+        Sanctum::actingAs($admin);
+
+        $response = $this->patchJson("/api/v1/pm-schedules/{$schedule->id}/complete", [
+            'date_serviced' => now()->toDateString(),
+            'completion_repair_source' => RepairLog::SOURCE_EXTERNAL,
+        ])->assertStatus(422);
+
+        $this->assertSame(
+            'The shop name is required when the source is an external repair shop.',
+            $response->json('errors.completion_external_shop_name.0'),
+        );
+    }
+
     public function test_driver_cannot_access_pm_schedules(): void
     {
         [$agency] = $this->adminWithVehicle();

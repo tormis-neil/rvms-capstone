@@ -27,6 +27,7 @@ class PmScheduleResource extends JsonResource
             'status' => $this->status,
             'date_serviced' => $this->date_serviced?->toDateString(),
             'completion_repair_source' => $this->completion_repair_source,
+            'completion_external_shop_name' => $this->completion_external_shop_name,
             'completion_parts_replaced' => $this->completion_parts_replaced,
             'completion_remarks' => $this->completion_remarks,
             'vehicle' => $this->whenLoaded('vehicle', fn () => [

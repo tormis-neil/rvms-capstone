@@ -124,6 +124,35 @@ class RecentActivityTest {
         assertTrue(buildRecentActivity(emptyList(), emptyList()).isEmpty())
     }
 
+    /* ------------------ Report Damage card subtitle (FR-11) ---------------- */
+
+    /**
+     * The card gave no feedback at all after a submission. It now reports the
+     * day's count — but deliberately never claims completion, because filing a
+     * damage report is not a daily obligation the way an inspection is.
+     */
+    @Test
+    fun `no damage filed today invites a report`() {
+        assertEquals("Report a fault or damage", damageActionSubtitle(0))
+    }
+
+    @Test
+    fun `one damage report today is confirmed in the singular`() {
+        assertEquals("1 filed today", damageActionSubtitle(1))
+    }
+
+    /** A driver may legitimately file more than one in a day (FR-11). */
+    @Test
+    fun `several damage reports today are counted`() {
+        assertEquals("3 filed today", damageActionSubtitle(3))
+    }
+
+    /** Defensive: a negative can only come from a bug, and must not render. */
+    @Test
+    fun `a nonsense count falls back to the invitation`() {
+        assertEquals("Report a fault or damage", damageActionSubtitle(-1))
+    }
+
     /** A record with no timestamp must sort last rather than break the comparison. */
     @Test
     fun `a missing timestamp does not crash the ordering`() {

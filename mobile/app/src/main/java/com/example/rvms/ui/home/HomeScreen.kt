@@ -93,6 +93,7 @@ fun HomeScreen(
     var vehicles by remember { mutableStateOf<List<VehicleDto>>(emptyList()) }
     var recentActivity by remember { mutableStateOf<List<ActivityEntry>>(emptyList()) }
     var todaysInspection by remember { mutableStateOf<InspectionDto?>(null) }
+    var todaysDamageCount by remember { mutableStateOf(0) }
     var isRefreshing by remember { mutableStateOf(false) }
     var loadError by remember { mutableStateOf<String?>(null) }
     var loaded by remember { mutableStateOf(false) }
@@ -119,6 +120,13 @@ fun HomeScreen(
             // last three submissions happen to be older — a wrong answer to the
             // one question the card exists to answer.
             todaysInspection = history.firstOrNull { it.inspectionDate == todayIso() }
+        }
+
+        // Same reasoning as todaysInspection: counted from the FULL history, not
+        // from the three rows Recent Activity happens to show. A driver may file
+        // more than one report in a day, so this is a count rather than a flag.
+        damageResult.dataOrNull?.let { reports ->
+            todaysDamageCount = reports.count { it.dateReported == todayIso() }
         }
 
         // Rebuilt only when BOTH reads succeeded, for the same reason the lists
@@ -408,12 +416,21 @@ fun HomeScreen(
                 onClick = onNavigateToInspection,
                 modifier = Modifier.weight(1f),
             )
+            // Reports today's count, but deliberately NOT with the green
+            // "done" treatment the inspection card uses (2026-08,
+            // lead-reported: the card gave no feedback at all after a
+            // submission).
+            //
+            // The two cards look alike but mean opposite things. A daily
+            // inspection is expected EVERY day, so a tick is an obligation met
+            // and a blank card is a reminder. A damage report is filed only
+            // when something is broken, so zero is the healthy number — a tick
+            // there would read as "you have filed today's damage report", which
+            // is not a thing anyone should be nudged toward. So: confirm the
+            // submission, keep the warning icon, no completion state.
             QuickActionCard(
                 title = "Report Damage",
-                // "Something is wrong" was too vague and too casual for a
-                // government fleet record. This names the action in the
-                // module's own vocabulary (FR-11 "nature of damage").
-                subtitle = "Report a fault or damage",
+                subtitle = damageActionSubtitle(todaysDamageCount),
                 icon = Icons.Default.ReportProblem,
                 done = false,
                 onClick = onNavigateToDamageReport,
@@ -550,6 +567,19 @@ private fun QuickActionCard(
             }
         }
     }
+}
+
+/**
+ * What the Report Damage card says beneath its title.
+ *
+ * Separate from the inspection card's wording on purpose: it confirms a
+ * submission without ever claiming a task is complete. See the call site for
+ * why the two cards deliberately do not match.
+ */
+internal fun damageActionSubtitle(filedToday: Int): String = when {
+    filedToday <= 0 -> "Report a fault or damage"
+    filedToday == 1 -> "1 filed today"
+    else -> "$filedToday filed today"
 }
 
 /**

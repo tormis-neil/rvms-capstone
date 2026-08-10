@@ -179,4 +179,49 @@ class WebDispatchPageTest extends TestCase
     {
         $this->get('/dispatch')->assertRedirect(route('login'));
     }
+
+    /**
+     * Picking the driver first now helps too (2026-08, lead-reported) — but it
+     * cannot always auto-select, because a driver may be the primary driver of
+     * more than one vehicle. Each driver option therefore carries the plates it
+     * would fill in, and the script decides.
+     */
+    public function test_driver_options_carry_their_assigned_vehicles(): void
+    {
+        $driver = User::factory()->driver()->create(['agency_id' => $this->agency->id]);
+        $first = Vehicle::factory()->create([
+            'agency_id' => $this->agency->id,
+            'plate_number' => 'BFP-1111',
+            'status' => Vehicle::STATUS_OPERATIONAL,
+            'assigned_driver_id' => $driver->id,
+        ]);
+        $second = Vehicle::factory()->create([
+            'agency_id' => $this->agency->id,
+            'plate_number' => 'BFP-2222',
+            'status' => Vehicle::STATUS_OPERATIONAL,
+            'assigned_driver_id' => $driver->id,
+        ]);
+
+        $html = $this->actingAs($this->admin)->get('/dispatch')->assertOk()->getContent();
+
+        $this->assertStringContainsString('data-vehicle-ids="'.$first->id.','.$second->id.'"', $html);
+        $this->assertStringContainsString('data-vehicle-plates="BFP-1111, BFP-2222"', $html);
+    }
+
+    /** A driver with nothing dispatchable must offer nothing, not a stale plate. */
+    public function test_a_driver_with_no_operational_vehicle_carries_no_plates(): void
+    {
+        $driver = User::factory()->driver()->create(['agency_id' => $this->agency->id]);
+        Vehicle::factory()->create([
+            'agency_id' => $this->agency->id,
+            'plate_number' => 'BFP-9999',
+            'status' => Vehicle::STATUS_UNDER_PM,
+            'assigned_driver_id' => $driver->id,
+        ]);
+
+        $html = $this->actingAs($this->admin)->get('/dispatch')->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('BFP-9999', $html);
+        $this->assertStringContainsString('data-vehicle-plates=""', $html);
+    }
 }

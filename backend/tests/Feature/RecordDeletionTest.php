@@ -10,6 +10,7 @@ use App\Models\PmSchedule;
 use App\Models\RepairLog;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\RecordDeletion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -129,11 +130,11 @@ class RecordDeletionTest extends TestCase
 
         $this->getJson('/api/v1/drivers')->assertOk()->assertJsonCount(0, 'data');
 
-        // A deleted account is not an account.
+        // A deleted account is not an account — and says so (see below).
         $this->postJson('/api/v1/login', [
             'email' => $this->driver->email,
             'password' => 'password',
-        ])->assertStatus(422);
+        ])->assertStatus(403);
     }
 
     /** A live bearer token must not outlive the account it belongs to. */
@@ -291,6 +292,59 @@ class RecordDeletionTest extends TestCase
         $this->deleteJson("/api/v1/drivers/{$colleague->id}")->assertNotFound();
 
         $this->assertNotSoftDeleted('users', ['id' => $colleague->id]);
+    }
+
+    /* --------- a removed account is told so, not told it is wrong ---------- */
+
+    /**
+     * The soft-delete scope hid removed accounts from the login lookup, so a
+     * driver whose account an administrator had deleted was told their
+     * credentials did not match. They retyped the password, assumed a typo, and
+     * asked for a reset from an administrator who could no longer find them in
+     * the list (2026-08, lead-reported).
+     *
+     * Naming the state matches what login already does for pending and
+     * rejected accounts; deletion was the only one kept silent.
+     */
+    public function test_a_removed_driver_is_told_their_account_was_removed(): void
+    {
+        $this->driver->update(['password' => 'password']);
+        app(RecordDeletion::class)->deleteDriver($this->driver);
+
+        $response = $this->postJson('/api/v1/login', [
+            'email' => $this->driver->email,
+            'password' => 'password',
+        ])->assertStatus(403);
+
+        $this->assertSame(
+            'Your account has been removed. Contact your agency administrator.',
+            $response->json('message'),
+        );
+    }
+
+    /** A wrong password on a removed account must still give nothing away. */
+    public function test_a_wrong_password_on_a_removed_account_stays_generic(): void
+    {
+        $this->driver->update(['password' => 'password']);
+        app(RecordDeletion::class)->deleteDriver($this->driver);
+
+        $this->postJson('/api/v1/login', [
+            'email' => $this->driver->email,
+            'password' => 'not-the-password',
+        ])->assertStatus(422)->assertJsonValidationErrors('email');
+    }
+
+    /** Restoring puts them back in, with the password they always had. */
+    public function test_a_restored_driver_can_sign_in_again(): void
+    {
+        $this->driver->update(['password' => 'password']);
+        app(RecordDeletion::class)->deleteDriver($this->driver);
+        app(RecordDeletion::class)->restoreDriver($this->driver->fresh());
+
+        $this->postJson('/api/v1/login', [
+            'email' => $this->driver->email,
+            'password' => 'password',
+        ])->assertOk()->assertJsonStructure(['token']);
     }
 
     public function test_a_driver_token_cannot_delete_anything(): void
