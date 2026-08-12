@@ -1,0 +1,1227 @@
+{
+ "order": [
+  "agencies",
+  "users",
+  "vehicles",
+  "inspection_checklist_items",
+  "inspections",
+  "inspection_items",
+  "damage_reports",
+  "repair_logs",
+  "pm_schedules",
+  "dispatches",
+  "notifications"
+ ],
+ "tables": {
+  "agencies": [
+   [
+    "id",
+    "Int",
+    "No",
+    "PK",
+    "—",
+    "Unique identifier for each agency."
+   ],
+   [
+    "code",
+    "Varchar(10)",
+    "No",
+    "—",
+    "—",
+    "Short agency code: BFP, PNP, CDRRMO, or CHO."
+   ],
+   [
+    "name",
+    "Varchar(255)",
+    "No",
+    "—",
+    "—",
+    "Full name of the agency."
+   ],
+   [
+    "location",
+    "Varchar(255)",
+    "Yes",
+    "—",
+    "—",
+    "Office location of the agency."
+   ],
+   [
+    "contact_number",
+    "Varchar(50)",
+    "Yes",
+    "—",
+    "—",
+    "Contact number of the agency."
+   ],
+   [
+    "email",
+    "Varchar(255)",
+    "Yes",
+    "—",
+    "—",
+    "Contact email address of the agency."
+   ],
+   [
+    "logo_path",
+    "Varchar(255)",
+    "Yes",
+    "—",
+    "—",
+    "File path of the agency logo shown on the dashboard."
+   ],
+   [
+    "license_expiry_warning_days",
+    "Smallint",
+    "No",
+    "—",
+    "—",
+    "Number of days before expiry at which a driver license is flagged as expiring soon. Configurable per agency."
+   ],
+   [
+    "created_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was created."
+   ],
+   [
+    "updated_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was last updated."
+   ]
+  ],
+  "users": [
+   [
+    "id",
+    "Int",
+    "No",
+    "PK",
+    "—",
+    "Unique identifier for each user account."
+   ],
+   [
+    "agency_id",
+    "Int",
+    "No",
+    "FK",
+    "agencies",
+    "Agency the user belongs to."
+   ],
+   [
+    "role",
+    "Enum",
+    "No",
+    "—",
+    "—",
+    "Role of the user: admin or driver."
+   ],
+   [
+    "name",
+    "Varchar(255)",
+    "No",
+    "—",
+    "—",
+    "Full name of the Agency Administrator or Authorized Driver."
+   ],
+   [
+    "email",
+    "Varchar(255)",
+    "No",
+    "—",
+    "—",
+    "Email address used to sign in. Unique across the system."
+   ],
+   [
+    "password",
+    "Varchar(255)",
+    "No",
+    "—",
+    "—",
+    "Hashed password of the account."
+   ],
+   [
+    "status",
+    "Enum",
+    "No",
+    "—",
+    "—",
+    "Account state: pending, active, or rejected."
+   ],
+   [
+    "license_number",
+    "Varchar(50)",
+    "Yes",
+    "—",
+    "—",
+    "Driver license number. Empty for Agency Administrators."
+   ],
+   [
+    "license_expiry_date",
+    "Date",
+    "Yes",
+    "—",
+    "—",
+    "Expiry date of the driver license. Empty for Agency Administrators."
+   ],
+   [
+    "fcm_token",
+    "Varchar(255)",
+    "Yes",
+    "—",
+    "—",
+    "Device token used to deliver push notifications to the mobile application."
+   ],
+   [
+    "deleted_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the account was removed by an Agency Administrator. Empty while the account is in use."
+   ],
+   [
+    "email_verified_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the email address was verified."
+   ],
+   [
+    "remember_token",
+    "Varchar(100)",
+    "Yes",
+    "—",
+    "—",
+    "Token used to keep a web session signed in."
+   ],
+   [
+    "created_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was created."
+   ],
+   [
+    "updated_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was last updated."
+   ]
+  ],
+  "vehicles": [
+   [
+    "id",
+    "Int",
+    "No",
+    "PK",
+    "—",
+    "Unique identifier for each vehicle."
+   ],
+   [
+    "agency_id",
+    "Int",
+    "No",
+    "FK",
+    "agencies",
+    "Agency that owns the vehicle."
+   ],
+   [
+    "assigned_driver_id",
+    "Int",
+    "Yes",
+    "FK",
+    "users",
+    "Primary Authorized Driver assigned to the vehicle."
+   ],
+   [
+    "type",
+    "Varchar(100)",
+    "No",
+    "—",
+    "—",
+    "Type of vehicle, such as Fire Truck, Ambulance, or Patrol Car."
+   ],
+   [
+    "plate_number",
+    "Varchar(20)",
+    "No",
+    "—",
+    "—",
+    "Plate number of the vehicle. Unique within the agency."
+   ],
+   [
+    "make",
+    "Varchar(100)",
+    "No",
+    "—",
+    "—",
+    "Manufacturer of the vehicle."
+   ],
+   [
+    "model",
+    "Varchar(100)",
+    "No",
+    "—",
+    "—",
+    "Model of the vehicle."
+   ],
+   [
+    "engine_number",
+    "Varchar(50)",
+    "Yes",
+    "—",
+    "—",
+    "Engine number of the vehicle. Unique within the agency."
+   ],
+   [
+    "chassis_number",
+    "Varchar(50)",
+    "Yes",
+    "—",
+    "—",
+    "Chassis number of the vehicle. Unique within the agency."
+   ],
+   [
+    "current_mileage",
+    "Int",
+    "No",
+    "—",
+    "—",
+    "Current odometer reading in kilometers. Used for mileage-based preventive maintenance."
+   ],
+   [
+    "status",
+    "Enum",
+    "No",
+    "—",
+    "—",
+    "Single shared operational status: Operational, Dispatched, Not Operational, or Under Preventive Maintenance."
+   ],
+   [
+    "deleted_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the vehicle was removed by an Agency Administrator. Empty while the vehicle is in use."
+   ],
+   [
+    "created_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was created."
+   ],
+   [
+    "updated_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was last updated."
+   ]
+  ],
+  "inspection_checklist_items": [
+   [
+    "id",
+    "Int",
+    "No",
+    "PK",
+    "—",
+    "Unique identifier for each checklist item."
+   ],
+   [
+    "name",
+    "Varchar(100)",
+    "No",
+    "—",
+    "—",
+    "Name of the checklist item, such as Battery, Brakes, or Fire Pump."
+   ],
+   [
+    "is_bfp_only",
+    "Boolean",
+    "No",
+    "—",
+    "—",
+    "Marks the two items that apply only to BFP vehicles: Hydraulic System and Fire Pump."
+   ],
+   [
+    "sort_order",
+    "Smallint",
+    "No",
+    "—",
+    "—",
+    "Order in which the item appears on the checklist."
+   ],
+   [
+    "created_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was created."
+   ],
+   [
+    "updated_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was last updated."
+   ]
+  ],
+  "inspections": [
+   [
+    "id",
+    "Int",
+    "No",
+    "PK",
+    "—",
+    "Unique identifier for each inspection."
+   ],
+   [
+    "agency_id",
+    "Int",
+    "No",
+    "FK",
+    "agencies",
+    "Agency that owns the inspection record."
+   ],
+   [
+    "vehicle_id",
+    "Int",
+    "No",
+    "FK",
+    "vehicles",
+    "Vehicle that was inspected."
+   ],
+   [
+    "driver_id",
+    "Int",
+    "No",
+    "FK",
+    "users",
+    "Authorized Driver who performed the inspection."
+   ],
+   [
+    "inspection_date",
+    "Date",
+    "No",
+    "—",
+    "—",
+    "Date the daily inspection was performed."
+   ],
+   [
+    "review_status",
+    "Enum",
+    "No",
+    "—",
+    "—",
+    "Review state of the inspection: Pending or Reviewed."
+   ],
+   [
+    "reviewed_by",
+    "Int",
+    "Yes",
+    "FK",
+    "users",
+    "Agency Administrator who reviewed the inspection."
+   ],
+   [
+    "reviewed_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the inspection was reviewed."
+   ],
+   [
+    "created_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the inspection was submitted."
+   ],
+   [
+    "updated_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was last updated."
+   ]
+  ],
+  "inspection_items": [
+   [
+    "id",
+    "Int",
+    "No",
+    "PK",
+    "—",
+    "Unique identifier for each inspection item result."
+   ],
+   [
+    "inspection_id",
+    "Int",
+    "No",
+    "FK",
+    "inspections",
+    "Inspection this result belongs to."
+   ],
+   [
+    "checklist_item_id",
+    "Int",
+    "No",
+    "FK",
+    "inspection_checklist_items",
+    "Checklist item that was assessed."
+   ],
+   [
+    "status",
+    "Enum",
+    "No",
+    "—",
+    "—",
+    "Result for the item: OK or Has Issue."
+   ],
+   [
+    "remarks",
+    "Text",
+    "Yes",
+    "—",
+    "—",
+    "Explanation of the fault. Required when the status is Has Issue."
+   ]
+  ],
+  "damage_reports": [
+   [
+    "id",
+    "Int",
+    "No",
+    "PK",
+    "—",
+    "Unique identifier for each damage report."
+   ],
+   [
+    "agency_id",
+    "Int",
+    "No",
+    "FK",
+    "agencies",
+    "Agency that owns the damage report."
+   ],
+   [
+    "vehicle_id",
+    "Int",
+    "No",
+    "FK",
+    "vehicles",
+    "Vehicle that was damaged."
+   ],
+   [
+    "driver_id",
+    "Int",
+    "No",
+    "FK",
+    "users",
+    "Authorized Driver who submitted the report."
+   ],
+   [
+    "nature_of_damage",
+    "Text",
+    "No",
+    "—",
+    "—",
+    "Description of the damage."
+   ],
+   [
+    "suspected_parts",
+    "Varchar(255)",
+    "Yes",
+    "—",
+    "—",
+    "Parts suspected to be defective."
+   ],
+   [
+    "photo_path",
+    "Varchar(255)",
+    "Yes",
+    "—",
+    "—",
+    "File path of the optional photo attachment."
+   ],
+   [
+    "date_reported",
+    "Date",
+    "No",
+    "—",
+    "—",
+    "Date the report was submitted. Set automatically."
+   ],
+   [
+    "status",
+    "Enum",
+    "No",
+    "—",
+    "—",
+    "Review state of the report: Pending or Reviewed."
+   ],
+   [
+    "reviewed_by",
+    "Int",
+    "Yes",
+    "FK",
+    "users",
+    "Agency Administrator who assessed the report."
+   ],
+   [
+    "reviewed_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the report was assessed."
+   ],
+   [
+    "created_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was created."
+   ],
+   [
+    "updated_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was last updated."
+   ]
+  ],
+  "repair_logs": [
+   [
+    "id",
+    "Int",
+    "No",
+    "PK",
+    "—",
+    "Unique identifier for each repair record."
+   ],
+   [
+    "agency_id",
+    "Int",
+    "No",
+    "FK",
+    "agencies",
+    "Agency that owns the repair record."
+   ],
+   [
+    "vehicle_id",
+    "Int",
+    "No",
+    "FK",
+    "vehicles",
+    "Vehicle that was repaired."
+   ],
+   [
+    "driver_id",
+    "Int",
+    "Yes",
+    "FK",
+    "users",
+    "Authorized Driver assigned to the vehicle at the time of repair."
+   ],
+   [
+    "repair_date",
+    "Date",
+    "No",
+    "—",
+    "—",
+    "Date the repair was performed or logged."
+   ],
+   [
+    "scope_of_work",
+    "Text",
+    "No",
+    "—",
+    "—",
+    "Description of the work performed."
+   ],
+   [
+    "parts_replaced",
+    "Text",
+    "Yes",
+    "—",
+    "—",
+    "Parts replaced during the repair."
+   ],
+   [
+    "cost",
+    "Decimal(10,2)",
+    "Yes",
+    "—",
+    "—",
+    "Cost of the repair."
+   ],
+   [
+    "repair_source",
+    "Enum",
+    "No",
+    "—",
+    "—",
+    "Who performed the repair: Internal Office, GSO Motorpool, or External Repair Shop."
+   ],
+   [
+    "external_shop_name",
+    "Varchar(255)",
+    "Yes",
+    "—",
+    "—",
+    "Name of the shop when the repair source is External Repair Shop."
+   ],
+   [
+    "remarks",
+    "Text",
+    "Yes",
+    "—",
+    "—",
+    "Additional notes about the repair."
+   ],
+   [
+    "created_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was created."
+   ],
+   [
+    "updated_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was last updated."
+   ]
+  ],
+  "pm_schedules": [
+   [
+    "id",
+    "Int",
+    "No",
+    "PK",
+    "—",
+    "Unique identifier for each preventive maintenance schedule."
+   ],
+   [
+    "agency_id",
+    "Int",
+    "No",
+    "FK",
+    "agencies",
+    "Agency that owns the schedule."
+   ],
+   [
+    "vehicle_id",
+    "Int",
+    "No",
+    "FK",
+    "vehicles",
+    "Vehicle the schedule applies to."
+   ],
+   [
+    "service_target",
+    "Varchar(255)",
+    "No",
+    "—",
+    "—",
+    "Part or service to be maintained, such as Oil Change and Filter."
+   ],
+   [
+    "pm_type",
+    "Enum",
+    "No",
+    "—",
+    "—",
+    "Basis of the schedule: Mileage-Based or Time-Based."
+   ],
+   [
+    "interval_km",
+    "Int",
+    "Yes",
+    "—",
+    "—",
+    "Distance in kilometers between services. Mileage-based schedules only."
+   ],
+   [
+    "last_pm_mileage",
+    "Int",
+    "Yes",
+    "—",
+    "—",
+    "Odometer reading at the last service. Mileage-based schedules only."
+   ],
+   [
+    "due_mileage",
+    "Int",
+    "Yes",
+    "—",
+    "—",
+    "Odometer reading at which the service becomes due."
+   ],
+   [
+    "due_date",
+    "Date",
+    "Yes",
+    "—",
+    "—",
+    "Date on which the service becomes due. Time-based schedules only."
+   ],
+   [
+    "due_soon_threshold_km",
+    "Int",
+    "Yes",
+    "—",
+    "—",
+    "Kilometers before the due mileage at which the schedule is flagged Due Soon. Configurable."
+   ],
+   [
+    "due_soon_threshold_days",
+    "Smallint",
+    "Yes",
+    "—",
+    "—",
+    "Days before the due date at which the schedule is flagged Due Soon. Configurable."
+   ],
+   [
+    "status",
+    "Enum",
+    "No",
+    "—",
+    "—",
+    "State of the schedule: Upcoming, Due Soon, Due, or Completed."
+   ],
+   [
+    "date_serviced",
+    "Date",
+    "Yes",
+    "—",
+    "—",
+    "Date the service was carried out."
+   ],
+   [
+    "completion_repair_source",
+    "Enum",
+    "Yes",
+    "—",
+    "—",
+    "Who carried out the service: Internal Office, GSO Motorpool, or External Repair Shop."
+   ],
+   [
+    "completion_external_shop_name",
+    "Varchar(255)",
+    "Yes",
+    "—",
+    "—",
+    "Name of the shop when the completion source is External Repair Shop."
+   ],
+   [
+    "completion_parts_replaced",
+    "Text",
+    "Yes",
+    "—",
+    "—",
+    "Parts replaced during the service."
+   ],
+   [
+    "completion_remarks",
+    "Text",
+    "Yes",
+    "—",
+    "—",
+    "Notes and findings recorded on completion."
+   ],
+   [
+    "created_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was created."
+   ],
+   [
+    "updated_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was last updated."
+   ]
+  ],
+  "dispatches": [
+   [
+    "id",
+    "Int",
+    "No",
+    "PK",
+    "—",
+    "Unique identifier for each dispatch record."
+   ],
+   [
+    "agency_id",
+    "Int",
+    "No",
+    "FK",
+    "agencies",
+    "Agency that owns the dispatch record."
+   ],
+   [
+    "vehicle_id",
+    "Int",
+    "No",
+    "FK",
+    "vehicles",
+    "Vehicle that was dispatched."
+   ],
+   [
+    "driver_id",
+    "Int",
+    "No",
+    "FK",
+    "users",
+    "Authorized Driver who was dispatched."
+   ],
+   [
+    "mission_type",
+    "Enum",
+    "No",
+    "—",
+    "—",
+    "Type of mission: Fire Response, Medical Response, Rescue Operation, Patrol, Administrative Travel, or Others."
+   ],
+   [
+    "mission_other",
+    "Varchar(255)",
+    "Yes",
+    "—",
+    "—",
+    "Description of the mission when the mission type is Others."
+   ],
+   [
+    "location",
+    "Varchar(255)",
+    "No",
+    "—",
+    "—",
+    "Location the vehicle was dispatched to."
+   ],
+   [
+    "time_out",
+    "Datetime",
+    "No",
+    "—",
+    "—",
+    "Date and time the vehicle left. Sets the vehicle status to Dispatched."
+   ],
+   [
+    "odometer_out",
+    "Int",
+    "Yes",
+    "—",
+    "—",
+    "Odometer reading recorded at time out."
+   ],
+   [
+    "time_in",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the vehicle returned. Empty while the dispatch is active."
+   ],
+   [
+    "odometer_in",
+    "Int",
+    "Yes",
+    "—",
+    "—",
+    "Odometer reading recorded at time in. Updates the vehicle current mileage when higher."
+   ],
+   [
+    "return_status",
+    "Enum",
+    "Yes",
+    "—",
+    "—",
+    "Status set on return: Operational, Not Operational, or Under Preventive Maintenance."
+   ],
+   [
+    "remarks",
+    "Text",
+    "Yes",
+    "—",
+    "—",
+    "Notes recorded when the dispatch was closed."
+   ],
+   [
+    "created_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was created."
+   ],
+   [
+    "updated_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was last updated."
+   ]
+  ],
+  "notifications": [
+   [
+    "id",
+    "Int",
+    "No",
+    "PK",
+    "—",
+    "Unique identifier for each notification."
+   ],
+   [
+    "agency_id",
+    "Int",
+    "No",
+    "FK",
+    "agencies",
+    "Agency the notification belongs to."
+   ],
+   [
+    "user_id",
+    "Int",
+    "No",
+    "FK",
+    "users",
+    "User who receives the notification."
+   ],
+   [
+    "type",
+    "Enum",
+    "No",
+    "—",
+    "—",
+    "Category of the alert, such as New Damage Report, Inspection Flagged, License Expiring, PM Due, or Password Reset."
+   ],
+   [
+    "title",
+    "Varchar(255)",
+    "No",
+    "—",
+    "—",
+    "Short headline of the notification."
+   ],
+   [
+    "message",
+    "Text",
+    "No",
+    "—",
+    "—",
+    "Body text of the notification."
+   ],
+   [
+    "data",
+    "JSON",
+    "Yes",
+    "—",
+    "—",
+    "Reference details such as the plate number or the record concerned."
+   ],
+   [
+    "is_read",
+    "Boolean",
+    "No",
+    "—",
+    "—",
+    "Marks whether the recipient has opened the notification."
+   ],
+   [
+    "read_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the notification was opened."
+   ],
+   [
+    "created_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was created."
+   ],
+   [
+    "updated_at",
+    "Datetime",
+    "Yes",
+    "—",
+    "—",
+    "Date and time the record was last updated."
+   ]
+  ]
+ },
+ "rels": [
+  [
+   "agencies",
+   "users",
+   "employs",
+   "agency_id"
+  ],
+  [
+   "agencies",
+   "vehicles",
+   "owns",
+   "agency_id"
+  ],
+  [
+   "agencies",
+   "inspections",
+   "scopes",
+   "agency_id"
+  ],
+  [
+   "agencies",
+   "damage_reports",
+   "scopes",
+   "agency_id"
+  ],
+  [
+   "agencies",
+   "repair_logs",
+   "scopes",
+   "agency_id"
+  ],
+  [
+   "agencies",
+   "pm_schedules",
+   "scopes",
+   "agency_id"
+  ],
+  [
+   "agencies",
+   "dispatches",
+   "scopes",
+   "agency_id"
+  ],
+  [
+   "agencies",
+   "notifications",
+   "scopes",
+   "agency_id"
+  ],
+  [
+   "users",
+   "vehicles",
+   "is assigned",
+   "assigned_driver_id"
+  ],
+  [
+   "users",
+   "inspections",
+   "submits",
+   "driver_id"
+  ],
+  [
+   "users",
+   "inspections",
+   "reviews",
+   "reviewed_by"
+  ],
+  [
+   "users",
+   "damage_reports",
+   "submits",
+   "driver_id"
+  ],
+  [
+   "users",
+   "damage_reports",
+   "reviews",
+   "reviewed_by"
+  ],
+  [
+   "users",
+   "repair_logs",
+   "is assigned to",
+   "driver_id"
+  ],
+  [
+   "users",
+   "dispatches",
+   "is dispatched on",
+   "driver_id"
+  ],
+  [
+   "users",
+   "notifications",
+   "receives",
+   "user_id"
+  ],
+  [
+   "vehicles",
+   "inspections",
+   "undergoes",
+   "vehicle_id"
+  ],
+  [
+   "vehicles",
+   "damage_reports",
+   "has",
+   "vehicle_id"
+  ],
+  [
+   "vehicles",
+   "repair_logs",
+   "has",
+   "vehicle_id"
+  ],
+  [
+   "vehicles",
+   "pm_schedules",
+   "has",
+   "vehicle_id"
+  ],
+  [
+   "vehicles",
+   "dispatches",
+   "is used in",
+   "vehicle_id"
+  ],
+  [
+   "inspections",
+   "inspection_items",
+   "contains",
+   "inspection_id"
+  ],
+  [
+   "inspection_checklist_items",
+   "inspection_items",
+   "is assessed in",
+   "checklist_item_id"
+  ]
+ ]
+}
