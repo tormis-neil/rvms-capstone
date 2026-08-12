@@ -164,29 +164,30 @@ TABLES = {
 
 # (parent, child, label, child_fk)  — parent is the "one", child is the "many"
 RELATIONSHIPS = [
+ # (parent = the "one" side, child = the "many" side, label read parent -> child, child FK)
  ("agencies","users","employs","agency_id"),
  ("agencies","vehicles","owns","agency_id"),
- ("agencies","inspections","scopes","agency_id"),
- ("agencies","damage_reports","scopes","agency_id"),
- ("agencies","repair_logs","scopes","agency_id"),
- ("agencies","pm_schedules","scopes","agency_id"),
- ("agencies","dispatches","scopes","agency_id"),
- ("agencies","notifications","scopes","agency_id"),
- ("users","vehicles","is assigned","assigned_driver_id"),
+ ("agencies","inspections","has","agency_id"),
+ ("agencies","damage_reports","has","agency_id"),
+ ("agencies","repair_logs","has","agency_id"),
+ ("agencies","pm_schedules","has","agency_id"),
+ ("agencies","dispatches","has","agency_id"),
+ ("agencies","notifications","has","agency_id"),
+ ("users","vehicles","drives","assigned_driver_id"),
  ("users","inspections","submits","driver_id"),
  ("users","inspections","reviews","reviewed_by"),
  ("users","damage_reports","submits","driver_id"),
  ("users","damage_reports","reviews","reviewed_by"),
- ("users","repair_logs","is assigned to","driver_id"),
- ("users","dispatches","is dispatched on","driver_id"),
+ ("users","repair_logs","assigned to","driver_id"),
+ ("users","dispatches","dispatched on","driver_id"),
  ("users","notifications","receives","user_id"),
  ("vehicles","inspections","undergoes","vehicle_id"),
  ("vehicles","damage_reports","has","vehicle_id"),
  ("vehicles","repair_logs","has","vehicle_id"),
  ("vehicles","pm_schedules","has","vehicle_id"),
- ("vehicles","dispatches","is used in","vehicle_id"),
+ ("vehicles","dispatches","used in","vehicle_id"),
  ("inspections","inspection_items","contains","inspection_id"),
- ("inspection_checklist_items","inspection_items","is assessed in","checklist_item_id"),
+ ("inspection_checklist_items","inspection_items","assessed in","checklist_item_id"),
 ]
 
 if __name__ == "__main__":

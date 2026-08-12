@@ -10,6 +10,7 @@ the document is regenerated.
 | `RVMS-Chapter4-ERD-and-Data-Dictionary.docx` | **The deliverable.** Part A explains the ERD; Part B is manuscript text to paste, including Tables 5–15. |
 | `rvms-erd.png` | The ERD, 6780 × 3930 px. Insert as Figure 6. |
 | `rvms-erd.drawio` | Editable source for diagrams.net, same layout. |
+| `rvms-erd.sql` | Schema for MySQL Workbench. Run it, then Database > Reverse Engineer to have Workbench draw the EER diagram from the foreign keys. |
 
 ## Regenerating
 
@@ -20,8 +21,8 @@ python3 make_drawio.py   # -> rvms-erd.drawio
 node build_docx.js       # -> the .docx
 ```
 
-`erd_model.py` is the single source of truth for both the diagram and the
-dictionary, so the two can never disagree. Edit it, re-run `verify.py`, then
+`erd_model.py` is the single source of truth for the diagram, the dictionary
+and the SQL, so the three can never disagree — `verify.py` checks all of them. Edit it, re-run `verify.py`, then
 regenerate.
 
 ## Decisions baked in

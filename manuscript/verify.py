@@ -30,5 +30,26 @@ for t in TABLES:
     else:
         print(f"[OK  ] {t:28} {len(doc)} fields")
 
-print("\nDIFFERENCES FOUND — fix erd_model.py before regenerating" if bad else "\nALL MATCH")
+# --- and the hand-written SQL must agree with the model too --------------
+import os
+if os.path.exists("rvms-erd.sql"):
+    sql = open("rvms-erd.sql").read()
+    from erd_model import RELATIONSHIPS
+    print()
+    for t, fields in TABLES.items():
+        m = re.search(r"CREATE TABLE `%s` \((.*?)\n\) ENGINE" % t, sql, re.S)
+        if not m:
+            bad = True; print(f"[DIFF] rvms-erd.sql is missing table {t}"); continue
+        cols = re.findall(r"^\s*`(\w+)`\s+[A-Z]", m.group(1), re.M)
+        doc = [f[0] for f in fields]
+        miss = [c for c in doc if c not in cols]; extra = [c for c in cols if c not in doc]
+        if miss or extra:
+            bad = True; print(f"[DIFF] rvms-erd.sql {t}: missing={miss} extra={extra}")
+    fks = len(re.findall(r"CONSTRAINT `\w+`\s+FOREIGN KEY", sql))
+    if fks != len(RELATIONSHIPS):
+        bad = True; print(f"[DIFF] rvms-erd.sql declares {fks} foreign keys, model has {len(RELATIONSHIPS)}")
+    else:
+        print(f"[OK  ] rvms-erd.sql              {fks} foreign keys, all tables match")
+
+print("\nDIFFERENCES FOUND — fix before regenerating" if bad else "\nALL MATCH")
 sys.exit(1 if bad else 0)

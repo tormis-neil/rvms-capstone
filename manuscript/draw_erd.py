@@ -22,8 +22,38 @@ def many_end(ax,x,y,dd):
     for o in (-7,0,7):
         L([(x+14*dd,y),(x,y+o)],1.5) if ax=='h' else L([(x,y+14*dd),(x+o,y)],1.5)
 
-for pts, oe, me in R.EDGES:
+for pts, oe, me, lab in R.EDGES:
     L(pts); one_end(*oe); many_end(*me)
+
+# Labels go on last so nothing is drawn over them. Each sits on its edge's
+# longest straight run, on a white plate so the line does not read through the
+# text — the run belongs to that edge alone, so labels cannot collide.
+fe = ImageFont.truetype(F, int(9*SC))
+def plate(cx, cy, text):
+    tw = d.textlength(text, font=fe); th = 11*SC
+    d.rectangle([cx-tw/2-4*SC, cy-th/2-1*SC, cx+tw/2+4*SC, cy+th/2+1*SC], fill="white")
+    d.text((cx-tw/2, cy-th/2), text, font=fe, fill=(90,100,120))
+
+for pts, oe, me, lab in R.EDGES:
+    if not lab: continue
+    tw_pt = d.textlength(lab, font=fe) / SC
+    best, blen, horiz = None, -1, True
+    for (x1,y1),(x2,y2) in zip(pts, pts[1:]):          # horizontal runs first
+        if y1 == y2 and abs(x2-x1) > blen:
+            blen, best, horiz = abs(x2-x1), ((x1+x2)/2, y1), True
+    if best is None or blen < tw_pt + 10:              # nothing usable: take the longest run
+        for (x1,y1),(x2,y2) in zip(pts, pts[1:]):
+            ln = abs(x2-x1) if y1==y2 else abs(y2-y1)
+            if ln > blen:
+                blen, best, horiz = ln, ((x1+x2)/2, (y1+y2)/2), (y1==y2)
+    cx, cy = best[0]*SC, best[1]*SC
+    tw = d.textlength(lab, font=fe)
+    if horiz and blen*SC > tw + 14*SC:
+        plate(cx, cy, lab)                    # sits on the run
+    elif horiz:
+        plate(cx, cy - 9*SC, lab)             # too short: float above it
+    else:
+        plate(cx + tw/2 + 9*SC, cy, lab)      # vertical run: sit beside it
 
 for t in TABLES:
     b = R.B(t); x, y, bh = b['x'], b['y'], b['h']
