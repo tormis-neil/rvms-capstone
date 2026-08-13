@@ -1,0 +1,1398 @@
+{
+ "order": [
+  "agencies",
+  "users",
+  "vehicles",
+  "inspection_checklist_items",
+  "inspections",
+  "inspection_items",
+  "damage_reports",
+  "repair_logs",
+  "pm_schedules",
+  "dispatches",
+  "notifications"
+ ],
+ "tables": {
+  "agencies": {
+   "columns": [
+    {
+     "name": "id",
+     "type": "BIGINT",
+     "pk": true,
+     "nn": true,
+     "un": true,
+     "ai": true,
+     "default": ""
+    },
+    {
+     "name": "code",
+     "type": "VARCHAR(10)",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "name",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "location",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "contact_number",
+     "type": "VARCHAR(50)",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "email",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "logo_path",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "license_expiry_warning_days",
+     "type": "SMALLINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": "30"
+    },
+    {
+     "name": "created_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "updated_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    }
+   ],
+   "fks": []
+  },
+  "users": {
+   "columns": [
+    {
+     "name": "id",
+     "type": "BIGINT",
+     "pk": true,
+     "nn": true,
+     "un": true,
+     "ai": true,
+     "default": ""
+    },
+    {
+     "name": "agency_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "role",
+     "type": "ENUM('admin','driver')",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "name",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "email",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "email_verified_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "password",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "status",
+     "type": "ENUM('pending','active','rejected')",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": "'active'"
+    },
+    {
+     "name": "license_number",
+     "type": "VARCHAR(50)",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "license_expiry_date",
+     "type": "DATE",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "fcm_token",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "remember_token",
+     "type": "VARCHAR(100)",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "deleted_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "created_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "updated_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    }
+   ],
+   "fks": [
+    {
+     "name": "fk_users_agency_id",
+     "column": "agency_id",
+     "ref": "agencies",
+     "on_delete": "NO ACTION"
+    }
+   ]
+  },
+  "vehicles": {
+   "columns": [
+    {
+     "name": "id",
+     "type": "BIGINT",
+     "pk": true,
+     "nn": true,
+     "un": true,
+     "ai": true,
+     "default": ""
+    },
+    {
+     "name": "agency_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "assigned_driver_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": false,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "type",
+     "type": "VARCHAR(100)",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "plate_number",
+     "type": "VARCHAR(20)",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "make",
+     "type": "VARCHAR(100)",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "model",
+     "type": "VARCHAR(100)",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "engine_number",
+     "type": "VARCHAR(50)",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "chassis_number",
+     "type": "VARCHAR(50)",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "current_mileage",
+     "type": "INT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": "0"
+    },
+    {
+     "name": "status",
+     "type": "ENUM('Operational','Dispatched','Not Operational','Under Preventive Maintenance')",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": "'Operational'"
+    },
+    {
+     "name": "deleted_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "created_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "updated_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    }
+   ],
+   "fks": [
+    {
+     "name": "fk_vehicles_agency_id",
+     "column": "agency_id",
+     "ref": "agencies",
+     "on_delete": "CASCADE"
+    },
+    {
+     "name": "fk_vehicles_assigned_driver_id",
+     "column": "assigned_driver_id",
+     "ref": "users",
+     "on_delete": "SET NULL"
+    }
+   ]
+  },
+  "inspection_checklist_items": {
+   "columns": [
+    {
+     "name": "id",
+     "type": "BIGINT",
+     "pk": true,
+     "nn": true,
+     "un": true,
+     "ai": true,
+     "default": ""
+    },
+    {
+     "name": "name",
+     "type": "VARCHAR(100)",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "is_bfp_only",
+     "type": "TINYINT(1)",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": "0"
+    },
+    {
+     "name": "sort_order",
+     "type": "SMALLINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": "0"
+    },
+    {
+     "name": "created_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "updated_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    }
+   ],
+   "fks": []
+  },
+  "inspections": {
+   "columns": [
+    {
+     "name": "id",
+     "type": "BIGINT",
+     "pk": true,
+     "nn": true,
+     "un": true,
+     "ai": true,
+     "default": ""
+    },
+    {
+     "name": "agency_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "vehicle_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "driver_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "inspection_date",
+     "type": "DATE",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "review_status",
+     "type": "ENUM('Pending','Reviewed')",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": "'Pending'"
+    },
+    {
+     "name": "reviewed_by",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": false,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "reviewed_at",
+     "type": "DATETIME",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "created_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "updated_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    }
+   ],
+   "fks": [
+    {
+     "name": "fk_inspections_agency_id",
+     "column": "agency_id",
+     "ref": "agencies",
+     "on_delete": "CASCADE"
+    },
+    {
+     "name": "fk_inspections_vehicle_id",
+     "column": "vehicle_id",
+     "ref": "vehicles",
+     "on_delete": "CASCADE"
+    },
+    {
+     "name": "fk_inspections_driver_id",
+     "column": "driver_id",
+     "ref": "users",
+     "on_delete": "CASCADE"
+    },
+    {
+     "name": "fk_inspections_reviewed_by",
+     "column": "reviewed_by",
+     "ref": "users",
+     "on_delete": "SET NULL"
+    }
+   ]
+  },
+  "inspection_items": {
+   "columns": [
+    {
+     "name": "id",
+     "type": "BIGINT",
+     "pk": true,
+     "nn": true,
+     "un": true,
+     "ai": true,
+     "default": ""
+    },
+    {
+     "name": "inspection_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "checklist_item_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "status",
+     "type": "ENUM('OK','Has Issue')",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "remarks",
+     "type": "TEXT",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    }
+   ],
+   "fks": [
+    {
+     "name": "fk_inspection_items_inspection_id",
+     "column": "inspection_id",
+     "ref": "inspections",
+     "on_delete": "CASCADE"
+    },
+    {
+     "name": "fk_inspection_items_checklist_item_id",
+     "column": "checklist_item_id",
+     "ref": "inspection_checklist_items",
+     "on_delete": "CASCADE"
+    }
+   ]
+  },
+  "damage_reports": {
+   "columns": [
+    {
+     "name": "id",
+     "type": "BIGINT",
+     "pk": true,
+     "nn": true,
+     "un": true,
+     "ai": true,
+     "default": ""
+    },
+    {
+     "name": "agency_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "vehicle_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "driver_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "nature_of_damage",
+     "type": "TEXT",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "suspected_parts",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "photo_path",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "date_reported",
+     "type": "DATE",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "status",
+     "type": "ENUM('Pending','Reviewed')",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": "'Pending'"
+    },
+    {
+     "name": "reviewed_by",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": false,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "reviewed_at",
+     "type": "DATETIME",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "created_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "updated_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    }
+   ],
+   "fks": [
+    {
+     "name": "fk_damage_reports_agency_id",
+     "column": "agency_id",
+     "ref": "agencies",
+     "on_delete": "CASCADE"
+    },
+    {
+     "name": "fk_damage_reports_vehicle_id",
+     "column": "vehicle_id",
+     "ref": "vehicles",
+     "on_delete": "CASCADE"
+    },
+    {
+     "name": "fk_damage_reports_driver_id",
+     "column": "driver_id",
+     "ref": "users",
+     "on_delete": "CASCADE"
+    },
+    {
+     "name": "fk_damage_reports_reviewed_by",
+     "column": "reviewed_by",
+     "ref": "users",
+     "on_delete": "SET NULL"
+    }
+   ]
+  },
+  "repair_logs": {
+   "columns": [
+    {
+     "name": "id",
+     "type": "BIGINT",
+     "pk": true,
+     "nn": true,
+     "un": true,
+     "ai": true,
+     "default": ""
+    },
+    {
+     "name": "agency_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "vehicle_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "driver_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": false,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "repair_date",
+     "type": "DATE",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "scope_of_work",
+     "type": "TEXT",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "parts_replaced",
+     "type": "TEXT",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "cost",
+     "type": "DECIMAL(10,2)",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "repair_source",
+     "type": "ENUM('Internal Office','GSO Motorpool','External Repair Shop')",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "external_shop_name",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "remarks",
+     "type": "TEXT",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "created_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "updated_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    }
+   ],
+   "fks": [
+    {
+     "name": "fk_repair_logs_agency_id",
+     "column": "agency_id",
+     "ref": "agencies",
+     "on_delete": "CASCADE"
+    },
+    {
+     "name": "fk_repair_logs_vehicle_id",
+     "column": "vehicle_id",
+     "ref": "vehicles",
+     "on_delete": "CASCADE"
+    },
+    {
+     "name": "fk_repair_logs_driver_id",
+     "column": "driver_id",
+     "ref": "users",
+     "on_delete": "SET NULL"
+    }
+   ]
+  },
+  "pm_schedules": {
+   "columns": [
+    {
+     "name": "id",
+     "type": "BIGINT",
+     "pk": true,
+     "nn": true,
+     "un": true,
+     "ai": true,
+     "default": ""
+    },
+    {
+     "name": "agency_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "vehicle_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "service_target",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "pm_type",
+     "type": "ENUM('Mileage-Based','Time-Based')",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "interval_km",
+     "type": "INT",
+     "pk": false,
+     "nn": false,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "last_pm_mileage",
+     "type": "INT",
+     "pk": false,
+     "nn": false,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "due_mileage",
+     "type": "INT",
+     "pk": false,
+     "nn": false,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "due_date",
+     "type": "DATE",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "due_soon_threshold_km",
+     "type": "INT",
+     "pk": false,
+     "nn": false,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "due_soon_threshold_days",
+     "type": "SMALLINT",
+     "pk": false,
+     "nn": false,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "status",
+     "type": "ENUM('Upcoming','Due Soon','Due','Completed')",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": "'Upcoming'"
+    },
+    {
+     "name": "date_serviced",
+     "type": "DATE",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "completion_repair_source",
+     "type": "ENUM('Internal Office','GSO Motorpool','External Repair Shop')",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "completion_external_shop_name",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "completion_parts_replaced",
+     "type": "TEXT",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "completion_remarks",
+     "type": "TEXT",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "created_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "updated_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    }
+   ],
+   "fks": [
+    {
+     "name": "fk_pm_schedules_agency_id",
+     "column": "agency_id",
+     "ref": "agencies",
+     "on_delete": "CASCADE"
+    },
+    {
+     "name": "fk_pm_schedules_vehicle_id",
+     "column": "vehicle_id",
+     "ref": "vehicles",
+     "on_delete": "CASCADE"
+    }
+   ]
+  },
+  "dispatches": {
+   "columns": [
+    {
+     "name": "id",
+     "type": "BIGINT",
+     "pk": true,
+     "nn": true,
+     "un": true,
+     "ai": true,
+     "default": ""
+    },
+    {
+     "name": "agency_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "vehicle_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "driver_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "mission_type",
+     "type": "ENUM('Fire Response','Medical Response','Rescue Operation', 'Patrol','Administrative Travel','Others')",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "mission_other",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "location",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "time_out",
+     "type": "DATETIME",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "odometer_out",
+     "type": "INT",
+     "pk": false,
+     "nn": false,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "time_in",
+     "type": "DATETIME",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "odometer_in",
+     "type": "INT",
+     "pk": false,
+     "nn": false,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "return_status",
+     "type": "ENUM('Operational','Not Operational','Under Preventive Maintenance')",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "remarks",
+     "type": "TEXT",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "created_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "updated_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    }
+   ],
+   "fks": [
+    {
+     "name": "fk_dispatches_agency_id",
+     "column": "agency_id",
+     "ref": "agencies",
+     "on_delete": "CASCADE"
+    },
+    {
+     "name": "fk_dispatches_vehicle_id",
+     "column": "vehicle_id",
+     "ref": "vehicles",
+     "on_delete": "CASCADE"
+    },
+    {
+     "name": "fk_dispatches_driver_id",
+     "column": "driver_id",
+     "ref": "users",
+     "on_delete": "CASCADE"
+    }
+   ]
+  },
+  "notifications": {
+   "columns": [
+    {
+     "name": "id",
+     "type": "BIGINT",
+     "pk": true,
+     "nn": true,
+     "un": true,
+     "ai": true,
+     "default": ""
+    },
+    {
+     "name": "agency_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "user_id",
+     "type": "BIGINT",
+     "pk": false,
+     "nn": true,
+     "un": true,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "type",
+     "type": "ENUM('PM_Reminder','Vehicle_Status_Update','New_Damage_Report', 'Inspection_Flagged','License_Expiring','License_Expired', 'PM_Due_Soon','PM_Due','New_Access_Request','Password_Reset')",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "title",
+     "type": "VARCHAR(255)",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "message",
+     "type": "TEXT",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "data",
+     "type": "JSON",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "is_read",
+     "type": "TINYINT(1)",
+     "pk": false,
+     "nn": true,
+     "un": false,
+     "ai": false,
+     "default": "0"
+    },
+    {
+     "name": "read_at",
+     "type": "DATETIME",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "created_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    },
+    {
+     "name": "updated_at",
+     "type": "TIMESTAMP",
+     "pk": false,
+     "nn": false,
+     "un": false,
+     "ai": false,
+     "default": ""
+    }
+   ],
+   "fks": [
+    {
+     "name": "fk_notifications_agency_id",
+     "column": "agency_id",
+     "ref": "agencies",
+     "on_delete": "CASCADE"
+    },
+    {
+     "name": "fk_notifications_user_id",
+     "column": "user_id",
+     "ref": "users",
+     "on_delete": "CASCADE"
+    }
+   ]
+  }
+ }
+}
