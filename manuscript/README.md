@@ -11,6 +11,8 @@ the document is regenerated.
 | `rvms-erd.png` | The ERD, 6780 × 3930 px. Insert as Figure 6. |
 | `rvms-erd.drawio` | Editable source for diagrams.net, same layout. |
 | `rvms-erd.sql` | Schema for MySQL Workbench. Run it, then Database > Reverse Engineer to have Workbench draw the EER diagram from the foreign keys. |
+| `rvms-erd-layout.py` | Run inside Workbench (Scripting > Scripting Shell) to place the eleven tables at Figure 6's positions. Reverse engineering produces a cramped automatic arrangement; this fixes it in one go. **Enlarge the canvas first** — Model > Diagram Properties and Size, Width 3 × Height 2 — or the moves get clamped to a single page, which is what makes spacing look impossible to change. |
+| `RVMS-ERD-MySQL-Workbench-Manual.docx` | Step-by-step manual for designing the ERD by hand in Workbench. |
 | `fig2-system-architecture.png` | Figure 2 — System Architecture, three tiers. |
 | `fig3-context-diagram.png` | Figure 3 — Context Diagram (Diagram 0 level 0). |
 | `fig4-data-flow-diagram.png` | Figure 4 — Data Flow Diagram, eight processes. |
