@@ -13,13 +13,20 @@
 #       Without this the canvas is one page and the tables physically
 #       cannot be spread out. This is the usual reason spacing "won't work".
 #    3. Scripting > Scripting Shell   (Ctrl + F3)
-#    4. In the shell prompt at the bottom, type ONE of these and press Enter:
+#    4. Click the SHELL tab (the black one). Type this at the prompt, Enter:
 #
-#         execfile(r"C:\\path\\to\\rvms-erd-layout.py")          # Workbench 8.0 (Python 2)
-#         exec(open(r"C:\\path\\to\\rvms-erd-layout.py").read()) # newer builds (Python 3)
+#         exec(open(r"C:\\path\\to\\rvms-erd-layout.py").read())
 #
-#       Try the first one. If it says "execfile is not defined", use the second.
 #    5. Read the report it prints. Then click the diagram tab to see the result.
+#
+#  DO NOT USE THE RUN BUTTON, and do not open this file in Workbench's editor
+#  to run it. On Python 3 builds of Workbench the Run button fails with
+#  "NameError: name 'execfile' is not defined" — that is a bug in Workbench's
+#  own script runner, not in this file. The shell command above avoids it.
+#
+#  If you cannot get the file to load at all, paste the single line in
+#  ONE-LINE FALLBACK at the bottom of this file into the shell instead. It
+#  does the same job with no file to find.
 #
 #  Nothing here touches your data. It only moves boxes on the drawing.
 # =====================================================================
@@ -133,3 +140,15 @@ def main():
 
 
 main()
+
+
+# =====================================================================
+#  ONE-LINE FALLBACK
+#
+#  If Workbench will not load this file at all, copy the single long line
+#  below (everything after the "#" on the line starting with "import grt")
+#  and paste it straight into the Scripting Shell prompt, then press Enter.
+#  It needs no file path and does the same job.
+#
+# import grt; d=grt.root.wb.doc.physicalModels[0].diagrams[0]; P={'agencies':(40,40),'users':(420,40),'vehicles':(800,40),'inspection_checklist_items':(1180,40),'inspection_items':(1560,40),'notifications':(40,780),'inspections':(420,780),'damage_reports':(800,780),'repair_logs':(1180,780),'pm_schedules':(1560,780),'dispatches':(1940,780)}; d.width=max(d.width,2400); d.height=max(d.height,1300); n=len([1 for f in d.figures if getattr(f,'table',None) and f.table.name in P and (setattr(f,'left',P[f.table.name][0]) or setattr(f,'top',P[f.table.name][1]) or True)]); print('placed %d of 11' % n)
+# =====================================================================
