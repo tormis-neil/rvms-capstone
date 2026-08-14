@@ -72,10 +72,9 @@ const ALIGN = [
   AlignmentType.LEFT,       // Reference Table
 ];
 
-// The draft sets the Reference Table column a point larger than the other five,
-// which carry no explicit size and so fall back to the document default. Copied
-// as found rather than normalised.
-const COL_SIZE = [CELL, CELL, CELL, CELL, CELL, BODY];
+// The draft set its Reference Table column a point larger than the other five.
+// Normalised to 11 pt across all six columns (lead-approved 2026-08).
+const COL_SIZE = [CELL, CELL, CELL, CELL, CELL, CELL];
 
 function ddTable(name) {
   const cell = (txt, i, { header = false, last = false } = {}) => new TableCell({
