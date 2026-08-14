@@ -14,7 +14,7 @@
 const fs = require('fs');
 const {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType,
-  AlignmentType, BorderStyle, ShadingType, LineRuleType,
+  AlignmentType, BorderStyle, ShadingType, LineRuleType, TableLayoutType, HeightRule,
 } = require('docx');
 
 const M = JSON.parse(fs.readFileSync('model.json', 'utf8'));
@@ -45,35 +45,78 @@ const Rich = (runs, o = {}) => new Paragraph({
 });
 
 // ---------- the data dictionary table ----------
-const COLS = [2000, 1180, 620, 3520, 620, 1420];   // = 9360 dxa (6.5 in)
+//
+// Copied cell-for-cell from Table 5 of the Chapter 4 draft, read out of that
+// file's XML rather than by eye: 8640 dxa fixed layout on the column widths
+// below; only three horizontal rules (3 pt above the header, 1 pt below it,
+// 3 pt under the last row) and no line at all between data rows; no shading;
+// header centred, Arial 12 pt bold, row at least 660 twips tall; data rows
+// Arial 11 pt double-spaced, with Null and Key centred and Description
+// justified.
+const COLS = [1575, 1605, 1170, 2010, 825, 1455];   // = 8640 dxa (6.0 in)
 const HEADERS = ['Field Name', 'Data Type', 'Null', 'Description', 'Key', 'Reference Table'];
 
+const NO_EDGE = { style: BorderStyle.NONE, size: 0, color: '000000' };
+const RULE = size => ({ style: BorderStyle.SINGLE, size, color: '000000' });
+// The draft rules off every data row in white — invisible, but it is what the
+// file does, so it is what is reproduced here.
+const HIDDEN = { style: BorderStyle.SINGLE, size: 8, color: 'FFFFFF' };
+
+/** Per-column alignment, matching the draft. */
+const ALIGN = [
+  AlignmentType.LEFT,       // Field Name
+  AlignmentType.LEFT,       // Data Type
+  AlignmentType.CENTER,     // Null
+  AlignmentType.JUSTIFIED,  // Description
+  AlignmentType.CENTER,     // Key
+  AlignmentType.LEFT,       // Reference Table
+];
+
+// The draft sets the Reference Table column a point larger than the other five,
+// which carry no explicit size and so fall back to the document default. Copied
+// as found rather than normalised.
+const COL_SIZE = [CELL, CELL, CELL, CELL, CELL, BODY];
+
 function ddTable(name) {
-  const cell = (txt, i, hdr) => new TableCell({
+  const cell = (txt, i, { header = false, last = false } = {}) => new TableCell({
     width: { size: COLS[i], type: WidthType.DXA },
-    shading: hdr ? { type: ShadingType.CLEAR, fill: 'DDE3F0' } : undefined,
-    margins: { top: 60, bottom: 60, left: 90, right: 90 },
+    shading: header ? { type: ShadingType.CLEAR, fill: 'FFFFFF' } : undefined,
+    margins: { top: 60, bottom: 60, left: 100, right: 100 },
+    verticalAlign: 'top',
+    borders: {
+      top: header ? RULE(18) : HIDDEN,
+      bottom: header ? RULE(8) : (last ? RULE(18) : HIDDEN),
+      left: NO_EDGE, right: NO_EDGE,
+    },
     children: [new Paragraph({
-      alignment: (i === 2 || i === 4) ? AlignmentType.CENTER : AlignmentType.LEFT,
-      spacing: { after: 0, line: 240, lineRule: LineRuleType.AUTO },
-      children: [new TextRun({ text: txt, font: FONT, size: CELL, bold: !!hdr })],
+      alignment: header ? AlignmentType.CENTER : ALIGN[i],
+      spacing: { after: 0, line: header ? 240 : 480, lineRule: LineRuleType.AUTO },
+      children: [new TextRun({ text: txt, font: FONT, size: header ? BODY : COL_SIZE[i], bold: header })],
     })],
   });
+
+  const rows = M.tables[name];
   return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
+    width: { size: 8640, type: WidthType.DXA },
     columnWidths: COLS,
+    layout: TableLayoutType.FIXED,
+    alignment: AlignmentType.LEFT,
     borders: {
-      top: { style: BorderStyle.SINGLE, size: 8, color: '000000' },
-      bottom: { style: BorderStyle.SINGLE, size: 8, color: '000000' },
-      left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE },
-      insideHorizontal: { style: BorderStyle.SINGLE, size: 2, color: 'BBBBBB' },
-      insideVertical: { style: BorderStyle.NONE },
+      top: NO_EDGE, bottom: NO_EDGE, left: NO_EDGE, right: NO_EDGE,
+      insideHorizontal: NO_EDGE, insideVertical: NO_EDGE,
     },
     rows: [
-      new TableRow({ tableHeader: true, children: HEADERS.map((h, i) => cell(h, i, true)) }),
-      ...M.tables[name].map(r => new TableRow({
-        children: [cell(r[0], 0), cell(r[1], 1), cell(r[2], 2), cell(r[5], 3), cell(r[3], 4), cell(r[4], 5)],
-      })),
+      new TableRow({
+        height: { value: 660, rule: HeightRule.ATLEAST },
+        children: HEADERS.map((h, i) => cell(h, i, { header: true })),
+      }),
+      ...rows.map((r, k) => {
+        const o = { last: k === rows.length - 1 };
+        return new TableRow({
+          children: [cell(r[0], 0, o), cell(r[1], 1, o), cell(r[2], 2, o),
+                     cell(r[5], 3, o), cell(r[3], 4, o), cell(r[4], 5, o)],
+        });
+      }),
     ],
   });
 }
