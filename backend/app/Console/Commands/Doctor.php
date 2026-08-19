@@ -50,6 +50,7 @@ class Doctor extends Command
         $this->checkEnvironment();
         $this->checkDatabase();
         $this->checkStorageLink();
+        $this->checkUploadLimits();
         $this->checkQueue();
         $this->checkScheduler();
         $this->checkNotificationDelivery();
@@ -164,6 +165,70 @@ class Doctor extends Command
         } catch (Throwable $e) {
             $this->failed('Storage is not writable', $e->getMessage());
         }
+    }
+
+    /**
+     * PHP must accept a photo at least as large as the app is willing to take.
+     *
+     * The app validates damage-report photos at 5 MB (FR-11), but PHP enforces
+     * its own limit FIRST and enforces it silently: a photo over
+     * upload_max_filesize is discarded before Laravel sees the request, so the
+     * driver gets a refusal that names no reason, while a smaller photo from
+     * the same gallery uploads perfectly. The symptom is "some photos work" —
+     * which reads as a flaky app rather than a setting (2026-08).
+     *
+     * The fix is always in php.ini, never in code, which is exactly why it
+     * belongs in a deployment check.
+     */
+    private function checkUploadLimits(): void
+    {
+        $required = 5;   // megabytes — must match the 'max:5120' rule on the photo
+        $upload = $this->megabytes((string) ini_get('upload_max_filesize'));
+        $post = $this->megabytes((string) ini_get('post_max_size'));
+
+        if ($upload < $required) {
+            $label = sprintf('PHP upload limit is %.0fM, below the %dM the app accepts', $upload, $required);
+            $hint = sprintf('Set upload_max_filesize to at least %dM in php.ini (and post_max_size higher '
+                .'still), then restart the web server. Until then any damage photo over %.0fM is '
+                .'discarded by PHP before the app can explain why.', $required + 3, $upload);
+
+            // A small limit on a developer's machine is a nuisance; on the
+            // deployment machine it silently breaks FR-11 for real drivers.
+            $this->isDevelopment() ? $this->warning($label, $hint) : $this->failed($label, $hint);
+
+            return;
+        }
+
+        if ($post <= $upload) {
+            $this->warning(
+                sprintf('post_max_size (%.0fM) is not above upload_max_filesize (%.0fM)', $post, $upload),
+                'A request carries the photo plus its form fields, so post_max_size must be the larger '
+                    .'of the two or an upload at the limit still fails.'
+            );
+
+            return;
+        }
+
+        $this->pass('PHP upload limits', sprintf('%.0fM upload / %.0fM post', $upload, $post));
+    }
+
+    /** php.ini shorthand — "8M", "512K", "1G" — as megabytes. */
+    private function megabytes(string $value): float
+    {
+        $value = trim($value);
+
+        if ($value === '') {
+            return 0.0;
+        }
+
+        $number = (float) $value;
+
+        return match (strtoupper(substr($value, -1))) {
+            'G' => $number * 1024,
+            'M' => $number,
+            'K' => $number / 1024,
+            default => $number / 1048576,   // plain bytes
+        };
     }
 
     /**

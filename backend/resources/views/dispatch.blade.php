@@ -54,6 +54,7 @@
                                     data-time-out="{{ $d->time_out?->format('Y-m-d\TH:i') }}"
                                     data-time-out-label="{{ $d->time_out?->format('M j, Y, h:i A') }}"
                                     data-time-in-label="{{ $d->time_in?->format('M j, Y, h:i A') }}"
+                                    data-active="{{ $d->isActive() ? '1' : '' }}"
                                     data-odometer-out="{{ $d->odometer_out }}"
                                     data-return-status="{{ $d->return_status }}"
                                     data-remarks="{{ $d->remarks }}">
@@ -304,7 +305,9 @@
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <span class="badge bg-secondary px-3 py-2 rounded-pill mb-2">Completed</span>
+                        {{-- Set from the row: this was hardcoded "Completed", so a mission
+                             still out in the field was reported as finished (2026-08). --}}
+                        <span class="badge px-3 py-2 rounded-pill mb-2" id="vwStatus">—</span>
                         <h5 class="fw-bold" id="vwMission">—</h5>
                         <p class="text-secondary mb-0"><i class="bi bi-geo-alt me-1"></i><span id="vwLocation">—</span></p>
                     </div>
@@ -450,6 +453,11 @@
             document.getElementById('vwDriver').textContent = d.driver;
             document.getElementById('vwTimeOut').textContent = d.timeOutLabel || '—';
             document.getElementById('vwTimeIn').textContent = d.timeInLabel || '—';
+            const active = d.active === '1';
+            const badge = document.getElementById('vwStatus');
+            badge.textContent = active ? 'Active' : 'Completed';
+            badge.classList.remove('bg-primary', 'bg-secondary');
+            badge.classList.add(active ? 'bg-primary' : 'bg-secondary');
             document.getElementById('vwReturn').textContent = d.returnStatus || '—';
         });
     </script>

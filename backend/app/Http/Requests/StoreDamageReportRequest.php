@@ -28,12 +28,20 @@ class StoreDamageReportRequest extends FormRequest
             ],
             'nature_of_damage' => ['required', 'string'],
             'suspected_parts' => ['nullable', 'string', 'max:255'],
-            // 'image' alone also admits SVG, and an SVG is a document that can
-            // carry scripts — served back from /storage it would execute in the
+            // An explicit list rather than 'image', for two reasons.
+            //
+            // 'image' admits SVG, and an SVG is a document that can carry
+            // scripts — served back from /storage it would execute in the
             // dashboard's own origin when the admin clicks View (stored XSS,
-            // security audit R10.2). Photos from a phone camera are only ever
-            // raster formats, so nothing legitimate is lost.
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'], // optional, ≤5 MB
+            // security audit R10.2).
+            //
+            // 'image' also REFUSES heic/heif, which is the default camera
+            // format on current Samsung and iPhone handsets. Drivers were
+            // picking a photo that looked fine, uploading it, and being
+            // refused — while an older jpg from the same gallery worked
+            // (2026-08, lead-reported). Listing the formats explicitly keeps
+            // SVG out and lets a modern camera photo in.
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,heic,heif', 'max:5120'], // optional, ≤5 MB
         ];
     }
 
@@ -41,8 +49,11 @@ class StoreDamageReportRequest extends FormRequest
     {
         return [
             'nature_of_damage.required' => 'Please describe the nature of the damage.',
-            'photo.image' => 'The attachment must be an image file.',
-            'photo.max' => 'The photo must not be larger than 5 MB.',
+            'photo.mimes' => 'The photo must be a JPG, PNG, WEBP or HEIC image.',
+            'photo.max' => 'The photo must not be larger than 5 MB. Try a smaller one, '
+                .'or reduce the camera resolution.',
+            'photo.uploaded' => 'The photo did not finish uploading. It may be larger than '
+                .'this server accepts — try a smaller photo.',
         ];
     }
 }
