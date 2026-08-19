@@ -106,7 +106,7 @@ php artisan serve --port=8000
 
 ⚠️ Leave this window open for the whole session.
 
-> Plain `127.0.0.1` is correct here — unlike Tier 2, you do **not** need
+> Plain `127.0.0.1` is correct here — unlike Tier 3, you do **not** need
 > `--host=0.0.0.0`. The tunnel connects to your laptop from the inside, so no
 > firewall rule is needed either.
 
@@ -213,7 +213,7 @@ Set it back to **Operational** so the session starts clean.
 ## PART 5 — Running the session
 
 Go to **`rvms-demo-script.md`**. Everything in it works in this tier — including
-push notification banners, which work better here than in Tier 2, because
+push notification banners, which work better here than on a cable, because
 everyone already has internet.
 
 ---
@@ -305,7 +305,7 @@ window.
 2. **Is the address right?** Tap `Server:` and compare it, character for
    character, with Window 3. The words are random and easy to mistype.
 3. **Did you add a port?** Do **not** type `:8000` for a tunnel — that is only
-   for Tier 2 and Tier 3.
+   for Tier 3.
 4. **Is Window 3 still open?** If you closed it, the link is dead. Start it
    again and send the new address.
 

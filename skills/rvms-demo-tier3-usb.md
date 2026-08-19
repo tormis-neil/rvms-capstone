@@ -522,7 +522,7 @@ IF THE APP LOSES THE SERVER:
 
 ## Notes
 
-- Tiers 1 (deployed) and 2 (laptop hotspot) are documented separately. This tier
+- Tier 1 (deployed, or tunnelled from the laptop) is documented separately. This tier
   needs no internet and no code changes — it works with the app exactly as it is
   today, which is why it is the fallback that cannot be taken away.
 - **This document only covers getting the system running.** Once both logins

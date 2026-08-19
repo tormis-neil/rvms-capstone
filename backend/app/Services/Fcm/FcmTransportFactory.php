@@ -45,7 +45,11 @@ class FcmTransportFactory
             return $this->fallBack('FIREBASE_PROJECT_ID is set but FIREBASE_CREDENTIALS is blank.');
         }
 
-        $path = self::resolvePath($credentials);
+        $path = self::resolveCredentialsPath($credentials);
+
+        if ($path === null) {
+            return $this->fallBack('FIREBASE_CREDENTIALS looks like JSON but is not a usable service-account key — it needs both client_email and private_key.');
+        }
 
         if (! is_readable($path)) {
             return $this->fallBack("The service-account key at {$path} does not exist or cannot be read.");
@@ -78,6 +82,52 @@ class FcmTransportFactory
      * cannot exist — and the only symptom would have been the factory falling
      * back to the log while `.env` looked correct.
      */
+    /**
+     * Where the service-account key can actually be read from on disk.
+     *
+     * FIREBASE_CREDENTIALS holds one of two things. On a laptop or on shared
+     * hosting it is a PATH, because there is a filesystem to put a file on. On
+     * a platform — Railway, Render, App Platform — there is nowhere to upload a
+     * private key to and nothing that survives a redeploy, so secrets arrive as
+     * environment variables and the value is the JSON ITSELF.
+     *
+     * Google's library only accepts a path, so JSON is written once into
+     * storage/app (never web-reachable, already gitignored) and that path is
+     * handed on. Without this, deploying means either committing a private key
+     * to the repository or shipping with push notifications silently dead.
+     *
+     * Returns null when the value is JSON but not a usable key, so the caller
+     * can say so rather than reporting a missing file that was never a file.
+     */
+    public static function resolveCredentialsPath(string $credentials): ?string
+    {
+        $trimmed = trim($credentials);
+
+        if (! str_starts_with($trimmed, '{')) {
+            return self::resolvePath($credentials);
+        }
+
+        $key = json_decode($trimmed, true);
+
+        if (! is_array($key) || blank($key['client_email'] ?? null) || blank($key['private_key'] ?? null)) {
+            return null;
+        }
+
+        $path = storage_path('app/firebase-credentials.json');
+
+        // Rewritten only when it changes: this runs on every boot, and the key
+        // is read far more often than it is rotated.
+        if (! is_file($path) || file_get_contents($path) !== $trimmed) {
+            if (! is_dir(dirname($path))) {
+                mkdir(dirname($path), 0755, true);
+            }
+            file_put_contents($path, $trimmed);
+            chmod($path, 0600);   // it holds a private key
+        }
+
+        return $path;
+    }
+
     public static function resolvePath(string $credentials): string
     {
         $isAbsolute = str_starts_with($credentials, '/')
