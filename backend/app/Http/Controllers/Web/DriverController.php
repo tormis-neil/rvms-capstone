@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Services\MaintenanceAlerts;
-use App\Services\RecordDeletion;
 use App\Http\Requests\StoreDriverRequest;
 use App\Http\Requests\UpdateDriverLicenseRequest;
 use App\Http\Requests\UpdateDriverRequest;
@@ -81,14 +80,6 @@ class DriverController extends Controller
             'licenseCounts' => $licenseCounts,
             'availableVehicles' => $availableVehicles,
             'vehicleLabels' => $vehicleLabels,
-            // Deleted drivers, so a delete is undoable from the same screen
-            // (FR-06, extended 2026-08). Scoped by hand: `users` carries no
-            // global agency scope.
-            'deleted' => User::onlyTrashed()
-                ->where('role', User::ROLE_DRIVER)
-                ->where('agency_id', $request->user()->agency_id)
-                ->orderByDesc('deleted_at')
-                ->get(),
         ]);
     }
 
@@ -192,30 +183,7 @@ class DriverController extends Controller
             ->with('status', "Password reset for {$driver->name}. Give them the new password directly.");
     }
 
-    /** Soft-delete a driver (FR-06, extended 2026-08). */
-    public function destroy(Request $request, User $driver)
-    {
-        $this->authorizeDriver($request, $driver);
 
-        app(RecordDeletion::class)->deleteDriver($driver);
-
-        return back(fallback: route('drivers'))
-            ->with('status', "{$driver->name} deleted. You can restore them from Deleted Records.");
-    }
-
-    public function restore(Request $request, int $driver)
-    {
-        $trashed = User::onlyTrashed()->find($driver);
-
-        if (! $trashed || $trashed->role !== User::ROLE_DRIVER
-            || $trashed->agency_id !== $request->user()->agency_id) {
-            abort(404);
-        }
-
-        app(RecordDeletion::class)->restoreDriver($trashed);
-
-        return back(fallback: route('drivers'))->with('status', "{$trashed->name} restored.");
-    }
 
     private function authorizeDriver(Request $request, User $driver): void
     {

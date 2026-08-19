@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreVehicleRequest;
 use App\Models\User;
 use App\Models\Vehicle;
-use App\Services\RecordDeletion;
 use App\Services\VehicleStatusWriter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -53,12 +52,7 @@ class VehicleController extends Controller
             ->unique()
             ->values();
 
-        // Deleted vehicles, so a delete is undoable from the same screen that
-        // made it (FR-05, extended 2026-08). Newest first: the one just deleted
-        // by mistake is the one being looked for.
-        $deleted = Vehicle::onlyTrashed()->orderByDesc('deleted_at')->get();
-
-        return view('vehicles', compact('vehicles', 'drivers', 'types', 'deleted'));
+        return view('vehicles', compact('vehicles', 'drivers', 'types'));
     }
 
     public function store(StoreVehicleRequest $request): RedirectResponse
@@ -106,28 +100,6 @@ class VehicleController extends Controller
             ->with('status', 'Vehicle status updated.');
     }
 
-    /**
-     * Soft-delete a vehicle (FR-05, extended 2026-08).
-     *
-     * The 422 from RecordDeletion (vehicle out on an active dispatch) surfaces
-     * as a validation error on the page the admin pressed the button on, the
-     * same way a refused status change does.
-     */
-    public function destroy(Vehicle $vehicle)
-    {
-        app(RecordDeletion::class)->deleteVehicle($vehicle);
 
-        return back(fallback: route('vehicles'))
-            ->with('status', "{$vehicle->plate_number} deleted. You can restore it from Deleted Records.");
-    }
 
-    public function restore(int $vehicle)
-    {
-        $trashed = Vehicle::onlyTrashed()->findOrFail($vehicle);
-
-        app(RecordDeletion::class)->restoreVehicle($trashed);
-
-        return back(fallback: route('vehicles'))
-            ->with('status', "{$trashed->plate_number} restored.");
-    }
 }

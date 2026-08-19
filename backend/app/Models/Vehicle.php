@@ -6,7 +6,6 @@ use App\Models\Concerns\BelongsToAgency;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Agency rescue vehicle (FR-05). Carries the single shared operational
@@ -16,7 +15,6 @@ class Vehicle extends Model
 {
     use BelongsToAgency;
     use HasFactory;
-    use SoftDeletes;
 
     public const STATUS_OPERATIONAL = 'Operational';
 
@@ -93,7 +91,7 @@ class Vehicle extends Model
 
     public function assignedDriver(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'assigned_driver_id')->withTrashed();
+        return $this->belongsTo(User::class, 'assigned_driver_id');
     }
 
     public function badgeClass(): string

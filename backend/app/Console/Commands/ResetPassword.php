@@ -31,10 +31,7 @@ class ResetPassword extends Command
     {
         $email = $this->argument('email') ?: $this->ask('Email address');
 
-        // withTrashed: a deleted account should report that it is deleted,
-        // rather than "no account", which would send someone hunting for a
-        // typo that is not there.
-        $user = User::withTrashed()->where('email', $email)->first();
+        $user = User::query()->where('email', $email)->first();
 
         if (! $user) {
             $this->components->error("No account found for {$email}.");
@@ -42,12 +39,6 @@ class ResetPassword extends Command
             $this->line('  Known administrators:');
             User::query()->where('role', User::ROLE_ADMIN)->orderBy('email')
                 ->each(fn (User $admin) => $this->line("  <fg=cyan>-</> {$admin->email}"));
-
-            return self::FAILURE;
-        }
-
-        if ($user->trashed()) {
-            $this->components->error("{$email} is a deleted account. Restore it in the dashboard first.");
 
             return self::FAILURE;
         }

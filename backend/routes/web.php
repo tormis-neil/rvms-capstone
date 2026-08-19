@@ -31,9 +31,6 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     Route::post('/vehicles', [VehicleController::class, 'store'])->name('vehicles.store');
     Route::put('/vehicles/{vehicle}', [VehicleController::class, 'update'])->name('vehicles.update');
     Route::patch('/vehicles/{vehicle}/status', [VehicleController::class, 'updateStatus'])->name('vehicles.status');
-    // Soft delete + restore (FR-05, extended 2026-08).
-    Route::delete('/vehicles/{vehicle}', [VehicleController::class, 'destroy'])->name('vehicles.destroy');
-    Route::patch('/vehicles/{vehicle}/restore', [VehicleController::class, 'restore'])->name('vehicles.restore');
 
     // Drivers (FR-03, FR-06, FR-08)
     Route::get('/drivers', [DriverController::class, 'index'])->name('drivers');
@@ -42,10 +39,8 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     Route::patch('/drivers/{driver}/license', [DriverController::class, 'updateLicense'])->name('drivers.license');
     Route::patch('/drivers/{driver}/approve', [DriverController::class, 'approve'])->name('drivers.approve');
     Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject'])->name('drivers.reject');
-    // Password reset + soft delete/restore (FR-22, FR-06, 2026-08).
+    // A driver's password, when they can no longer sign in (FR-22).
     Route::patch('/drivers/{driver}/password', [DriverController::class, 'resetPassword'])->name('drivers.password');
-    Route::delete('/drivers/{driver}', [DriverController::class, 'destroy'])->name('drivers.destroy');
-    Route::patch('/drivers/{driver}/restore', [DriverController::class, 'restore'])->name('drivers.restore');
 
     // Inspections + Damage reports share one page (FR-10, FR-12).
     Route::get('/inspections', [InspectionController::class, 'index'])->name('inspections');
@@ -73,9 +68,6 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     // (design decision 7: no FR backs editing agency information).
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    // A colleague administrator's password (FR-22, 2026-08) — the layer that
-    // stops a forgotten password locking an agency out of its own dashboard.
-    Route::patch('/admins/{admin}/password', [ProfileController::class, 'resetColleaguePassword'])->name('admins.password');
 
     // Reports (FR-20). One route: the page, plus the generated report when a
     // ?type= is present — the prototype renders its report into the same page.

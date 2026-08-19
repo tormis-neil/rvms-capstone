@@ -55,7 +55,7 @@ class PmSchedule extends Model
 
     public function vehicle(): BelongsTo
     {
-        return $this->belongsTo(Vehicle::class)->withTrashed();
+        return $this->belongsTo(Vehicle::class);
     }
 
     public function isCompleted(): bool
