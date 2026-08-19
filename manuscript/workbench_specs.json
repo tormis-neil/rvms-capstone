@@ -219,15 +219,6 @@
      "default": ""
     },
     {
-     "name": "deleted_at",
-     "type": "TIMESTAMP",
-     "pk": false,
-     "nn": false,
-     "un": false,
-     "ai": false,
-     "default": ""
-    },
-    {
      "name": "created_at",
      "type": "TIMESTAMP",
      "pk": false,
@@ -355,15 +346,6 @@
      "un": false,
      "ai": false,
      "default": "'Operational'"
-    },
-    {
-     "name": "deleted_at",
-     "type": "TIMESTAMP",
-     "pk": false,
-     "nn": false,
-     "un": false,
-     "ai": false,
-     "default": ""
     },
     {
      "name": "created_at",

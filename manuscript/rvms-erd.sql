@@ -89,7 +89,6 @@ CREATE TABLE `users` (
   `license_expiry_date` DATE                NULL,
   `fcm_token`           VARCHAR(255)        NULL COMMENT 'Device token for push notifications (FR-21)',
   `remember_token`      VARCHAR(100)        NULL,
-  `deleted_at`          TIMESTAMP           NULL COMMENT 'Set when removed by an administrator (FR-06)',
   `created_at`          TIMESTAMP           NULL,
   `updated_at`          TIMESTAMP           NULL,
   PRIMARY KEY (`id`),
@@ -117,7 +116,6 @@ CREATE TABLE `vehicles` (
   `current_mileage`    INT UNSIGNED    NOT NULL DEFAULT 0 COMMENT 'Odometer in km; feeds mileage-based PM (FR-14)',
   `status`             ENUM('Operational','Dispatched','Not Operational','Under Preventive Maintenance')
                        NOT NULL DEFAULT 'Operational',
-  `deleted_at`         TIMESTAMP           NULL COMMENT 'Set when removed by an administrator (FR-05)',
   `created_at`         TIMESTAMP           NULL,
   `updated_at`         TIMESTAMP           NULL,
   PRIMARY KEY (`id`),

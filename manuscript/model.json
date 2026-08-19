@@ -19,79 +19,79 @@
     "Int",
     "No",
     "PK",
-    "—",
+    "\u2014",
     "Unique identifier for each agency."
    ],
    [
     "code",
     "Varchar(10)",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Short agency code: BFP, PNP, CDRRMO, or CHO."
    ],
    [
     "name",
     "Varchar(255)",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Full name of the agency."
    ],
    [
     "location",
     "Varchar(255)",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Office location of the agency."
    ],
    [
     "contact_number",
     "Varchar(50)",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Contact number of the agency."
    ],
    [
     "email",
     "Varchar(255)",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Contact email address of the agency."
    ],
    [
     "logo_path",
     "Varchar(255)",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "File path of the agency logo shown on the dashboard."
    ],
    [
     "license_expiry_warning_days",
     "Smallint",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Number of days before expiry at which a driver license is flagged as expiring soon. Configurable per agency."
    ],
    [
     "created_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was created."
    ],
    [
     "updated_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was last updated."
    ]
   ],
@@ -101,7 +101,7 @@
     "Int",
     "No",
     "PK",
-    "—",
+    "\u2014",
     "Unique identifier for each user account."
    ],
    [
@@ -116,104 +116,96 @@
     "role",
     "Enum",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Role of the user: admin or driver."
    ],
    [
     "name",
     "Varchar(255)",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Full name of the Agency Administrator or Authorized Driver."
    ],
    [
     "email",
     "Varchar(255)",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Email address used to sign in. Unique across the system."
    ],
    [
     "password",
     "Varchar(255)",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Hashed password of the account."
    ],
    [
     "status",
     "Enum",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Account state: pending, active, or rejected."
    ],
    [
     "license_number",
     "Varchar(50)",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Driver license number. Empty for Agency Administrators."
    ],
    [
     "license_expiry_date",
     "Date",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Expiry date of the driver license. Empty for Agency Administrators."
    ],
    [
     "fcm_token",
     "Varchar(255)",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Device token used to deliver push notifications to the mobile application."
-   ],
-   [
-    "deleted_at",
-    "Datetime",
-    "Yes",
-    "—",
-    "—",
-    "Date and time the account was removed by an Agency Administrator. Empty while the account is in use."
    ],
    [
     "email_verified_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the email address was verified."
    ],
    [
     "remember_token",
     "Varchar(100)",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Token used to keep a web session signed in."
    ],
    [
     "created_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was created."
    ],
    [
     "updated_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was last updated."
    ]
   ],
@@ -223,7 +215,7 @@
     "Int",
     "No",
     "PK",
-    "—",
+    "\u2014",
     "Unique identifier for each vehicle."
    ],
    [
@@ -246,88 +238,80 @@
     "type",
     "Varchar(100)",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Type of vehicle, such as Fire Truck, Ambulance, or Patrol Car."
    ],
    [
     "plate_number",
     "Varchar(20)",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Plate number of the vehicle. Unique within the agency."
    ],
    [
     "make",
     "Varchar(100)",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Manufacturer of the vehicle."
    ],
    [
     "model",
     "Varchar(100)",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Model of the vehicle."
    ],
    [
     "engine_number",
     "Varchar(50)",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Engine number of the vehicle. Unique within the agency."
    ],
    [
     "chassis_number",
     "Varchar(50)",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Chassis number of the vehicle. Unique within the agency."
    ],
    [
     "current_mileage",
     "Int",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Current odometer reading in kilometers. Used for mileage-based preventive maintenance."
    ],
    [
     "status",
     "Enum",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Single shared operational status: Operational, Dispatched, Not Operational, or Under Preventive Maintenance."
-   ],
-   [
-    "deleted_at",
-    "Datetime",
-    "Yes",
-    "—",
-    "—",
-    "Date and time the vehicle was removed by an Agency Administrator. Empty while the vehicle is in use."
    ],
    [
     "created_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was created."
    ],
    [
     "updated_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was last updated."
    ]
   ],
@@ -337,47 +321,47 @@
     "Int",
     "No",
     "PK",
-    "—",
+    "\u2014",
     "Unique identifier for each checklist item."
    ],
    [
     "name",
     "Varchar(100)",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Name of the checklist item, such as Battery, Brakes, or Fire Pump."
    ],
    [
     "is_bfp_only",
     "Boolean",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Marks the two items that apply only to BFP vehicles: Hydraulic System and Fire Pump."
    ],
    [
     "sort_order",
     "Smallint",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Order in which the item appears on the checklist."
    ],
    [
     "created_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was created."
    ],
    [
     "updated_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was last updated."
    ]
   ],
@@ -387,7 +371,7 @@
     "Int",
     "No",
     "PK",
-    "—",
+    "\u2014",
     "Unique identifier for each inspection."
    ],
    [
@@ -418,16 +402,16 @@
     "inspection_date",
     "Date",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date the daily inspection was performed."
    ],
    [
     "review_status",
     "Enum",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Review state of the inspection: Pending or Reviewed."
    ],
    [
@@ -442,24 +426,24 @@
     "reviewed_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the inspection was reviewed."
    ],
    [
     "created_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the inspection was submitted."
    ],
    [
     "updated_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was last updated."
    ]
   ],
@@ -469,7 +453,7 @@
     "Int",
     "No",
     "PK",
-    "—",
+    "\u2014",
     "Unique identifier for each inspection item result."
    ],
    [
@@ -492,16 +476,16 @@
     "status",
     "Enum",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Result for the item: OK or Has Issue."
    ],
    [
     "remarks",
     "Text",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Explanation of the fault. Required when the status is Has Issue."
    ]
   ],
@@ -511,7 +495,7 @@
     "Int",
     "No",
     "PK",
-    "—",
+    "\u2014",
     "Unique identifier for each damage report."
    ],
    [
@@ -542,40 +526,40 @@
     "nature_of_damage",
     "Text",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Description of the damage."
    ],
    [
     "suspected_parts",
     "Varchar(255)",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Parts suspected to be defective."
    ],
    [
     "photo_path",
     "Varchar(255)",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "File path of the optional photo attachment."
    ],
    [
     "date_reported",
     "Date",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date the report was submitted. Set automatically."
    ],
    [
     "status",
     "Enum",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Review state of the report: Pending or Reviewed."
    ],
    [
@@ -590,24 +574,24 @@
     "reviewed_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the report was assessed."
    ],
    [
     "created_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was created."
    ],
    [
     "updated_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was last updated."
    ]
   ],
@@ -617,7 +601,7 @@
     "Int",
     "No",
     "PK",
-    "—",
+    "\u2014",
     "Unique identifier for each repair record."
    ],
    [
@@ -648,72 +632,72 @@
     "repair_date",
     "Date",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date the repair was performed or logged."
    ],
    [
     "scope_of_work",
     "Text",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Description of the work performed."
    ],
    [
     "parts_replaced",
     "Text",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Parts replaced during the repair."
    ],
    [
     "cost",
     "Decimal(10,2)",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Cost of the repair."
    ],
    [
     "repair_source",
     "Enum",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Who performed the repair: Internal Office, GSO Motorpool, or External Repair Shop."
    ],
    [
     "external_shop_name",
     "Varchar(255)",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Name of the shop when the repair source is External Repair Shop."
    ],
    [
     "remarks",
     "Text",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Additional notes about the repair."
    ],
    [
     "created_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was created."
    ],
    [
     "updated_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was last updated."
    ]
   ],
@@ -723,7 +707,7 @@
     "Int",
     "No",
     "PK",
-    "—",
+    "\u2014",
     "Unique identifier for each preventive maintenance schedule."
    ],
    [
@@ -746,128 +730,128 @@
     "service_target",
     "Varchar(255)",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Part or service to be maintained, such as Oil Change and Filter."
    ],
    [
     "pm_type",
     "Enum",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Basis of the schedule: Mileage-Based or Time-Based."
    ],
    [
     "interval_km",
     "Int",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Distance in kilometers between services. Mileage-based schedules only."
    ],
    [
     "last_pm_mileage",
     "Int",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Odometer reading at the last service. Mileage-based schedules only."
    ],
    [
     "due_mileage",
     "Int",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Odometer reading at which the service becomes due."
    ],
    [
     "due_date",
     "Date",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date on which the service becomes due. Time-based schedules only."
    ],
    [
     "due_soon_threshold_km",
     "Int",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Kilometers before the due mileage at which the schedule is flagged Due Soon. Configurable."
    ],
    [
     "due_soon_threshold_days",
     "Smallint",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Days before the due date at which the schedule is flagged Due Soon. Configurable."
    ],
    [
     "status",
     "Enum",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "State of the schedule: Upcoming, Due Soon, Due, or Completed."
    ],
    [
     "date_serviced",
     "Date",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date the service was carried out."
    ],
    [
     "completion_repair_source",
     "Enum",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Who carried out the service: Internal Office, GSO Motorpool, or External Repair Shop."
    ],
    [
     "completion_external_shop_name",
     "Varchar(255)",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Name of the shop when the completion source is External Repair Shop."
    ],
    [
     "completion_parts_replaced",
     "Text",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Parts replaced during the service."
    ],
    [
     "completion_remarks",
     "Text",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Notes and findings recorded on completion."
    ],
    [
     "created_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was created."
    ],
    [
     "updated_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was last updated."
    ]
   ],
@@ -877,7 +861,7 @@
     "Int",
     "No",
     "PK",
-    "—",
+    "\u2014",
     "Unique identifier for each dispatch record."
    ],
    [
@@ -908,88 +892,88 @@
     "mission_type",
     "Enum",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Type of mission: Fire Response, Medical Response, Rescue Operation, Patrol, Administrative Travel, or Others."
    ],
    [
     "mission_other",
     "Varchar(255)",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Description of the mission when the mission type is Others."
    ],
    [
     "location",
     "Varchar(255)",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Location the vehicle was dispatched to."
    ],
    [
     "time_out",
     "Datetime",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the vehicle left. Sets the vehicle status to Dispatched."
    ],
    [
     "odometer_out",
     "Int",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Odometer reading recorded at time out."
    ],
    [
     "time_in",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the vehicle returned. Empty while the dispatch is active."
    ],
    [
     "odometer_in",
     "Int",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Odometer reading recorded at time in. Updates the vehicle current mileage when higher."
    ],
    [
     "return_status",
     "Enum",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Status set on return: Operational, Not Operational, or Under Preventive Maintenance."
    ],
    [
     "remarks",
     "Text",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Notes recorded when the dispatch was closed."
    ],
    [
     "created_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was created."
    ],
    [
     "updated_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was last updated."
    ]
   ],
@@ -999,7 +983,7 @@
     "Int",
     "No",
     "PK",
-    "—",
+    "\u2014",
     "Unique identifier for each notification."
    ],
    [
@@ -1022,64 +1006,64 @@
     "type",
     "Enum",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Category of the alert, such as New Damage Report, Inspection Flagged, License Expiring, PM Due, or Password Reset."
    ],
    [
     "title",
     "Varchar(255)",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Short headline of the notification."
    ],
    [
     "message",
     "Text",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Body text of the notification."
    ],
    [
     "data",
     "JSON",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Reference details such as the plate number or the record concerned."
    ],
    [
     "is_read",
     "Boolean",
     "No",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Marks whether the recipient has opened the notification."
    ],
    [
     "read_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the notification was opened."
    ],
    [
     "created_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was created."
    ],
    [
     "updated_at",
     "Datetime",
     "Yes",
-    "—",
-    "—",
+    "\u2014",
+    "\u2014",
     "Date and time the record was last updated."
    ]
   ]
