@@ -1,9 +1,9 @@
 # Demo Script & Functional Acceptance Test
 
-> **One script, all three tiers.** The system behaves identically whether it is
-> deployed on a host, tunnelled from a laptop, or connected by USB cable — only the
-> way the phone reaches the server changes. The few things that genuinely differ
-> are listed in [Tier differences](#tier-differences) and nowhere else.
+> **One script, both tiers.** The system behaves identically whether it is
+> deployed on a host or connected by USB cable — only the way the phone reaches
+> the server changes. The few things that genuinely differ are listed in
+> [Tier differences](#tier-differences) and nowhere else.
 >
 > **This document does three jobs at once:**
 > 1. the running order for the client and panel demos;
@@ -16,19 +16,15 @@
 >
 > | Tier | Runbook |
 > |---|---|
-> | 1 — Deployed | `rvms-demo-tier1-railway.md` (hosted) · `rvms-demo-tier1-tunnel.md` (free, laptop-hosted) |
-> | 3 — USB cable | `rvms-demo-tier3-usb.md` |
->
-> *(Tier 2, the laptop hotspot, was retired — Tier 1 covers remote access and
-> Tier 3 covers no-network. The tier numbers are kept as they were so the older
-> documents and the manuscript still line up.)*
+> | 1 — Deployed | `rvms-demo-tier1-railway.md` |
+> | 2 — USB cable | `rvms-demo-tier2-usb.md` |
 
 ---
 
 <a name="tier-differences"></a>
 ## Tier differences — the only things that change
 
-| | Tier 1 · Deployed | Tier 3 · USB |
+| | Tier 1 · Deployed | Tier 2 · USB |
 |---|---|---|
 | Phone can move around the room | ✅ freely | ❌ tethered by cable |
 | Push notification banners | ✅ always | ⚠️ only if phone has data |
@@ -37,7 +33,7 @@
 
 **Everything else in this document is identical in both tiers.**
 
-> **When push banners are unavailable** (Tier 3 with no mobile data), the alert
+> **When push banners are unavailable** (Tier 2 with no mobile data), the alert
 > is still created and still appears in the app's **Alerts** tab, because it is
 > stored in your own database. Show it there and say so:
 > *"The alert is delivered and stored. The pop-up banner needs Google's servers,
@@ -322,7 +318,7 @@ headline moments except the mileage update.
 1. **Do not debug in front of people.** Write down the step number and move on.
 2. **Never apologise repeatedly.** One sentence: *"That one is not behaving —
    I will come back to it."* Then continue.
-3. **If the phone loses the server:** the fix is in your tier runbook. Tier 3 is
+3. **If the phone loses the server:** the fix is in your tier runbook. Tier 2 is
    almost always `adb reverse tcp:8000 tcp:8000`.
 4. **If the data is wrong** because a step went sideways, reset and restart the
    act rather than improvising.

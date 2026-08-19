@@ -203,7 +203,8 @@ App service → **Settings** → **Networking** → **Generate Domain**.
 **You should see:** something like
 `rvms-production-a1b2.up.railway.app`
 
-📝 **Write it down.** Unlike a tunnel, this address is permanent.
+📝 **Write it down.** This address is permanent — it survives restarts and
+redeploys, so you can print it and give it to the agencies.
 
 ---
 
@@ -406,10 +407,7 @@ FIRST THING     change the seeded passwords. The site is public.
 
 ## Notes
 
-- **Free alternative:** `rvms-demo-tier1-tunnel.md` gives a public HTTPS address
-  with no account and no payment, at the cost of your laptop needing to stay on.
-  Same app, same phone setting.
-- **For the final defense, use Tier 3 (USB).** It depends on no network at all,
+- **For the final defense, use Tier 2 (USB).** It depends on no network at all,
   so nothing in the venue can break it. This tier is for UAT, where the clients
   cannot come to you.
 - **What to demonstrate is in `rvms-demo-script.md`**, shared by every tier.
