@@ -214,7 +214,13 @@
                             Give it to them directly — the system does not send email.
                             Any phone they are signed in on will be signed out.
                         </div>
-                        <label class="form-label small fw-semibold">New Password</label>
+                        {{-- Your own password first (FR-22, 2026-08). Taking over a
+                             driver's sign-in should not be possible from an unattended
+                             logged-in dashboard. --}}
+                        <label class="form-label small fw-semibold">Your Current Password</label>
+                        <input type="password" name="current_password" class="form-control mb-3" required
+                               placeholder="Confirm it is you">
+                        <label class="form-label small fw-semibold">Their New Password</label>
                         <input type="text" name="password" class="form-control" minlength="8" required
                                placeholder="At least 8 characters">
                         <div class="form-text">Shown as plain text so you can read it out accurately.</div>
