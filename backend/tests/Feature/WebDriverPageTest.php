@@ -79,6 +79,14 @@ class WebDriverPageTest extends TestCase
         $this->assertSame($this->agency->id, $driver->agency_id);
     }
 
+    /**
+     * A renewal goes through the Edit Driver form (2026-08).
+     *
+     * The "Update License" button and its PATCH route were removed: the
+     * prototype never had that button — its rows carry View and Edit only, and
+     * the modal it opened is unreachable markup in the prototype itself — and
+     * the field it wrote is already on the edit form beside the licence number.
+     */
     public function test_license_renewal_flow(): void
     {
         $driver = User::factory()->driver()->create([
@@ -89,10 +97,37 @@ class WebDriverPageTest extends TestCase
         $newDate = now()->addYears(5)->toDateString();
 
         $this->actingAs($this->admin)
-            ->patch("/drivers/{$driver->id}/license", ['license_expiry_date' => $newDate])
+            ->put("/drivers/{$driver->id}", [
+                'name' => $driver->name,
+                'email' => $driver->email,
+                'license_expiry_date' => $newDate,
+            ])
             ->assertRedirect(route('drivers'));
 
         $this->assertSame($newDate, $driver->fresh()->license_expiry_date->toDateString());
+    }
+
+    /**
+     * Prototype fidelity, guarded (Non-Negotiable Rule 9).
+     *
+     * The removed button is exactly the kind of convenience that gets added
+     * back by someone who has not read the prototype — and re-adding it would
+     * quietly restore a second, narrower way to write one column.
+     */
+    public function test_a_driver_row_carries_only_the_prototypes_actions(): void
+    {
+        User::factory()->driver()->create(['agency_id' => $this->agency->id]);
+
+        $html = $this->actingAs($this->admin)->get('/drivers')->getContent();
+
+        $this->assertStringNotContainsString('updateLicenseModal', $html,
+            'The Update License modal is back. The prototype has no button that opens it.');
+        $this->assertStringNotContainsString('Update License', $html);
+
+        // The two the prototype does have, plus the documented FR-22 addition.
+        $this->assertStringContainsString('#viewDriverModal', $html);
+        $this->assertStringContainsString('#editDriverModal', $html);
+        $this->assertStringContainsString('js-reset', $html);
     }
 
     public function test_filters_narrow_the_table(): void

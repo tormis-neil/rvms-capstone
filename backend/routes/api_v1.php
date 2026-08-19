@@ -70,7 +70,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/drivers/{driver}', [DriverController::class, 'update']);
         Route::patch('/drivers/{driver}/approve', [DriverController::class, 'approve']);
         Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject']);
-        Route::patch('/drivers/{driver}/license', [DriverController::class, 'updateLicense']);
+        // No separate licence route: PUT /drivers/{driver} records a renewed
+        // expiry date and re-raises the FR-08 alerts (2026-08).
         // Password reset without email (FR-22): the admin sets it and reads it
         // out. The system sends no mail by design.
         Route::patch('/drivers/{driver}/password', [DriverController::class, 'resetPassword']);

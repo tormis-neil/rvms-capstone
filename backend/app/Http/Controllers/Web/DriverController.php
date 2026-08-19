@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Services\MaintenanceAlerts;
 use App\Http\Requests\StoreDriverRequest;
-use App\Http\Requests\UpdateDriverLicenseRequest;
 use App\Http\Requests\UpdateDriverRequest;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -128,18 +127,6 @@ class DriverController extends Controller
         app(MaintenanceAlerts::class)->raiseForDriver($driver->fresh());
 
         return redirect()->route('drivers')->with('status', 'Driver details updated.');
-    }
-
-    public function updateLicense(UpdateDriverLicenseRequest $request, User $driver): RedirectResponse
-    {
-        $this->authorizeDriver($request, $driver);
-
-        $driver->update(['license_expiry_date' => $request->validated('license_expiry_date')]);
-
-        // A "renewal" may still land inside the warning window.
-        app(MaintenanceAlerts::class)->raiseForDriver($driver->fresh());
-
-        return redirect()->route('drivers')->with('status', 'License renewal recorded.');
     }
 
     public function approve(Request $request, User $driver): RedirectResponse

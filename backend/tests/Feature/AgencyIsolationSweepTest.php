@@ -107,7 +107,6 @@ class AgencyIsolationSweepTest extends TestCase
             'update driver' => ['putJson', '/api/v1/drivers/{driver}', []],
             'approve driver' => ['patchJson', '/api/v1/drivers/{driver}/approve', []],
             'reject driver' => ['patchJson', '/api/v1/drivers/{driver}/reject', []],
-            'driver license' => ['patchJson', '/api/v1/drivers/{driver}/license', ['license_expiry_date' => '2030-01-01']],
             'reset driver password' => ['patchJson', '/api/v1/drivers/{driver}/password', ['password' => 'new-secret-123']],
             'show inspection' => ['getJson', '/api/v1/inspections/{inspection}', []],
             'review inspection' => ['patchJson', '/api/v1/inspections/{inspection}/review', []],
