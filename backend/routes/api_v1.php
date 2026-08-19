@@ -1,10 +1,9 @@
 <?php
 
-use App\Http\Controllers\Api\V1\AdminController;
 use App\Http\Controllers\Api\V1\AgencyController;
 use App\Http\Controllers\Api\V1\AuthController;
-use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DamageReportController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DispatchController;
 use App\Http\Controllers\Api\V1\DriverController;
 use App\Http\Controllers\Api\V1\FcmTokenController;
@@ -57,11 +56,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin — vehicle records (FR-05, FR-18)
     Route::middleware('role:admin')->group(function () {
-        // Administrators: list colleagues. NOT a management module — admin
-        // accounts stay provisioned (design decision 6), and one administrator
-        // cannot reset another's password (FR-22, narrowed 2026-08).
-        Route::get('/admins', [AdminController::class, 'index']);
-
         Route::get('/vehicles', [VehicleController::class, 'index']);
         Route::post('/vehicles', [VehicleController::class, 'store']);
         // Numeric-only so the text path /vehicles/availability (below) resolves.
