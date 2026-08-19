@@ -1,0 +1,27 @@
+# Railway start configuration.
+#
+# Railway builds with Nixpacks, which detects Laravel and runs composer install
+# on its own. Only the start command needs overriding, because three things have
+# to happen on every boot for a deployed RVMS to actually work and none of them
+# are automatic:
+#
+#   1. migrations, so a fresh database gets its tables and a redeploy picks up
+#      any new ones. --force because a deploy is non-interactive.
+#   2. storage:link, because damage-report photos (FR-11) are served out of
+#      public/storage; without the link every photo 404s. Allowed to fail, since
+#      it errors when the link already exists — which it will on a volume.
+#   3. binding to $PORT on 0.0.0.0. Railway assigns the port and routes to it,
+#      so the default 127.0.0.1:8000 is unreachable from outside.
+#
+# The parentheses matter. Written as `a && b || true && c`, a FAILED MIGRATION
+# would be swallowed by the `|| true` and the app would boot against a database
+# with no tables. Grouped this way, a failed migration stops the deploy — which
+# is what you want to see in the logs — while a redundant storage:link does not.
+#
+# The scheduled licence and PM sweeps (FR-08, FR-14) are deliberately NOT here.
+# They belong to a second Railway service running `php artisan schedule:work`:
+# this process restarts on every deploy, and a web server is the wrong place to
+# keep a clock.
+
+[start]
+cmd = "php artisan migrate --force && (php artisan storage:link || true) && php artisan serve --host=0.0.0.0 --port=$PORT"
