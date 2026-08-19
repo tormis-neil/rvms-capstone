@@ -551,7 +551,5 @@
             });
         });
 
-            });
-        });
     </script>
 @endsection
