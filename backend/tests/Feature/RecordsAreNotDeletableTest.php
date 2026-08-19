@@ -57,6 +57,7 @@ class RecordsAreNotDeletableTest extends TestCase
             'restore driver (web)' => ['PATCH', 'drivers/{driver}/restore'],
             'reset a colleague administrator (api)' => ['PATCH', 'api/v1/admins/{admin}/password'],
             'reset a colleague administrator (web)' => ['PATCH', 'admins/{admin}/password'],
+            'administrator directory (api)' => ['GET', 'api/v1/admins'],
         ];
     }
 

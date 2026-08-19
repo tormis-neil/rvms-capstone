@@ -458,7 +458,5 @@
             });
         })();
 
-            });
-        });
     </script>
 @endsection

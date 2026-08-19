@@ -17,6 +17,17 @@ for f in sorted(glob.glob("../backend/database/migrations/*.php")):
         if "timestamps()" in body:
             for c in ("created_at", "updated_at"):
                 if c not in real[tbl]: real[tbl].append(c)
+        # Migrations also REMOVE columns, and a checker that only ever adds them
+        # reports a column the database no longer has — which is exactly the kind
+        # of quiet wrongness this file exists to prevent. Files are read in name
+        # order, so a later drop correctly undoes an earlier add.
+        if "dropSoftDeletes()" in body and "deleted_at" in real[tbl]:
+            real[tbl].remove("deleted_at")
+        for dropped in re.findall(r"dropColumn\(\s*'(\w+)'", body):
+            if dropped in real[tbl]: real[tbl].remove(dropped)
+        for group in re.findall(r"dropColumn\(\s*\[(.*?)\]", body, re.S):
+            for dropped in re.findall(r"'(\w+)'", group):
+                if dropped in real[tbl]: real[tbl].remove(dropped)
 
 bad = False
 for t in TABLES:

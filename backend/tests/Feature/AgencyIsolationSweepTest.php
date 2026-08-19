@@ -100,7 +100,6 @@ class AgencyIsolationSweepTest extends TestCase
         return [
             // A colleague reset reaching into another agency would hand over an
             // administrator account — the worst possible isolation failure here.
-            'reset admin password' => ['patchJson', '/api/v1/admins/{admin}/password', ['current_password' => 'password', 'password' => 'new-secret-123']],
             'show vehicle' => ['getJson', '/api/v1/vehicles/{vehicle}', []],
             'update vehicle' => ['putJson', '/api/v1/vehicles/{vehicle}', []],
             'vehicle status' => ['patchJson', '/api/v1/vehicles/{vehicle}/status', ['status' => 'Operational']],

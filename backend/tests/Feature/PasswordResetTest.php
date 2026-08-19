@@ -61,18 +61,6 @@ class PasswordResetTest extends TestCase
         $this->assertTrue(Hash::check('new-secret-123', $this->driver->fresh()->password));
     }
 
-
-
-
-
-    /** A driver must never reach the administrator directory. */
-    public function test_a_driver_cannot_list_admins(): void
-    {
-        Sanctum::actingAs($this->driver);
-
-        $this->getJson('/api/v1/admins')->assertForbidden();
-    }
-
     /* ------------------ the reset is never silent (FR-22 → FR-21) ---------- */
 
     /**
@@ -96,7 +84,6 @@ class PasswordResetTest extends TestCase
         $this->assertNotNull($notification, 'The driver was not told their password had been reset.');
         $this->assertStringContainsString($this->admin->name, $notification->message);
     }
-
 
     /** Telling the administrator what they just did would be noise. */
     public function test_the_administrator_who_reset_it_is_not_notified(): void
@@ -167,5 +154,4 @@ class PasswordResetTest extends TestCase
             ->expectsOutputToContain('No account found')
             ->assertExitCode(1);
     }
-
 }
