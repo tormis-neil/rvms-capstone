@@ -137,7 +137,16 @@ class FcmDoctor extends Command
     /** Stage 4 — the service-account key itself. */
     private function checkCredentialsFile(): bool
     {
-        $path = FcmTransportFactory::resolvePath(config('services.fcm.credentials'));
+        $path = FcmTransportFactory::resolveCredentialsPath(config('services.fcm.credentials'));
+
+        if ($path === null) {
+            $this->components->error(
+                'FIREBASE_CREDENTIALS looks like JSON but is not a usable service-account key — '
+                .'it needs both client_email and private_key.'
+            );
+
+            return false;
+        }
 
         if (! is_readable($path)) {
             $this->components->error("The service-account key at {$path} cannot be read.");
