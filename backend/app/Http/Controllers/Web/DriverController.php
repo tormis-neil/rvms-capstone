@@ -12,6 +12,7 @@ use App\Models\Vehicle;
 use App\Services\NotificationDispatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -163,16 +164,28 @@ class DriverController extends Controller
      * Set a new password for a driver (FR-22, 2026-08).
      *
      * The action behind "contact your administrator" on the login screen. The
-     * admin types it and reads it out — no confirmation box, because they can
-     * see what they typed and it is not their own account being locked.
+     * admin types the new password and reads it out, after confirming their own
+     * — taking over someone else's sign-in should not be possible from a
+     * dashboard someone walked away from.
      */
     public function resetPassword(Request $request, User $driver)
     {
         $this->authorizeDriver($request, $driver);
 
+        // Same rule as the API path (FR-22, 2026-08): the acting administrator
+        // confirms who they are before taking over someone else's sign-in.
+        // Validated here rather than through ResetDriverPasswordRequest because
+        // this action predates it and returns a redirect, not JSON.
         $validated = $request->validate([
+            'current_password' => ['required', 'string'],
             'password' => ['required', 'string', 'min:8'],
+        ], [
+            'current_password.required' => 'Confirm your own password before resetting a driver’s.',
         ]);
+
+        if (! Hash::check($validated['current_password'], (string) $request->user()->password)) {
+            return back()->withErrors(['current_password' => 'That is not your current password.']);
+        }
 
         $driver->update(['password' => $validated['password']]);
         $driver->tokens()->delete();

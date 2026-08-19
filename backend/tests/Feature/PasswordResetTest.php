@@ -55,6 +55,7 @@ class PasswordResetTest extends TestCase
         Sanctum::actingAs($this->admin);
 
         $this->patchJson("/api/v1/drivers/{$this->driver->id}/password", [
+            'current_password' => 'password',
             'password' => 'new-secret-123',
         ])->assertOk();
 
@@ -68,11 +69,71 @@ class PasswordResetTest extends TestCase
      * lands in the affected user's own inbox naming who performed it — the
      * accountability trail every comparable system leaves (2026-08).
      */
-    public function test_a_driver_is_told_who_reset_their_password(): void
+    /**
+     * The acting administrator confirms who they are first (FR-22, 2026-08).
+     * Without it, an unattended logged-in dashboard is enough to take over a
+     * driver's account, and the driver only learns of it afterwards.
+     */
+    public function test_the_reset_is_refused_without_the_admins_own_password(): void
     {
         Sanctum::actingAs($this->admin);
 
         $this->patchJson("/api/v1/drivers/{$this->driver->id}/password", ['password' => 'new-secret-123'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('current_password');
+
+        $this->assertTrue(Hash::check('password', $this->driver->fresh()->password),
+            'The driver password changed even though the administrator was not confirmed.');
+    }
+
+    public function test_the_reset_is_refused_when_the_admins_password_is_wrong(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        $this->patchJson("/api/v1/drivers/{$this->driver->id}/password", [
+            'current_password' => 'not-my-password',
+            'password' => 'new-secret-123',
+        ])->assertStatus(422)->assertJsonValidationErrors('current_password');
+
+        $this->assertTrue(Hash::check('password', $this->driver->fresh()->password));
+    }
+
+    /**
+     * The rule must hold on BOTH platforms. The dashboard authenticates on the
+     * web session guard and the API on Sanctum, so a rule naming one guard
+     * would silently pass on the other.
+     */
+    public function test_the_confirmation_is_enforced_on_the_dashboard_too(): void
+    {
+        $this->actingAs($this->admin)
+            ->from('/drivers')
+            ->patch("/drivers/{$this->driver->id}/password", [
+                'password' => 'new-secret-123',
+            ])
+            ->assertSessionHasErrors('current_password');
+
+        $this->assertTrue(Hash::check('password', $this->driver->fresh()->password));
+    }
+
+    /** A wrong password is refused as firmly as a missing one. */
+    public function test_the_dashboard_refuses_a_wrong_administrator_password(): void
+    {
+        $this->actingAs($this->admin)
+            ->from('/drivers')
+            ->patch("/drivers/{$this->driver->id}/password", [
+                'current_password' => 'not-my-password',
+                'password' => 'new-secret-123',
+            ])
+            ->assertSessionHasErrors('current_password');
+
+        $this->assertTrue(Hash::check('password', $this->driver->fresh()->password));
+    }
+
+    public function test_a_driver_is_told_who_reset_their_password(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        $this->patchJson("/api/v1/drivers/{$this->driver->id}/password", ['current_password' => 'password', 'password' => 'new-secret-123'])
             ->assertOk();
 
         $notification = Notification::query()
@@ -90,7 +151,7 @@ class PasswordResetTest extends TestCase
     {
         Sanctum::actingAs($this->admin);
 
-        $this->patchJson("/api/v1/drivers/{$this->driver->id}/password", ['password' => 'new-secret-123']);
+        $this->patchJson("/api/v1/drivers/{$this->driver->id}/password", ['current_password' => 'password', 'password' => 'new-secret-123']);
 
         $this->assertDatabaseMissing('notifications', [
             'user_id' => $this->admin->id,
@@ -117,7 +178,10 @@ class PasswordResetTest extends TestCase
     {
         $this->actingAs($this->admin)
             ->from('/drivers')
-            ->patch(route('drivers.password', $this->driver), ['password' => 'new-secret-123'])
+            ->patch(route('drivers.password', $this->driver), [
+                'current_password' => 'password',
+                'password' => 'new-secret-123',
+            ])
             ->assertRedirect('/drivers');
 
         $this->assertDatabaseHas('notifications', [
