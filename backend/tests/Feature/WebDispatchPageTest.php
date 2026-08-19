@@ -175,6 +175,37 @@ class WebDispatchPageTest extends TestCase
         $this->assertStringNotContainsString($pending->name, $driverSelect[0]);
     }
 
+    /**
+     * The Dispatch Details badge was hardcoded to "Completed", so opening the
+     * details of a mission still out in the field reported it as finished —
+     * contradicting the row behind it and the active-count banner above it
+     * (2026-08, lead-reported).
+     *
+     * HTTP tests cannot run the page's JavaScript, so this asserts the two
+     * things the fix depends on: the row publishes whether the dispatch is
+     * active, and the badge is no longer a fixed word in the markup.
+     */
+    public function test_dispatch_details_badge_is_not_hardcoded(): void
+    {
+        $vehicle = Vehicle::factory()->create(['agency_id' => $this->agency->id]);
+
+        Dispatch::factory()->create([
+            'agency_id' => $this->agency->id,
+            'vehicle_id' => $vehicle->id,
+            'driver_id' => $this->driver->id,
+            'time_in' => null,          // still out in the field
+        ]);
+
+        $html = $this->actingAs($this->admin)->get('/dispatch')->getContent();
+
+        $this->assertStringContainsString('data-active="1"', $html,
+            'The row must publish whether the dispatch is active, or the details modal cannot know.');
+        $this->assertStringContainsString('id="vwStatus"', $html,
+            'The details badge must be fillable rather than a fixed word.');
+        $this->assertStringNotContainsString('rounded-pill mb-2">Completed<', $html,
+            'The details badge is hardcoded to Completed again.');
+    }
+
     public function test_guest_is_redirected_to_login(): void
     {
         $this->get('/dispatch')->assertRedirect(route('login'));

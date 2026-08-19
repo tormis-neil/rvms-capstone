@@ -167,7 +167,7 @@
         what to do, and a login form with no way forward is a worse outcome than
         slightly wrong wording. What it now names is the two paths that actually
         exist, in the order someone should try them.
-    -->
+    --}}
     <div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">

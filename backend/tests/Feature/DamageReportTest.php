@@ -117,6 +117,49 @@ class DamageReportTest extends TestCase
         }
     }
 
+    /**
+     * heic/heif is the default camera format on current Samsung and iPhone
+     * handsets. Laravel's 'image' rule refuses it, so a driver could pick a
+     * photo that looked perfectly ordinary, upload it, and be refused — while
+     * an older jpg from the same gallery worked (2026-08, lead-reported).
+     */
+    public function test_a_heic_photo_from_a_modern_phone_camera_is_accepted(): void
+    {
+        Storage::fake('public');
+        [, $driver, $vehicle] = $this->driverWithVehicle();
+        Sanctum::actingAs($driver);
+
+        // A real HEIC container: the format is identified by the 'ftypheic'
+        // brand in its header, which is what the mimes rule inspects.
+        $heic = UploadedFile::fake()->createWithContent(
+            'damage.heic',
+            "\x00\x00\x00\x18ftypheic\x00\x00\x00\x00mif1heic".str_repeat("\x00", 64),
+        );
+
+        $this->postJson('/api/v1/damage-reports', [
+            'vehicle_id' => $vehicle->id,
+            'nature_of_damage' => 'Cracked windscreen',
+            'photo' => $heic,
+        ])->assertCreated();
+    }
+
+    /** The SVG refusal must survive dropping the 'image' rule for heic's sake. */
+    public function test_svg_is_still_refused_after_widening_the_formats(): void
+    {
+        Storage::fake('public');
+        [, $driver, $vehicle] = $this->driverWithVehicle();
+        Sanctum::actingAs($driver);
+
+        $this->postJson('/api/v1/damage-reports', [
+            'vehicle_id' => $vehicle->id,
+            'nature_of_damage' => 'Attempted script upload',
+            'photo' => UploadedFile::fake()->createWithContent(
+                'payload.svg',
+                '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+            ),
+        ])->assertStatus(422)->assertJsonValidationErrors('photo');
+    }
+
     public function test_nature_of_damage_is_required(): void
     {
         [, $driver, $vehicle] = $this->driverWithVehicle();

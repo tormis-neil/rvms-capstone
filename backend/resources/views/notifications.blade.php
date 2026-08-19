@@ -94,10 +94,18 @@
                     <strong>{{ $readCount }} read {{ Str::plural('notification', $readCount) }}</strong>
                     from your inbox. This cannot be undone.
                 </p>
+                {{-- Each directive starts on its own line. Blade will not compile one
+                     glued to a word — `kept@if` and `unread@endif` were printed to the
+                     page verbatim (2026-08). --}}
                 <p class="text-secondary small mb-0">
-                    Unread notifications are kept@if ($unreadCount > 0) — you still have
-                    <strong>{{ $unreadCount }}</strong> unread@endif. Only your own inbox is
-                    affected; other administrators in your agency keep theirs.
+                    @if ($unreadCount > 0)
+                        Unread notifications are kept — you still have
+                        <strong>{{ $unreadCount }}</strong> unread.
+                    @else
+                        Unread notifications are kept.
+                    @endif
+                    Only your own inbox is affected; other administrators in your
+                    agency keep theirs.
                 </p>
             </div>
             <div class="modal-footer border-0">
