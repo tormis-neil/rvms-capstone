@@ -1,7 +1,7 @@
 # Demo Script & Functional Acceptance Test
 
 > **One script, all three tiers.** The system behaves identically whether it is
-> deployed, running off a laptop hotspot, or connected by USB cable — only the
+> deployed on a host, tunnelled from a laptop, or connected by USB cable — only the
 > way the phone reaches the server changes. The few things that genuinely differ
 > are listed in [Tier differences](#tier-differences) and nowhere else.
 >
@@ -16,25 +16,28 @@
 >
 > | Tier | Runbook |
 > |---|---|
-> | 1 — Deployed | *(to be written)* |
-> | 2 — Laptop hotspot | `rvms-demo-tier2-hotspot.md` |
+> | 1 — Deployed | `rvms-demo-tier1-railway.md` (hosted) · `rvms-demo-tier1-tunnel.md` (free, laptop-hosted) |
 > | 3 — USB cable | `rvms-demo-tier3-usb.md` |
+>
+> *(Tier 2, the laptop hotspot, was retired — Tier 1 covers remote access and
+> Tier 3 covers no-network. The tier numbers are kept as they were so the older
+> documents and the manuscript still line up.)*
 
 ---
 
 <a name="tier-differences"></a>
 ## Tier differences — the only things that change
 
-| | Tier 1 · Deployed | Tier 2 · Hotspot | Tier 3 · USB |
-|---|---|---|---|
-| Phone can move around the room | ✅ freely | ✅ freely | ❌ tethered by cable |
-| Push notification banners | ✅ always | ✅ if phone has data | ⚠️ only if phone has data |
-| Panel can open the dashboard on their own device | ✅ yes | ❌ no | ❌ no |
-| Needs venue internet | ✅ yes | ❌ no | ❌ no |
+| | Tier 1 · Deployed | Tier 3 · USB |
+|---|---|---|
+| Phone can move around the room | ✅ freely | ❌ tethered by cable |
+| Push notification banners | ✅ always | ⚠️ only if phone has data |
+| Panel can open the dashboard on their own device | ✅ yes | ❌ no |
+| Needs venue internet | ✅ yes | ❌ no |
 
-**Everything else in this document is identical in all three tiers.**
+**Everything else in this document is identical in both tiers.**
 
-> **When push banners are unavailable** (Tier 2/3 with no mobile data), the alert
+> **When push banners are unavailable** (Tier 3 with no mobile data), the alert
 > is still created and still appears in the app's **Alerts** tab, because it is
 > stored in your own database. Show it there and say so:
 > *"The alert is delivered and stored. The pop-up banner needs Google's servers,
