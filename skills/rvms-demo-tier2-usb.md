@@ -1,4 +1,4 @@
-# Demo Runbook — TIER 3: USB Cable (Last Fallback)
+# Demo Runbook — TIER 2: USB Cable (Last Fallback)
 
 > **Read this if:** there is no internet, no usable WiFi, or the deployed site is
 > down — and the demo still has to happen.
@@ -522,11 +522,11 @@ IF THE APP LOSES THE SERVER:
 
 ## Notes
 
-- Tier 1 (deployed, or tunnelled from the laptop) is documented separately. This tier
+- Tier 1 (deployed on Railway) is documented separately. This tier
   needs no internet and no code changes — it works with the app exactly as it is
   today, which is why it is the fallback that cannot be taken away.
 - **This document only covers getting the system running.** Once both logins
   work, go to **`rvms-demo-script.md`** for what to actually show — the running
   order, who does what, and the expected result of every step. That script is
-  shared by all three tiers; the only things that differ here are that the phone
+  shared by both tiers; the only things that differ here are that the phone
   is tethered by the cable, and that push banners need the phone's mobile data.
