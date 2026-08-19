@@ -57,10 +57,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin — vehicle records (FR-05, FR-18)
     Route::middleware('role:admin')->group(function () {
-        // Administrators: list colleagues and reset a locked-out one. NOT a
-        // management module — admin accounts stay provisioned.
+        // Administrators: list colleagues. NOT a management module — admin
+        // accounts stay provisioned (design decision 6), and one administrator
+        // cannot reset another's password (FR-22, narrowed 2026-08).
         Route::get('/admins', [AdminController::class, 'index']);
-        Route::patch('/admins/{admin}/password', [AdminController::class, 'resetPassword']);
 
         Route::get('/vehicles', [VehicleController::class, 'index']);
         Route::post('/vehicles', [VehicleController::class, 'store']);
@@ -68,10 +68,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/vehicles/{vehicle}', [VehicleController::class, 'show'])->whereNumber('vehicle');
         Route::put('/vehicles/{vehicle}', [VehicleController::class, 'update'])->whereNumber('vehicle');
         Route::patch('/vehicles/{vehicle}/status', [VehicleController::class, 'updateStatus'])->whereNumber('vehicle');
-        // Soft delete + restore (FR-05, extended 2026-08). Restore resolves the
-        // id by hand because route-model binding cannot see a trashed row.
-        Route::delete('/vehicles/{vehicle}', [VehicleController::class, 'destroy'])->whereNumber('vehicle');
-        Route::patch('/vehicles/{vehicle}/restore', [VehicleController::class, 'restore'])->whereNumber('vehicle');
 
         // Admin — driver records (FR-03, FR-06, FR-08)
         Route::get('/drivers', [DriverController::class, 'index']);
@@ -81,12 +77,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/drivers/{driver}/approve', [DriverController::class, 'approve']);
         Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject']);
         Route::patch('/drivers/{driver}/license', [DriverController::class, 'updateLicense']);
-        // Soft delete + restore (FR-06, extended 2026-08).
-        // Password reset without email (FR-22, 2026-08): the admin sets it and
-        // reads it out. The system sends no mail by design.
+        // Password reset without email (FR-22): the admin sets it and reads it
+        // out. The system sends no mail by design.
         Route::patch('/drivers/{driver}/password', [DriverController::class, 'resetPassword']);
-        Route::delete('/drivers/{driver}', [DriverController::class, 'destroy']);
-        Route::patch('/drivers/{driver}/restore', [DriverController::class, 'restore']);
         Route::get('/licenses/monitoring', LicenseMonitoringController::class);
 
         // Admin — dashboard summary (FR-19)

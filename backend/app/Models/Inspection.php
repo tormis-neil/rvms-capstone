@@ -39,17 +39,17 @@ class Inspection extends Model
 
     public function vehicle(): BelongsTo
     {
-        return $this->belongsTo(Vehicle::class)->withTrashed();
+        return $this->belongsTo(Vehicle::class);
     }
 
     public function driver(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'driver_id')->withTrashed();
+        return $this->belongsTo(User::class, 'driver_id');
     }
 
     public function reviewer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'reviewed_by')->withTrashed();
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 
     public function items(): HasMany

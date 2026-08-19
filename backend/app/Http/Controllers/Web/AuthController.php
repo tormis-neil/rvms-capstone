@@ -8,7 +8,6 @@ use App\Support\LoginThrottle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -38,19 +37,6 @@ class AuthController extends Controller
 
         if (! Auth::attempt($credentials)) {
             LoginThrottle::recordFailure($request, $credentials['email']);
-
-            // Auth::attempt cannot see a soft-deleted account, so a removed user
-            // would be told their credentials were wrong. Checked only after a
-            // failed attempt, and only with the correct password, so this says
-            // nothing to someone guessing (2026-08, lead-reported). Same
-            // wording as the API.
-            $removed = User::withTrashed()->where('email', $credentials['email'])->first();
-
-            if ($removed?->trashed() && Hash::check($credentials['password'], $removed->password)) {
-                throw ValidationException::withMessages([
-                    'email' => 'Your account has been removed. Contact your agency administrator.',
-                ]);
-            }
 
             throw ValidationException::withMessages([
                 'email' => 'These credentials do not match our records.',

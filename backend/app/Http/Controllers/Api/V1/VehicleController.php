@@ -7,7 +7,6 @@ use App\Http\Requests\StoreVehicleRequest;
 use App\Http\Requests\UpdateVehicleStatusRequest;
 use App\Http\Resources\VehicleResource;
 use App\Models\Vehicle;
-use App\Services\RecordDeletion;
 use App\Services\VehicleStatusWriter;
 use Illuminate\Http\Request;
 
@@ -57,29 +56,7 @@ class VehicleController extends Controller
         return VehicleResource::make($vehicle->fresh()->load('assignedDriver'));
     }
 
-    /**
-     * Soft-delete a vehicle (FR-05, extended 2026-08).
-     *
-     * The record leaves every list and dropdown; its inspections, damage
-     * reports, repairs, PM schedules and dispatches are untouched and still
-     * name it. Refused (422) while it is out on an active dispatch.
-     */
-    public function destroy(Vehicle $vehicle)
-    {
-        app(RecordDeletion::class)->deleteVehicle($vehicle);
 
-        return response()->json(['data' => ['deleted' => true]]);
-    }
-
-    /** Bring a deleted vehicle back, with its history intact. */
-    public function restore(int $vehicle)
-    {
-        $trashed = Vehicle::onlyTrashed()->findOrFail($vehicle);
-
-        app(RecordDeletion::class)->restoreVehicle($trashed);
-
-        return VehicleResource::make($trashed->fresh()->load('assignedDriver'));
-    }
 
     public function updateStatus(UpdateVehicleStatusRequest $request, Vehicle $vehicle)
     {

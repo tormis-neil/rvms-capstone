@@ -59,12 +59,12 @@ class Dispatch extends Model
 
     public function vehicle(): BelongsTo
     {
-        return $this->belongsTo(Vehicle::class)->withTrashed();
+        return $this->belongsTo(Vehicle::class);
     }
 
     public function driver(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'driver_id')->withTrashed();
+        return $this->belongsTo(User::class, 'driver_id');
     }
 
     public function isActive(): bool

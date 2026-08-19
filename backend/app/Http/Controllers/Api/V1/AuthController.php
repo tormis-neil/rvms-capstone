@@ -29,18 +29,7 @@ class AuthController extends Controller
         // leave the back door propped open.
         LoginThrottle::assertNotLocked($request, $email);
 
-        // withTrashed so a DELETED account can be told apart from a wrong email.
-        // Without it the soft-delete scope hid them, and a driver whose account
-        // an administrator had removed was told their credentials were wrong —
-        // so they retyped the password, assumed a typo, and asked for a reset
-        // from an administrator who could no longer find them in the list
-        // (2026-08, lead-reported).
-        //
-        // Naming the state is consistent with what this endpoint already does
-        // for pending and rejected accounts below; singling deletion out for
-        // silence protected nothing while costing the one person affected the
-        // only clue they had.
-        $user = User::withTrashed()->where('email', $email)->first();
+        $user = User::query()->where('email', $email)->first();
 
         if (! $user || ! Hash::check($request->input('password'), $user->password)) {
             LoginThrottle::recordFailure($request, $email);
@@ -48,14 +37,6 @@ class AuthController extends Controller
             throw ValidationException::withMessages([
                 'email' => 'These credentials do not match our records.',
             ]);
-        }
-
-        if ($user->trashed()) {
-            LoginThrottle::recordFailure($request, $email);
-
-            return response()->json([
-                'message' => 'Your account has been removed. Contact your agency administrator.',
-            ], 403);
         }
 
         if (! $user->isActive()) {

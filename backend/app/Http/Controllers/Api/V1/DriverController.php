@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Services\MaintenanceAlerts;
-use App\Services\RecordDeletion;
 use App\Http\Requests\StoreDriverRequest;
 use App\Http\Requests\ResetDriverPasswordRequest;
 use App\Http\Requests\UpdateDriverLicenseRequest;
@@ -144,38 +143,7 @@ class DriverController extends Controller
         return response()->json(['data' => ['reset' => true]]);
     }
 
-    /**
-     * Soft-delete a driver (FR-06, extended 2026-08).
-     *
-     * Their vehicle assignments are released; their inspections and damage
-     * reports keep their name. Refused (422) while they are out on an active
-     * dispatch.
-     */
-    public function destroy(Request $request, User $driver)
-    {
-        $this->authorizeDriver($request, $driver);
 
-        app(RecordDeletion::class)->deleteDriver($driver);
-
-        return response()->json(['data' => ['deleted' => true]]);
-    }
-
-    /** Bring a deleted driver back. Vehicle assignments are not restored. */
-    public function restore(Request $request, int $driver)
-    {
-        $trashed = User::onlyTrashed()->find($driver);
-
-        // Same 404-not-403 rule as every other lookup here: a foreign or
-        // non-driver id must not be distinguishable from one that never existed.
-        if (! $trashed || $trashed->role !== User::ROLE_DRIVER
-            || $trashed->agency_id !== $request->user()->agency_id) {
-            throw new NotFoundHttpException;
-        }
-
-        app(RecordDeletion::class)->restoreDriver($trashed);
-
-        return DriverResource::make($trashed->fresh());
-    }
 
     private function authorizeDriver(Request $request, User $driver): void
     {
