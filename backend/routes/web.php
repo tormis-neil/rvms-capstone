@@ -36,7 +36,9 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     Route::get('/drivers', [DriverController::class, 'index'])->name('drivers');
     Route::post('/drivers', [DriverController::class, 'store'])->name('drivers.store');
     Route::put('/drivers/{driver}', [DriverController::class, 'update'])->name('drivers.update');
-    Route::patch('/drivers/{driver}/license', [DriverController::class, 'updateLicense'])->name('drivers.license');
+    // No separate licence route: a renewed expiry date is recorded through the
+    // Edit Driver form above, beside the licence number it belongs with
+    // (2026-08 — see the note in drivers.blade.php).
     Route::patch('/drivers/{driver}/approve', [DriverController::class, 'approve'])->name('drivers.approve');
     Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject'])->name('drivers.reject');
     // A driver's password, when they can no longer sign in (FR-22).

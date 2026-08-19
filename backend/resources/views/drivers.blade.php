@@ -169,7 +169,6 @@
                                         <div class="d-flex gap-2 justify-content-end">
                                             <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
                                             <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
-                                            <button class="btn btn-sm btn-light border" title="Update License" data-bs-toggle="modal" data-bs-target="#updateLicenseModal"><i class="bi bi-arrow-clockwise"></i></button>
                                             {{-- Reset Password (FR-22, 2026-08): the action behind the
                                                  login screen's "contact your administrator". --}}
                                             <button type="button" class="btn btn-sm btn-light border js-reset"
@@ -359,52 +358,23 @@
         </div>
     </div>
 
-    <!-- Update License Modal -->
-    <div class="modal fade" id="updateLicenseModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-navy text-white">
-                    <h5 class="modal-title fw-bold">Update Driver License</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                {{-- Live form — action is set per-row by the page script (drivers.license, FR-08) --}}
-                <form method="POST" id="updateLicenseForm" action="#">
-                @csrf
-                @method('PATCH')
-                <div class="modal-body p-4">
-                    <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-4">
-                        <div>
-                            <div class="fw-bold" id="ulName">Driver Name</div>
-                            <div class="small text-secondary">License <span class="font-monospace" id="ulLicense">—</span></div>
-                        </div>
-                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill" id="ulCurrentBadge">Valid</span>
-                    </div>
-                    <p class="text-secondary small mb-4">After the driver renews their license, enter the new expiry date. The license status updates automatically based on the date.</p>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Current Expiry Date</label>
-                            <input type="text" class="form-control bg-light" id="ulCurrentExpiry" value="—" readonly>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">New Expiry Date</label>
-                            <input type="date" class="form-control" name="license_expiry_date" id="ulNewExpiry" required>
-                            <div class="mt-2 d-flex gap-2">
-                                <button type="button" class="btn btn-sm btn-light border" id="ulPlus5">+5 years</button>
-                                <button type="button" class="btn btn-sm btn-light border" id="ulPlus10">+10 years</button>
-                            </div>
-                        </div>
-                        <div class="alert alert-light border d-flex align-items-center mb-0">
-                            <i class="bi bi-info-circle text-primary me-2"></i>
-                            <div class="small">Resulting status: <span class="fw-bold" id="ulResult">—</span></div>
-                        </div>
-                </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-navy bg-navy text-white">Mark as Renewed</button>
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    {{-- Update License modal REMOVED (2026-08, lead-reported) — third recorded
+         prototype defect (Non-Negotiable Rule 9).
+
+         The prototype declares `#updateLicenseModal` but NOTHING in the
+         prototype opens it: its driver rows carry two action buttons, View
+         Details and Edit. The opening button was added during implementation
+         and never recorded as a deviation, so removing it restores fidelity to
+         the prototype rather than departing from it — the rendered pages match
+         either way, because an unreachable modal is invisible in both.
+
+         Nothing is lost. The modal wrote one column, `license_expiry_date`, and
+         the Edit Driver modal above already edits that same field alongside the
+         licence number it belongs with — so a renewal is recorded in the place
+         an administrator already looks, instead of behind a second button that
+         does a subset of the first. Both `update()` paths call
+         MaintenanceAlerts::raiseForDriver(), so a renewal still re-evaluates the
+         FR-08 warning window immediately, exactly as the removed route did. --}}
 
     <!-- View Driver Modal -->
     <div class="modal fade" id="viewDriverModal" tabindex="-1">
@@ -456,7 +426,6 @@
         // mirroring the prototype's own agency.js driver-modal behavior.
         const LIC_TONE = { 'Valid': 'success', 'Expiring Soon': 'warning', 'Expired': 'danger' };
         const vehicleLabels = @json($vehicleLabels);
-        const licenseWarningDays = {{ auth()->user()->agency->license_expiry_warning_days }};
 
         function rowData(event) {
             const row = event.relatedTarget && event.relatedTarget.closest('tr');
@@ -505,50 +474,7 @@
             if (ids.length === 0) select.value = '';
         });
 
-        // Update License modal
-        const licenseActionTemplate = @json(route('drivers.license', ['driver' => '__ID__']));
-        const ulNewExpiry = document.getElementById('ulNewExpiry');
-        const ulResult = document.getElementById('ulResult');
-
-        function computeStatus(dateStr) {
-            if (!dateStr) return null;
-            const days = (new Date(dateStr) - new Date()) / 86400000;
-            return days < 0 ? 'Expired' : days <= licenseWarningDays ? 'Expiring Soon' : 'Valid';
-        }
-
-        function showResult() {
-            const status = computeStatus(ulNewExpiry.value);
-            if (!status) { ulResult.textContent = '—'; ulResult.className = 'fw-bold'; return; }
-            ulResult.textContent = status;
-            ulResult.className = 'fw-bold text-' + LIC_TONE[status];
-        }
-
-        document.getElementById('updateLicenseModal').addEventListener('show.bs.modal', event => {
-            const d = rowData(event);
-            if (!d) return;
-            document.getElementById('updateLicenseForm').action = licenseActionTemplate.replace('__ID__', d.id);
-            document.getElementById('ulName').textContent = d.name;
-            document.getElementById('ulLicense').textContent = d.license || '—';
-            document.getElementById('ulCurrentExpiry').value = d.expiryLabel;
-            const badge = document.getElementById('ulCurrentBadge');
-            const tone = LIC_TONE[d.status] || 'secondary';
-            badge.className = 'badge bg-' + tone + ' bg-opacity-10 text-' + tone + ' px-3 py-2 rounded-pill';
-            badge.textContent = d.status || 'No License';
-            ulNewExpiry.value = '';
-            showResult();
-        });
-        ulNewExpiry.addEventListener('input', showResult);
-
-        function addYears(years) {
-            const dt = new Date();
-            dt.setFullYear(dt.getFullYear() + years);
-            ulNewExpiry.value = dt.toISOString().slice(0, 10);
-            showResult();
-        }
-        document.getElementById('ulPlus5').addEventListener('click', () => addYears(5));
-        document.getElementById('ulPlus10').addEventListener('click', () => addYears(10));
-
-        // Row actions added 2026-08: reset password (FR-22) and delete (FR-06).
+        // Row action added 2026-08: reset password (FR-22).
         document.querySelectorAll('.js-reset').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 document.getElementById('rpName').textContent = btn.dataset.name;

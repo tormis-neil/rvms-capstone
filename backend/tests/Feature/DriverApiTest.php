@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Agency;
+use App\Models\Notification;
 use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -221,7 +222,16 @@ class DriverApiTest extends TestCase
             ->assertJsonPath('data.status', User::STATUS_REJECTED);
     }
 
-    public function test_license_renewal_updates_expiry_date(): void
+    /**
+     * A renewal is recorded through the ordinary driver update (2026-08).
+     *
+     * PATCH /drivers/{driver}/license was removed with the "Update License"
+     * button it served: it wrote one column that the edit form already edits,
+     * beside the licence number that column belongs with. The capability is
+     * unchanged, so the coverage follows it to the endpoint that now carries it
+     * rather than being deleted.
+     */
+    public function test_a_renewed_expiry_date_is_recorded_through_the_driver_update(): void
     {
         $driver = User::factory()->driver()->create([
             'agency_id' => $this->agency->id,
@@ -232,21 +242,42 @@ class DriverApiTest extends TestCase
 
         $newDate = now()->addYears(5)->toDateString();
 
-        $this->patchJson("/api/v1/drivers/{$driver->id}/license", ['license_expiry_date' => $newDate])
+        $this->putJson("/api/v1/drivers/{$driver->id}", [
+            'name' => $driver->name,
+            'email' => $driver->email,
+            'license_expiry_date' => $newDate,
+        ])
             ->assertOk()
             ->assertJsonPath('data.license_expiry_date', $newDate)
+            // The point of recording it: an expired licence stops being expired.
             ->assertJsonPath('data.license_status', 'Valid');
     }
 
-    public function test_license_renewal_requires_a_date(): void
+    /**
+     * The reason the separate route was safe to remove: the FR-08 warning
+     * window is re-evaluated on the update path too, so a renewal that lands
+     * INSIDE the window still alerts immediately rather than waiting for the
+     * next daily sweep.
+     */
+    public function test_a_renewal_into_the_warning_window_still_alerts(): void
     {
-        $driver = User::factory()->driver()->create(['agency_id' => $this->agency->id]);
+        $driver = User::factory()->driver()->create([
+            'agency_id' => $this->agency->id,
+            'license_expiry_date' => now()->addYears(2),
+        ]);
 
         $this->actingAsAdmin();
 
-        $this->patchJson("/api/v1/drivers/{$driver->id}/license", [])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['license_expiry_date']);
+        $this->putJson("/api/v1/drivers/{$driver->id}", [
+            'name' => $driver->name,
+            'email' => $driver->email,
+            'license_expiry_date' => now()->addDays(5)->toDateString(),
+        ])->assertOk();
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $this->admin->id,
+            'type' => Notification::TYPE_LICENSE_EXPIRING,
+        ]);
     }
 
     public function test_driver_token_is_refused_on_admin_driver_routes(): void

@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Services\MaintenanceAlerts;
 use App\Http\Requests\StoreDriverRequest;
 use App\Http\Requests\ResetDriverPasswordRequest;
-use App\Http\Requests\UpdateDriverLicenseRequest;
 use App\Http\Requests\UpdateDriverRequest;
 use App\Http\Resources\DriverResource;
 use App\Models\User;
@@ -106,18 +105,6 @@ class DriverController extends Controller
         $this->authorizeDriver($request, $driver);
 
         $driver->update(['status' => User::STATUS_REJECTED]);
-
-        return DriverResource::make($driver->fresh());
-    }
-
-    public function updateLicense(UpdateDriverLicenseRequest $request, User $driver)
-    {
-        $this->authorizeDriver($request, $driver);
-
-        $driver->update(['license_expiry_date' => $request->validated('license_expiry_date')]);
-
-        // A "renewal" may still land inside the warning window.
-        app(MaintenanceAlerts::class)->raiseForDriver($driver->fresh());
 
         return DriverResource::make($driver->fresh());
     }
