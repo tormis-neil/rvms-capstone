@@ -81,13 +81,13 @@ class WebVehiclePageTest extends TestCase
         $this->assertSame('NEW-0002', $vehicle->fresh()->plate_number);
 
         // Status (manual choices only)
-        $this->patch("/vehicles/{$vehicle->id}/status", ['status' => Vehicle::STATUS_UNDER_PM])
+        $this->patch("/vehicles/{$vehicle->id}/status", ['status' => Vehicle::STATUS_UNDER_PM, 'remarks' => 'Reason for the change.'])
             ->assertRedirect(route('vehicles'));
         $this->assertSame(Vehicle::STATUS_UNDER_PM, $vehicle->fresh()->status);
 
         // "Dispatched" cannot be set by hand from the dashboard (FR-15/FR-18)
         $this->from('/vehicles')
-            ->patch("/vehicles/{$vehicle->id}/status", ['status' => Vehicle::STATUS_DISPATCHED])
+            ->patch("/vehicles/{$vehicle->id}/status", ['status' => Vehicle::STATUS_DISPATCHED, 'remarks' => 'Reason for the change.'])
             ->assertSessionHasErrors('status');
     }
 
@@ -118,7 +118,7 @@ class WebVehiclePageTest extends TestCase
             'current_mileage' => 1,
         ])->assertNotFound();
 
-        $this->patch("/vehicles/{$foreign->id}/status", ['status' => Vehicle::STATUS_OPERATIONAL])
+        $this->patch("/vehicles/{$foreign->id}/status", ['status' => Vehicle::STATUS_OPERATIONAL, 'remarks' => 'Reason for the change.'])
             ->assertNotFound();
     }
 

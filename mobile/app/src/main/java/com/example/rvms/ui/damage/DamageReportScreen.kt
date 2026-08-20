@@ -187,6 +187,15 @@ fun NewDamageReportScreen(
                             error = null
                         },
                         label = { Text("Nature of Damage") },
+                        // Placeholders added 2026-08 (adviser consultation). The GSO
+                        // Motorpool reported in the requirements interviews that damage
+                        // descriptions arrive incomplete and that further defects are
+                        // found during pre-inspection — so showing a driver what a usable
+                        // description looks like acts directly on a problem the study
+                        // documented. Bilingual, matching the inspection remarks field.
+                        placeholder = {
+                            Text("e.g. Rear left tire worn through, sidewall cracked / Ilarawan ang sira")
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 3,
                         isError = error != null && natureOfDamage.isBlank(),
@@ -202,6 +211,7 @@ fun NewDamageReportScreen(
                         value = suspectedParts,
                         onValueChange = { suspectedParts = it },
                         label = { Text("Suspected Defective Parts") },
+                        placeholder = { Text("e.g. Brake pads, wheel bearing / Ilista ang piyesa") },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 2,
                         colors = OutlinedTextFieldDefaults.colors(

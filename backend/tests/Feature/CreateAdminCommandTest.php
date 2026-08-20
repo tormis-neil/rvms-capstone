@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Agency;
 use App\Models\User;
+use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -100,5 +101,61 @@ class CreateAdminCommandTest extends TestCase
             ->assertExitCode(1);
 
         $this->assertDatabaseMissing('users', ['email' => 'short@bfp.local']);
+    }
+
+    /**
+     * A provisioned administrator arrives to a full dashboard, not an empty one
+     * (2026-08, lead-reported as a question — the answer is "no, and here is
+     * the proof").
+     *
+     * Worth asserting because the intuition runs the other way: a brand-new
+     * account looks like it should start empty. Access here is scoped by
+     * AGENCY, not by who created the record, so an officer appointed next year
+     * sees every vehicle, driver and inspection the agency already has — which
+     * is the whole point of design decision 6 allowing more than one
+     * administrator per agency. MultiAdminAgencyTest proves the scope rule
+     * against a fixture model; this proves it against the real pages, with the
+     * account made the way an administrator is actually made.
+     */
+    public function test_a_provisioned_admin_sees_the_agencys_existing_records(): void
+    {
+        $incumbent = User::factory()->admin()->create(['agency_id' => $this->agency->id]);
+        $driver = User::factory()->driver()->create([
+            'agency_id' => $this->agency->id,
+            'name' => 'Ramon Villanueva',
+        ]);
+        Vehicle::factory()->create([
+            'agency_id' => $this->agency->id,
+            'plate_number' => 'ABC-1234',
+            'assigned_driver_id' => $driver->id,
+        ]);
+
+        $this->artisan('rvms:create-admin', [
+            '--agency' => 'BFP', '--name' => 'New Officer', '--email' => 'new@bfp.local',
+        ])->expectsQuestion('Password (min 8 characters)', 'a-strong-password');
+
+        $new = User::query()->where('email', 'new@bfp.local')->firstOrFail();
+
+        $this->actingAs($new)->get('/vehicles')->assertOk()->assertSee('ABC-1234');
+        $this->actingAs($new)->get('/drivers')->assertOk()->assertSee('Ramon Villanueva');
+
+        // The dashboard counters are computed from the same agency-scoped
+        // queries, so the new administrator's read of the fleet is the
+        // incumbent's read of the fleet — not a fresh, empty one.
+        $this->assertSame(
+            $this->dashboardCounters($incumbent),
+            $this->dashboardCounters($new),
+            'A newly provisioned administrator saw different dashboard figures than the incumbent.'
+        );
+    }
+
+    /** The numbers printed on the dashboard's metric cards, in order. */
+    private function dashboardCounters(User $admin): array
+    {
+        $html = $this->actingAs($admin)->get('/dashboard')->assertOk()->getContent();
+
+        preg_match_all('/<h2[^>]*>\s*([0-9]+)\s*<\/h2>/', $html, $matches);
+
+        return $matches[1];
     }
 }

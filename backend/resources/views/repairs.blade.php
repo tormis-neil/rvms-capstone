@@ -85,6 +85,7 @@
                                     data-cost="{{ $repair->cost }}"
                                     data-source="{{ $repair->repair_source }}"
                                     data-shop="{{ $repair->external_shop_name }}"
+                                    data-receipt="{{ $repair->receipt_path }}"
                                     data-remarks="{{ $repair->remarks }}"
                                     data-vehicle-status="{{ $repair->vehicle->status ?? '' }}"
                                     data-status-origin="{{ $repair->vehicle?->statusOriginLabel() }}">
@@ -102,7 +103,17 @@
                                         @endif
                                     </td>
                                     <td>{{ $repair->costLabel() }}</td>
-                                    <td><span class="badge bg-light text-dark border">{{ $repair->sourceLabel() }}</span></td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">{{ $repair->sourceLabel() }}</span>
+                                        {{-- The receipt for external work, where one is on
+                                             file (FR-13, 2026-08). --}}
+                                        @if ($repair->receipt_path)
+                                        <a href="{{ asset('storage/'.$repair->receipt_path) }}" target="_blank" rel="noopener"
+                                           class="d-inline-flex align-items-center gap-1 small text-decoration-none mt-1">
+                                            <i class="bi bi-paperclip"></i>Receipt
+                                        </a>
+                                        @endif
+                                    </td>
                                     <td class="small text-secondary">
                                         @if ($repair->remarks)
                                         {{ $repair->remarks }}
@@ -154,7 +165,7 @@
                     <h5 class="modal-title fw-bold">Log Repair Activity</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="{{ route('repairs.store') }}">
+                <form method="POST" action="{{ route('repairs.store') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body p-4">
                         <div class="row g-3 mb-3">
@@ -189,6 +200,16 @@
                         <div class="mb-3 js-shop-wrap" style="display:none;">
                             <label class="form-label fw-semibold">External Shop Name</label>
                             <input type="text" class="form-control js-shop" name="external_shop_name" placeholder="Name of the external repair shop">
+                        </div>
+                        {{-- Receipt for external work (FR-13, 2026-08 adviser
+                             consultation): these are government offices spending public
+                             money at private shops, so the supporting document belongs
+                             with the record. Shown only for the external source — there
+                             is no third-party receipt for in-house work. --}}
+                        <div class="mb-3 js-shop-wrap" style="display:none;">
+                            <label class="form-label fw-semibold">Receipt / Service Document <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control" name="receipt" accept=".pdf,image/*">
+                            <div class="form-text">PDF or photo, up to 5&nbsp;MB.</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Scope of Work</label>
@@ -230,7 +251,7 @@
                     <h5 class="modal-title fw-bold">Edit Repair Log</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" id="editRepairForm" action="#">
+                <form method="POST" id="editRepairForm" action="#" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <div class="modal-body p-4">
@@ -262,6 +283,11 @@
                         <div class="mb-3 js-shop-wrap" id="erShopWrap" style="display:none;">
                             <label class="form-label fw-semibold">External Shop Name</label>
                             <input type="text" class="form-control js-shop" name="external_shop_name" id="erShop" placeholder="Name of the external repair shop">
+                        </div>
+                        <div class="mb-3 js-shop-wrap" style="display:none;">
+                            <label class="form-label fw-semibold">Receipt / Service Document</label>
+                            <input type="file" class="form-control" name="receipt" accept=".pdf,image/*">
+                            <div class="form-text" id="erReceiptHint">PDF or photo, up to 5&nbsp;MB.</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Scope of Work</label>
@@ -302,9 +328,14 @@
         // Toggle the External Shop Name field within a given modal root.
         function bindShopToggle(root) {
             const source = root.querySelector('.js-source');
-            const wrap = root.querySelector('.js-shop-wrap');
-            if (!source || !wrap) return;
-            const sync = () => { wrap.style.display = source.value === 'External Repair Shop' ? '' : 'none'; };
+            // All of them: the class marks every field that belongs to an
+            // external repair (shop name AND receipt), not just the first.
+            const wraps = root.querySelectorAll('.js-shop-wrap');
+            if (!source || wraps.length === 0) return;
+            const sync = () => {
+                const external = source.value === 'External Repair Shop';
+                wraps.forEach(w => { w.style.display = external ? '' : 'none'; });
+            };
             source.addEventListener('change', sync);
             sync();
         }
@@ -339,7 +370,13 @@
             document.getElementById('erCost').value = d.cost || '';
             document.getElementById('erShop').value = d.shop || '';
             document.getElementById('erRemarks').value = d.remarks || '';
-            editModal.querySelector('.js-shop-wrap').style.display = d.source === 'External Repair Shop' ? '' : 'none';
+            editModal.querySelectorAll('.js-shop-wrap').forEach(w => {
+                w.style.display = d.source === 'External Repair Shop' ? '' : 'none';
+            });
+            // An existing receipt is kept unless a new file is chosen.
+            document.getElementById('erReceiptHint').textContent = d.receipt
+                ? 'A receipt is already on file. Choose a file only to replace it.'
+                : 'PDF or photo, up to 5 MB.';
         });
 
     </script>

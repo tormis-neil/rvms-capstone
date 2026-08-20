@@ -41,6 +41,7 @@ class PmSchedule extends Model
         'date_serviced',
         'completion_repair_source',
         'completion_external_shop_name',
+        'completion_receipt_path',
         'completion_parts_replaced',
         'completion_remarks',
     ];

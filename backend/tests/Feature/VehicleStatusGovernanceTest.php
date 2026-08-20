@@ -67,7 +67,7 @@ class VehicleStatusGovernanceTest extends TestCase
     public function test_a_status_write_records_where_it_came_from(): void
     {
         $this->actingAs($this->admin)
-            ->patch("/vehicles/{$this->vehicle->id}/status", ['status' => Vehicle::STATUS_UNDER_PM])
+            ->patch("/vehicles/{$this->vehicle->id}/status", ['status' => Vehicle::STATUS_UNDER_PM, 'remarks' => 'Reason for the change.'])
             ->assertRedirect(route('vehicles'));
 
         $fresh = $this->vehicle->fresh();
@@ -129,7 +129,7 @@ class VehicleStatusGovernanceTest extends TestCase
 
         $this->actingAs($this->admin)
             ->from('/vehicles')
-            ->patch("/vehicles/{$this->vehicle->id}/status", ['status' => Vehicle::STATUS_OPERATIONAL])
+            ->patch("/vehicles/{$this->vehicle->id}/status", ['status' => Vehicle::STATUS_OPERATIONAL, 'remarks' => 'Reason for the change.'])
             ->assertSessionHasErrors('status');
 
         $this->assertSame(Vehicle::STATUS_DISPATCHED, $this->vehicle->fresh()->status);
@@ -143,6 +143,7 @@ class VehicleStatusGovernanceTest extends TestCase
         Sanctum::actingAs($this->admin);
         $response = $this->patchJson("/api/v1/vehicles/{$this->vehicle->id}/status", [
             'status' => Vehicle::STATUS_OPERATIONAL,
+            'remarks' => 'Reason for the change.',
         ])->assertStatus(422);
 
         $message = $response->json('errors.status.0');
@@ -205,7 +206,7 @@ class VehicleStatusGovernanceTest extends TestCase
 
         // With no open dispatch, other modules may write again.
         $this->actingAs($this->admin)
-            ->patch("/vehicles/{$this->vehicle->id}/status", ['status' => Vehicle::STATUS_OPERATIONAL])
+            ->patch("/vehicles/{$this->vehicle->id}/status", ['status' => Vehicle::STATUS_OPERATIONAL, 'remarks' => 'Reason for the change.'])
             ->assertRedirect(route('vehicles'));
 
         $this->assertSame(Vehicle::STATUS_OPERATIONAL, $this->vehicle->fresh()->status);

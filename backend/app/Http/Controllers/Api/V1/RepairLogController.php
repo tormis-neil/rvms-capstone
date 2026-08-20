@@ -30,7 +30,7 @@ class RepairLogController extends Controller
     public function store(StoreRepairLogRequest $request)
     {
         // agency_id is auto-stamped from the authenticated admin (BelongsToAgency).
-        $repair = RepairLog::create($request->validated());
+        $repair = RepairLog::create($this->payload($request));
 
         return RepairLogResource::make($repair->load(['vehicle', 'driver']))
             ->response()
@@ -44,8 +44,31 @@ class RepairLogController extends Controller
 
     public function update(StoreRepairLogRequest $request, RepairLog $repair)
     {
-        $repair->update($request->validated());
+        $repair->update($this->payload($request));
 
         return RepairLogResource::make($repair->fresh()->load(['vehicle', 'driver']));
+    }
+
+    /**
+     * Same shape as the Blade twin's payload(): store the upload, and drop both
+     * external-shop fields when the source is in-house (FR-13, 2026-08).
+     */
+    private function payload(StoreRepairLogRequest $request): array
+    {
+        $data = $request->validated();
+
+        // `receipt` is the upload; `receipt_path` is what the record stores.
+        unset($data['receipt']);
+
+        if ($path = $request->storeReceipt()) {
+            $data['receipt_path'] = $path;
+        }
+
+        if ($data['repair_source'] !== RepairLog::SOURCE_EXTERNAL) {
+            $data['external_shop_name'] = null;
+            $data['receipt_path'] = null;
+        }
+
+        return $data;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesRepairReceipt;
 use App\Models\RepairLog;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,6 +14,8 @@ use Illuminate\Validation\Rule;
  */
 class CompletePmScheduleRequest extends FormRequest
 {
+    use ValidatesRepairReceipt;
+
     public function authorize(): bool
     {
         return true;
@@ -32,6 +35,12 @@ class CompletePmScheduleRequest extends FormRequest
                 'max:255',
                 Rule::requiredIf(fn () => $this->input('completion_repair_source') === RepairLog::SOURCE_EXTERNAL),
             ],
+            // Same evidence rule as a repair log, from the shared trait: the
+            // two modules record the same fact from the same three sources.
+            'completion_receipt' => $this->receiptRules(
+                'completion_repair_source',
+                $this->route('pmSchedule')?->completion_receipt_path,
+            ),
             'completion_parts_replaced' => ['nullable', 'string'],
             'completion_remarks' => ['nullable', 'string'],
         ];
@@ -41,6 +50,7 @@ class CompletePmScheduleRequest extends FormRequest
     {
         return [
             'completion_external_shop_name.required' => 'The shop name is required when the source is an external repair shop.',
+            ...$this->receiptMessages('completion_receipt'),
         ];
     }
 }

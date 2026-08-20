@@ -240,13 +240,18 @@ laptop, **Drivers → Access Requests** → Approve → the new driver can now l
 | 7.1 | Admin | Run `php artisan rvms:license-alerts` | Bell count rises; a licence alert appears | **FR-08 → FR-21** |
 | 7.2 | Admin | Open the bell | Unread items carry a blue dot and a tinted background | FR-21 |
 | 7.3 | Admin | Click one, then **Mark all as read** | Count drops to zero | FR-21 |
-| 7.4 | Admin | **Drivers** → key icon on Ramon → set a new password | Confirmation; the driver's sessions are ended | **FR-22** |
+| 7.4 | Admin | **Drivers** → key icon on Ramon → type **your own** password, then the driver's new one | Confirmation; the driver's sessions are ended | **FR-22** |
 | 7.5 | Driver | On the phone, check **Alerts** | A **Password Reset** alert naming the administrator who did it | **FR-22 → FR-21** ⭐ |
 | 7.6 | Driver | Log in with the new password | Works. The old password no longer does | FR-22 |
 
-> ⭐ **Step 7.5 answers a question a panel will ask:** *"what stops an
-> administrator quietly taking over an account?"* — **They cannot do it silently.
-> The affected user is told, and by whom.**
+> ⭐ **Steps 7.4–7.5 answer a question a panel will ask:** *"what stops an
+> administrator quietly taking over an account?"* — **Two things, and say both.**
+> They must prove they are the administrator before the reset is applied, so a
+> dashboard someone walked away from is not enough (7.4). And they cannot do it
+> silently: the affected user is told, and by whom (7.5).
+>
+> Note the own-password field in 7.4 — it is easy to be caught out by a form
+> asking for something you did not expect while a panel watches.
 
 ---
 

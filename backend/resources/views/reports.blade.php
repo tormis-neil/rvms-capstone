@@ -122,6 +122,10 @@
                                 </div>
                             </div>
                             <div class="small text-secondary mb-3">{!! implode(' &nbsp;&middot;&nbsp; ', array_map('e', $report['filter_summary'])) !!}</div>
+                            {{-- Summary above the table: the figures are what an officer
+                                 reads first, and the rows are the evidence behind them
+                                 (FR-20, 2026-08 adviser consultation). --}}
+                            @include('partials.report-summary', ['summary' => $report['summary']])
                             <div class="table-responsive">
                                 <table class="table table-sm table-bordered align-middle mb-0">
                                     <thead class="table-light"><tr>
