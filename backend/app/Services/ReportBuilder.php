@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\DamageReport;
+use App\Models\InspectionItem;
 use App\Models\Dispatch;
 use App\Models\Inspection;
 use App\Models\PmSchedule;
@@ -10,6 +11,7 @@ use App\Models\RepairLog;
 use App\Models\Vehicle;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 /**
  * The six printable reports (FR-20), built in one place.
@@ -59,8 +61,14 @@ class ReportBuilder
     /**
      * Build one report.
      *
+     * `summary` (added 2026-08, adviser consultation) carries the analysis half
+     * of the report: a handful of headline figures, and optionally one ranked
+     * breakdown. Every figure is derived from the SAME records that produce the
+     * rows, never from a second query — so the summary can never describe a
+     * different set than the table printed underneath it.
+     *
      * @param  array{range?: ?string, vehicle_id?: ?int, driver_id?: ?int}  $filters
-     * @return array{title: string, columns: list<string>, rows: list<list<string>>, filter_summary: list<string>}
+     * @return array{title: string, columns: list<string>, rows: list<list<string>>, filter_summary: list<string>, summary: array{stats: list<array{label: string, value: string}>, breakdown: array{title: string, items: list<array{label: string, count: int}>}|null}}
      */
     public function build(string $type, int $agencyId, array $filters = []): array
     {
@@ -78,6 +86,10 @@ class ReportBuilder
             'columns' => $spec['columns'],
             'rows' => $spec['rows'],
             'filter_summary' => $this->filterSummary($type, $filters),
+            'summary' => [
+                'stats' => $spec['stats'] ?? [],
+                'breakdown' => $spec['breakdown'] ?? null,
+            ],
         ];
     }
 
@@ -85,11 +97,13 @@ class ReportBuilder
 
     private function inspections(int $agencyId, array $filters): array
     {
-        $rows = $this->scoped(Inspection::query(), $agencyId, $filters, 'inspection_date')
+        $records = $this->scoped(Inspection::query(), $agencyId, $filters, 'inspection_date')
             ->with(['vehicle', 'driver', 'reviewer', 'items.checklistItem'])
             ->orderByDesc('inspection_date')
             ->orderByDesc('id')
-            ->get()
+            ->get();
+
+        $rows = $records
             ->map(fn (Inspection $i) => [
                 $this->dateTime($i->created_at),
                 $this->vehicleLabel($i->vehicle),
@@ -100,19 +114,39 @@ class ReportBuilder
                 $i->reviewer?->name ?? '—',
             ]);
 
+        $flagged = $records->filter(
+            fn (Inspection $i) => $i->items->contains(fn ($item) => $item->status === InspectionItem::STATUS_HAS_ISSUE)
+        );
+
+        // Which checklist items are failing most often across the filtered set —
+        // the fleet-wide maintenance pattern the Inspections page already ranks.
+        $issueCounts = $records
+            ->flatMap(fn (Inspection $i) => $i->items->filter(fn ($item) => $item->status === InspectionItem::STATUS_HAS_ISSUE))
+            ->groupBy(fn ($item) => $item->checklistItem?->name ?? 'Unknown')
+            ->map->count()
+            ->sortDesc();
+
         return [
             'columns' => ['Date & Time', 'Vehicle', 'Driver', 'Result', 'Remarks', 'Review Status', 'Reviewed By'],
             'rows' => $rows->all(),
+            'stats' => [
+                $this->stat('Inspections Submitted', $records->count()),
+                $this->stat('With Reported Issues', $flagged->count(), $records->count()),
+                $this->stat('Pending Review', $records->where('review_status', Inspection::STATUS_PENDING)->count()),
+            ],
+            'breakdown' => $this->breakdown('Most Frequently Flagged Items', $issueCounts),
         ];
     }
 
     private function damage(int $agencyId, array $filters): array
     {
-        $rows = $this->scoped(DamageReport::query(), $agencyId, $filters, 'date_reported')
+        $records = $this->scoped(DamageReport::query(), $agencyId, $filters, 'date_reported')
             ->with(['vehicle', 'driver', 'reviewer'])
             ->orderByDesc('date_reported')
             ->orderByDesc('id')
-            ->get()
+            ->get();
+
+        $rows = $records
             ->map(fn (DamageReport $d) => [
                 $this->dateTime($d->created_at),
                 $this->vehicleLabel($d->vehicle),
@@ -124,19 +158,35 @@ class ReportBuilder
                 $d->reviewer?->name ?? '—',
             ]);
 
+        // Which vehicles generate the most reports — the question a maintenance
+        // officer actually asks of this report.
+        $byVehicle = $records
+            ->groupBy(fn (DamageReport $d) => $d->vehicle?->plate_number ?? 'Unknown')
+            ->map->count()
+            ->sortDesc();
+
         return [
             'columns' => ['Date & Time', 'Vehicle', 'Driver', 'Nature of Damage', 'Suspected Parts', 'Photo', 'Review Status', 'Reviewed By'],
             'rows' => $rows->all(),
+            'stats' => [
+                $this->stat('Reports Filed', $records->count()),
+                $this->stat('Pending Review', $records->where('status', DamageReport::STATUS_PENDING)->count(), $records->count()),
+                $this->stat('Reviewed', $records->where('status', DamageReport::STATUS_REVIEWED)->count(), $records->count()),
+                $this->stat('With Photo Evidence', $records->filter(fn (DamageReport $d) => (bool) $d->photo_path)->count(), $records->count()),
+            ],
+            'breakdown' => $this->breakdown('Vehicles Most Reported', $byVehicle),
         ];
     }
 
     private function repairs(int $agencyId, array $filters): array
     {
-        $rows = $this->scoped(RepairLog::query(), $agencyId, $filters, 'repair_date')
+        $records = $this->scoped(RepairLog::query(), $agencyId, $filters, 'repair_date')
             ->with(['vehicle', 'driver'])
             ->orderByDesc('repair_date')
             ->orderByDesc('id')
-            ->get()
+            ->get();
+
+        $rows = $records
             ->map(fn (RepairLog $r) => [
                 $this->date($r->repair_date),
                 $this->vehicleLabel($r->vehicle),
@@ -149,9 +199,30 @@ class ReportBuilder
                 $r->vehicle?->status ?? '—',
             ]);
 
+        // Cost is optional (FR-13), so the average is over the repairs that
+        // actually carry one — dividing the total by every repair would quietly
+        // understate it whenever a cost was left blank.
+        $withCost = $records->filter(fn (RepairLog $r) => $r->cost !== null);
+        $totalCost = (float) $withCost->sum(fn (RepairLog $r) => (float) $r->cost);
+
+        $bySource = $records
+            ->groupBy(fn (RepairLog $r) => $r->repair_source)
+            ->map->count()
+            ->sortDesc();
+
         return [
             'columns' => ['Date', 'Vehicle', 'Driver', 'Scope of Work', 'Parts Replaced', 'Cost', 'Repair Source', 'Remarks', 'Vehicle Status'],
             'rows' => $rows->all(),
+            'stats' => [
+                $this->stat('Repairs Logged', $records->count()),
+                ['label' => 'Total Recorded Cost', 'value' => '₱'.number_format($totalCost, 2)],
+                [
+                    'label' => 'Average per Repair',
+                    'value' => $withCost->isEmpty() ? '—' : '₱'.number_format($totalCost / $withCost->count(), 2),
+                ],
+                $this->stat('External Shop Repairs', $records->where('repair_source', RepairLog::SOURCE_EXTERNAL)->count(), $records->count()),
+            ],
+            'breakdown' => $this->breakdown('Repairs by Source', $bySource),
         ];
     }
 
@@ -178,7 +249,9 @@ class ReportBuilder
             });
         }
 
-        $rows = $query->orderByDesc('id')->get()->map(fn (PmSchedule $p) => [
+        $records = $query->orderByDesc('id')->get();
+
+        $rows = $records->map(fn (PmSchedule $p) => [
             $this->vehicleLabel($p->vehicle),
             $p->service_target,
             $p->pm_type,
@@ -191,19 +264,32 @@ class ReportBuilder
             $p->completion_remarks ?: '—',
         ]);
 
+        $byStatus = $records->groupBy('status')->map->count()->sortDesc();
+
         return [
             'columns' => ['Vehicle', 'Service Target', 'Type', 'Interval', 'Due', 'Status', 'Date Serviced', 'Repair Source', 'Parts Replaced', 'Remarks'],
             'rows' => $rows->all(),
+            'stats' => [
+                $this->stat('Schedules', $records->count()),
+                $this->stat('Completed', $records->where('status', PmSchedule::STATUS_COMPLETED)->count(), $records->count()),
+                // The two that need somebody to act — the reason this report is
+                // read at all.
+                $this->stat('Due', $records->where('status', PmSchedule::STATUS_DUE)->count()),
+                $this->stat('Due Soon', $records->where('status', PmSchedule::STATUS_DUE_SOON)->count()),
+            ],
+            'breakdown' => $this->breakdown('Schedules by Status', $byStatus),
         ];
     }
 
     private function dispatch(int $agencyId, array $filters): array
     {
-        $rows = $this->scoped(Dispatch::query(), $agencyId, $filters, 'time_out')
+        $records = $this->scoped(Dispatch::query(), $agencyId, $filters, 'time_out')
             ->with(['vehicle', 'driver'])
             ->orderByDesc('time_out')
             ->orderByDesc('id')
-            ->get()
+            ->get();
+
+        $rows = $records
             ->map(fn (Dispatch $d) => [
                 $d->missionLabel(),
                 $this->vehicleLabel($d->vehicle),
@@ -218,20 +304,46 @@ class ReportBuilder
                 $d->remarks ?: '—',
             ]);
 
+        $closed = $records->filter(fn (Dispatch $d) => $d->time_in !== null);
+
+        // Averaged over CLOSED dispatches only: an active one has no end, and
+        // treating "now" as its time in would report a duration that grows
+        // every time the page is refreshed.
+        $averageMinutes = $closed->isEmpty()
+            ? null
+            : $closed->avg(fn (Dispatch $d) => $d->time_out->diffInMinutes($d->time_in));
+
+        $byMission = $records
+            ->groupBy(fn (Dispatch $d) => $d->mission_type)
+            ->map->count()
+            ->sortDesc();
+
         return [
             'columns' => ['Mission', 'Vehicle', 'Driver', 'Location', 'Time Out', 'Odometer Out', 'Time In', 'Odometer In', 'Status', 'Return Status', 'Remarks'],
             'rows' => $rows->all(),
+            'stats' => [
+                $this->stat('Dispatches', $records->count()),
+                $this->stat('Completed', $closed->count(), $records->count()),
+                $this->stat('Still Active', $records->count() - $closed->count()),
+                [
+                    'label' => 'Average Duration',
+                    'value' => $averageMinutes === null ? '—' : $this->duration((int) round($averageMinutes)),
+                ],
+            ],
+            'breakdown' => $this->breakdown('Dispatches by Mission Type', $byMission),
         ];
     }
 
     /** A snapshot of the fleet as it stands — no date range applies. */
     private function vehicleStatus(int $agencyId): array
     {
-        $rows = Vehicle::query()
+        $records = Vehicle::query()
             ->where('agency_id', $agencyId)
             ->with('assignedDriver')
             ->orderBy('plate_number')
-            ->get()
+            ->get();
+
+        $rows = $records
             ->map(fn (Vehicle $v) => [
                 $v->plate_number,
                 $v->type,
@@ -243,10 +355,85 @@ class ReportBuilder
                 $v->status,
             ]);
 
+        // Every status listed, including the ones at zero: "no vehicles are Not
+        // Operational" is a finding, and a bar that silently disappears reads
+        // as missing data rather than as good news.
+        $byStatus = collect(Vehicle::STATUSES)
+            ->mapWithKeys(fn (string $status) => [$status => $records->where('status', $status)->count()]);
+
         return [
             'columns' => ['Plate Number', 'Type', 'Make / Model', 'Engine No.', 'Chassis No.', 'Assigned Driver', 'Mileage', 'Status'],
             'rows' => $rows->all(),
+            'stats' => [
+                $this->stat('Vehicles', $records->count()),
+                $this->stat('Operational', $records->where('status', Vehicle::STATUS_OPERATIONAL)->count(), $records->count()),
+                $this->stat('Unavailable', $records->whereIn('status', Vehicle::OUT_OF_SERVICE_STATUSES)->count(), $records->count()),
+                $this->stat('Unassigned', $records->whereNull('assigned_driver_id')->count()),
+            ],
+            'breakdown' => $this->breakdown('Fleet by Status', $byStatus, keepZeroes: true),
         ];
+    }
+
+    /* --------------------------- summary helpers -------------------------- */
+
+    /**
+     * One headline figure. Pass $outOf to append the share it represents.
+     *
+     * The percentage is what turns a count into a finding: "8 inspections
+     * reported issues" is a number, "8 of 20 (40%)" is something an officer can
+     * act on. Suppressed when the total is zero, because 0% of nothing is not a
+     * fact about the fleet.
+     *
+     * @return array{label: string, value: string}
+     */
+    private function stat(string $label, int $count, ?int $outOf = null): array
+    {
+        $value = number_format($count);
+
+        if ($outOf !== null && $outOf > 0) {
+            $value .= sprintf(' of %s (%d%%)', number_format($outOf), (int) round($count / $outOf * 100));
+        }
+
+        return ['label' => $label, 'value' => $value];
+    }
+
+    /**
+     * A ranked breakdown, rendered as the same server-side bars the Inspections
+     * page already uses for Frequently Reported Issues — no charting library,
+     * no <canvas>, and it prints, which a report has to (FR-20).
+     *
+     * @param  \Illuminate\Support\Collection<string, int>  $counts
+     * @return array{title: string, items: list<array{label: string, count: int}>}|null
+     */
+    private function breakdown(string $title, Collection $counts, bool $keepZeroes = false): ?array
+    {
+        if (! $keepZeroes) {
+            $counts = $counts->filter(fn (int $count) => $count > 0);
+        }
+
+        if ($counts->isEmpty()) {
+            return null;
+        }
+
+        return [
+            'title' => $title,
+            // Capped: a printed report is not a place to rank forty items, and
+            // the tail is never the part anybody acts on.
+            'items' => $counts->take(8)
+                ->map(fn (int $count, string $label) => ['label' => $label, 'count' => $count])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /** "2h 35m" — a duration an officer reads, not a minute count. */
+    private function duration(int $minutes): string
+    {
+        if ($minutes < 60) {
+            return $minutes.'m';
+        }
+
+        return intdiv($minutes, 60).'h '.($minutes % 60).'m';
     }
 
     /* ------------------------------ helpers ------------------------------ */
