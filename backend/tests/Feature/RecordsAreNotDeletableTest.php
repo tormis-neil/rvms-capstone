@@ -92,6 +92,7 @@ class RecordsAreNotDeletableTest extends TestCase
 
         $this->patchJson("/api/v1/vehicles/{$vehicle->id}/status", [
             'status' => Vehicle::STATUS_NOT_OPERATIONAL,
+            'remarks' => 'Engine failure; awaiting parts.',
         ])->assertOk();
 
         $this->assertDatabaseHas('vehicles', [

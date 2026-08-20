@@ -41,6 +41,28 @@ class Vehicle extends Model
         self::STATUS_UNDER_PM,
     ];
 
+    /**
+     * Statuses meaning the vehicle is off the road (2026-08, adviser-reported).
+     *
+     * A BLOWBAGETS inspection is a PRE-TRIP safety check, so submitting one for
+     * a vehicle in these states records a trip that cannot happen — and an
+     * all-OK checklist on a vehicle the system calls broken is a contradiction
+     * stored in the database. Dispatched is deliberately absent: a vehicle out
+     * on a mission was inspected before it left and can be inspected again when
+     * it returns.
+     *
+     * Damage reports are deliberately NOT restricted by this list. A vehicle is
+     * usually Not Operational BECAUSE it is damaged, so blocking reports would
+     * make a second, unrelated fault unreportable — the same reasoning that
+     * keeps multiple damage reports per vehicle allowed (design decision 10),
+     * and the exact failure the GSO Motorpool described when they reported
+     * finding further defects during pre-inspection.
+     */
+    public const OUT_OF_SERVICE_STATUSES = [
+        self::STATUS_NOT_OPERATIONAL,
+        self::STATUS_UNDER_PM,
+    ];
+
     /** Badge class per status — mirrors the prototype's STATUS_BADGE map. */
     public const STATUS_BADGES = [
         self::STATUS_OPERATIONAL => 'badge-operational',
@@ -103,5 +125,11 @@ class Vehicle extends Model
     public function mileageLabel(): string
     {
         return number_format($this->current_mileage).' km';
+    }
+
+    /** False when the vehicle is off the road — see OUT_OF_SERVICE_STATUSES. */
+    public function isInService(): bool
+    {
+        return ! in_array($this->status, self::OUT_OF_SERVICE_STATUSES, true);
     }
 }

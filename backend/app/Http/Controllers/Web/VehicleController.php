@@ -77,7 +77,14 @@ class VehicleController extends Controller
         // "Dispatched" is written by the Dispatch module alone (FR-15/FR-18).
         $validated = $request->validate([
             'status' => ['required', Rule::in(Vehicle::MANUAL_STATUSES)],
-            'remarks' => ['nullable', 'string'],
+            // Required since 2026-08 (adviser consultation). A manual status
+            // change is the only status write with no other record of why it
+            // happened: a dispatch carries its mission, a review carries the
+            // report it came from, a PM carries its schedule. This one carried
+            // nothing unless somebody chose to type it.
+            'remarks' => ['required', 'string', 'max:1000'],
+        ], [
+            'remarks.required' => 'Give a reason for the status change.',
         ]);
 
         // Refused (422) when the vehicle is on an active dispatch — design decision 9.

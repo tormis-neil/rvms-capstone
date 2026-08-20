@@ -157,17 +157,54 @@ class VehicleApiTest extends TestCase
         $this->actingAsAdmin();
 
         foreach (Vehicle::STATUSES as $status) {
-            $this->patchJson("/api/v1/vehicles/{$vehicle->id}/status", ['status' => $status])
+            $this->patchJson("/api/v1/vehicles/{$vehicle->id}/status", [
+                'status' => $status,
+                'remarks' => 'Reason for the change.',
+            ])
                 ->assertOk()
                 ->assertJsonPath('data.status', $status);
         }
 
-        $this->patchJson("/api/v1/vehicles/{$vehicle->id}/status", ['status' => 'Broken'])
+        $this->patchJson("/api/v1/vehicles/{$vehicle->id}/status", [
+            'status' => 'Broken',
+            'remarks' => 'Reason for the change.',
+        ])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['status']);
     }
 
-    public function test_status_update_accepts_optional_remarks_and_overwrites_on_each_change(): void
+    /**
+     * A manual status change must say why (FR-18, 2026-08 adviser consultation).
+     *
+     * Remarks used to be optional here, and omitting the key left the previous
+     * note in place — so a status could be changed with no reason at all, or
+     * worse, wearing the reason for a DIFFERENT change made weeks earlier. Both
+     * manual paths (this one and the dashboard) now require it, so the rule
+     * cannot be sidestepped by calling the API instead.
+     *
+     * It remains a note on the CURRENT status, not a history: the next change
+     * overwrites it, exactly like current_mileage (design decision 7 amendment).
+     */
+    public function test_a_status_change_must_carry_a_reason(): void
+    {
+        $vehicle = Vehicle::factory()->create(['agency_id' => $this->agency->id]);
+
+        $this->actingAsAdmin();
+
+        $this->patchJson("/api/v1/vehicles/{$vehicle->id}/status", [
+            'status' => Vehicle::STATUS_UNDER_PM,
+        ])->assertStatus(422)->assertJsonValidationErrors(['remarks']);
+
+        // An empty string is not a reason either.
+        $this->patchJson("/api/v1/vehicles/{$vehicle->id}/status", [
+            'status' => Vehicle::STATUS_UNDER_PM,
+            'remarks' => '',
+        ])->assertStatus(422)->assertJsonValidationErrors(['remarks']);
+
+        $this->assertSame(Vehicle::STATUS_OPERATIONAL, $vehicle->fresh()->status);
+    }
+
+    public function test_the_reason_is_stored_and_overwritten_by_the_next_change(): void
     {
         $vehicle = Vehicle::factory()->create(['agency_id' => $this->agency->id]);
 
@@ -178,17 +215,10 @@ class VehicleApiTest extends TestCase
             'remarks' => 'Sent for brake inspection.',
         ])->assertOk()->assertJsonPath('data.remarks', 'Sent for brake inspection.');
 
-        // Omitting remarks entirely (e.g. the API caller does not send the key)
-        // leaves the existing note untouched — no history, but no silent wipe either.
         $this->patchJson("/api/v1/vehicles/{$vehicle->id}/status", [
             'status' => Vehicle::STATUS_OPERATIONAL,
-        ])->assertOk()->assertJsonPath('data.remarks', 'Sent for brake inspection.');
-
-        // An explicit empty value overwrites/clears the note (like current_mileage).
-        $this->patchJson("/api/v1/vehicles/{$vehicle->id}/status", [
-            'status' => Vehicle::STATUS_NOT_OPERATIONAL,
-            'remarks' => '',
-        ])->assertOk()->assertJsonPath('data.remarks', null);
+            'remarks' => 'Back from GSO Motorpool, brakes replaced.',
+        ])->assertOk()->assertJsonPath('data.remarks', 'Back from GSO Motorpool, brakes replaced.');
     }
 
     public function test_driver_token_is_refused_on_admin_vehicle_routes(): void

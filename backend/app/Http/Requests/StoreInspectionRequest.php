@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\InspectionChecklistItem;
 use App\Models\InspectionItem;
+use App\Models\Vehicle;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -41,6 +42,8 @@ class StoreInspectionRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            $this->assertVehicleIsInService($validator);
+
             $items = $this->input('items', []);
 
             // Remarks required on any flagged item.
@@ -72,5 +75,37 @@ class StoreInspectionRequest extends FormRequest
                 $validator->errors()->add('items', 'The inspection must include every checklist item for your agency, and no others.');
             }
         });
+    }
+
+    /**
+     * A daily inspection is a pre-trip check, so the vehicle has to be in
+     * service (2026-08, adviser-reported).
+     *
+     * Before this, a driver could file a full BLOWBAGETS checklist against a
+     * truck the system was reporting as Not Operational or Under Preventive
+     * Maintenance — recording a trip that could not happen, and storing an
+     * all-OK result that contradicts the vehicle's own status (FR-09 vs FR-18).
+     *
+     * The message names the status so the driver knows why, rather than being
+     * refused by a form that will not say what is wrong.
+     */
+    private function assertVehicleIsInService(Validator $validator): void
+    {
+        // A vehicle_id that already failed 'required' or 'exists' has nothing
+        // to look up; a second error would only obscure the first.
+        if ($validator->errors()->has('vehicle_id')) {
+            return;
+        }
+
+        $vehicle = Vehicle::query()->find($this->input('vehicle_id'));
+
+        if ($vehicle && ! $vehicle->isInService()) {
+            $validator->errors()->add('vehicle_id', sprintf(
+                '%s is currently %s, so it is not in service for a daily inspection. '
+                .'Report a new fault as a damage report instead.',
+                $vehicle->plate_number,
+                $vehicle->status,
+            ));
+        }
     }
 }

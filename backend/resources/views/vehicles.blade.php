@@ -345,8 +345,15 @@
                              note on the vehicle (like current_mileage), not a change history.
                              Documented deviation from design decision 7 — see CLAUDE.md. --}}
                         <div class="mb-2">
-                            <label class="form-label fw-semibold">Remarks (Optional)</label>
-                            <textarea class="form-control" name="remarks" id="usRemarks" rows="2" placeholder="Reason for the status change..."></textarea>
+                            {{-- Was "Remarks (Optional)" in the prototype. Made REQUIRED
+                                 2026-08 (adviser consultation): a manual status change is
+                                 the one write with no other record of why it happened —
+                                 a dispatch has its mission, a review has the report it
+                                 came from. Note this is a note on the CURRENT status, not
+                                 a history: it is overwritten by the next change, exactly
+                                 like current_mileage (design decision 7 amendment). --}}
+                            <label class="form-label fw-semibold">Reason for this change <span class="text-danger">*</span></label>
+                            <textarea class="form-control" name="remarks" id="usRemarks" rows="2" required placeholder="Why is the status changing? e.g. Returned from GSO Motorpool, brakes replaced"></textarea>
                         </div>
                 </div>
                 <div class="modal-footer border-0">

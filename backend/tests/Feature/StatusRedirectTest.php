@@ -54,7 +54,7 @@ class StatusRedirectTest extends TestCase
     {
         $this->actingAs($this->admin)
             ->from($from)
-            ->patch("/vehicles/{$this->vehicle->id}/status", ['status' => Vehicle::STATUS_NOT_OPERATIONAL])
+            ->patch("/vehicles/{$this->vehicle->id}/status", ['status' => Vehicle::STATUS_NOT_OPERATIONAL, 'remarks' => 'Reason for the change.'])
             ->assertRedirect($from)
             ->assertSessionHas('status', 'Vehicle status updated.');
 
@@ -86,7 +86,7 @@ class StatusRedirectTest extends TestCase
 
         $this->actingAs($this->admin)
             ->from($from)
-            ->patch("/vehicles/{$this->vehicle->id}/status", ['status' => Vehicle::STATUS_OPERATIONAL])
+            ->patch("/vehicles/{$this->vehicle->id}/status", ['status' => Vehicle::STATUS_OPERATIONAL, 'remarks' => 'Reason for the change.'])
             ->assertRedirect($from)
             ->assertSessionHasErrors('status');
 
