@@ -7,6 +7,7 @@ use App\Models\RepairLog;
 use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -76,6 +77,8 @@ class RepairLogTest extends TestCase
             'scope_of_work' => 'Engine overhaul',
             'repair_source' => RepairLog::SOURCE_EXTERNAL,
             'external_shop_name' => 'Calbayog Auto Works',
+            // External work also needs its receipt (FR-13, 2026-08).
+            'receipt' => UploadedFile::fake()->create('receipt.pdf', 120, 'application/pdf'),
         ])->assertCreated()->assertJsonPath('data.external_shop_name', 'Calbayog Auto Works');
     }
 

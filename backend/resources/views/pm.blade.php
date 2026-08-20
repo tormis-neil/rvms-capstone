@@ -125,6 +125,12 @@
                                                 @if ($pm->completion_external_shop_name)
                                                 <div class="small text-secondary mt-1">{{ $pm->completion_external_shop_name }}</div>
                                                 @endif
+                                                @if ($pm->completion_receipt_path)
+                                                <a href="{{ asset('storage/'.$pm->completion_receipt_path) }}" target="_blank" rel="noopener"
+                                                   class="d-inline-flex align-items-center gap-1 small text-decoration-none mt-1">
+                                                    <i class="bi bi-paperclip"></i>Receipt
+                                                </a>
+                                                @endif
                                             </td>
                                             <td><div class="fw-medium text-dark">{{ $pm->completion_parts_replaced ?? '—' }}</div></td>
                                             <td><span class="badge bg-secondary px-3 py-2 rounded-pill">Completed</span></td>
@@ -222,7 +228,7 @@
                     <h5 class="modal-title fw-bold">Mark Maintenance Completed</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" id="completePmForm" action="#">
+                <form method="POST" id="completePmForm" action="#" enctype="multipart/form-data">
                 @csrf
                 @method('PATCH')
                 <div class="modal-body p-4">
@@ -247,6 +253,15 @@
                         <div class="mb-3 js-shop-wrap" style="display:none;">
                             <label class="form-label fw-semibold">External Shop Name</label>
                             <input type="text" class="form-control" name="completion_external_shop_name" placeholder="Name of the external repair shop">
+                        </div>
+                        {{-- Receipt for external work (FR-14, 2026-08 adviser
+                             consultation). Same rule and same wording as a repair log:
+                             the two modules record the same fact from the same three
+                             sources, so they demand the same evidence. --}}
+                        <div class="mb-3 js-shop-wrap" style="display:none;">
+                            <label class="form-label fw-semibold">Receipt / Service Document <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control" name="completion_receipt" accept=".pdf,image/*">
+                            <div class="form-text">PDF or photo, up to 5&nbsp;MB.</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Parts Replaced</label>
@@ -346,9 +361,14 @@
         // cannot drift apart in how they reveal the field.
         function bindShopToggle(root) {
             const source = root.querySelector('.js-source');
-            const wrap = root.querySelector('.js-shop-wrap');
-            if (!source || !wrap) return;
-            const sync = () => { wrap.style.display = source.value === 'External Repair Shop' ? '' : 'none'; };
+            // All of them: the class marks every field that belongs to an
+            // external repair (shop name AND receipt), not just the first.
+            const wraps = root.querySelectorAll('.js-shop-wrap');
+            if (!source || wraps.length === 0) return;
+            const sync = () => {
+                const external = source.value === 'External Repair Shop';
+                wraps.forEach(w => { w.style.display = external ? '' : 'none'; });
+            };
             source.addEventListener('change', sync);
             sync();
         }

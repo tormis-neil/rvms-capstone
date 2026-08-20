@@ -403,6 +403,7 @@ standard and not detailed below.
 | cost | DECIMAL(10,2) | Yes | NULL | Optional cost (FR-13). |
 | repair_source | ENUM('Internal Office','GSO Motorpool','External Repair Shop') | No | — | Source of repair (FR-13). |
 | external_shop_name | VARCHAR(255) | Yes | NULL | Shop name when source = External Repair Shop (prototype `shop`). |
+| receipt_path | VARCHAR(255) | Yes | NULL | Path to the receipt or service document issued by the external shop (FR-13, 2026-08). Required by the form request when `repair_source` = External Repair Shop and none is on file; nullable because the two in-house sources have no third-party document. Cleared when the source is corrected to in-house. |
 | remarks | TEXT | Yes | NULL | Notes (FR-13). |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
 
@@ -424,6 +425,7 @@ standard and not detailed below.
 | date_serviced | DATE | Yes | NULL | Completion: date serviced (FR-14). |
 | completion_repair_source | ENUM('Internal Office','GSO Motorpool','External Repair Shop') | Yes | NULL | Completion: repair source (FR-14). |
 | completion_external_shop_name | VARCHAR(255) | Yes | NULL | Completion: shop name when `completion_repair_source` = External Repair Shop (FR-14, 2026-08). Mirrors `repair_logs.external_shop_name` — the two modules record the same fact from the same three sources, so both name the shop. Required by the form request only for the External source; the other two are in-house. |
+| completion_receipt_path | VARCHAR(255) | Yes | NULL | Completion: path to the receipt or service document issued by the external shop (FR-14, 2026-08). Same rule and same wording as `repair_logs.receipt_path` — the two modules record the same fact from the same three sources. |
 | completion_parts_replaced | TEXT | Yes | NULL | Completion: parts replaced (FR-14). |
 | completion_remarks | TEXT | Yes | NULL | Completion: remarks (FR-14). |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |

@@ -35,6 +35,7 @@ class RepairLog extends Model
         'cost',
         'repair_source',
         'external_shop_name',
+        'receipt_path',
         'remarks',
     ];
 

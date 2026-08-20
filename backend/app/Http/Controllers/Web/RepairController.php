@@ -60,9 +60,19 @@ class RepairController extends Controller
         $data = $request->validated();
         $data['driver_id'] = Vehicle::whereKey($data['vehicle_id'])->value('assigned_driver_id');
 
-        // Clear the shop name unless the source is an external shop.
+        // `receipt` is the upload; `receipt_path` is what the record stores.
+        unset($data['receipt']);
+
+        if ($path = $request->storeReceipt()) {
+            $data['receipt_path'] = $path;
+        }
+
+        // Clear the shop name and the receipt unless the source is an external
+        // shop — both describe third-party work, so neither belongs on a record
+        // that has been corrected to in-house.
         if ($data['repair_source'] !== RepairLog::SOURCE_EXTERNAL) {
             $data['external_shop_name'] = null;
+            $data['receipt_path'] = null;
         }
 
         return $data;

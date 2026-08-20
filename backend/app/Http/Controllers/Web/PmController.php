@@ -73,6 +73,9 @@ class PmController extends Controller
             'date_serviced' => $request->validated('date_serviced'),
             'completion_repair_source' => $request->validated('completion_repair_source'),
             'completion_external_shop_name' => $request->validated('completion_external_shop_name'),
+            // Proof of the work when it was done outside (FR-14, 2026-08).
+            'completion_receipt_path' => $request->storeReceipt('completion_receipt')
+                ?? $pmSchedule->completion_receipt_path,
             'completion_parts_replaced' => $request->validated('completion_parts_replaced'),
             'completion_remarks' => $request->validated('completion_remarks'),
         ]);

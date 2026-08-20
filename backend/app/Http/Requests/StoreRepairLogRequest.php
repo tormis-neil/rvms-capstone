@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesRepairReceipt;
 use App\Models\RepairLog;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,6 +14,8 @@ use Illuminate\Validation\Rule;
  */
 class StoreRepairLogRequest extends FormRequest
 {
+    use ValidatesRepairReceipt;
+
     public function authorize(): bool
     {
         return true;
@@ -42,6 +45,8 @@ class StoreRepairLogRequest extends FormRequest
                 'max:255',
                 Rule::requiredIf(fn () => $this->input('repair_source') === RepairLog::SOURCE_EXTERNAL),
             ],
+            // Proof of the work when it was done outside (FR-13, 2026-08).
+            'receipt' => $this->receiptRules('repair_source', $this->route('repair')?->receipt_path),
             'remarks' => ['nullable', 'string'],
         ];
     }
@@ -50,6 +55,7 @@ class StoreRepairLogRequest extends FormRequest
     {
         return [
             'external_shop_name.required' => 'The shop name is required when the source is an external repair shop.',
+            ...$this->receiptMessages('receipt'),
         ];
     }
 }

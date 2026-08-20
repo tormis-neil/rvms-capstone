@@ -7,6 +7,7 @@ use App\Models\PmSchedule;
 use App\Models\RepairLog;
 use App\Models\User;
 use App\Models\Vehicle;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -123,6 +124,8 @@ class WebPmPageTest extends TestCase
                 'date_serviced' => now()->toDateString(),
                 'completion_repair_source' => RepairLog::SOURCE_EXTERNAL,
                 'completion_external_shop_name' => 'Calbayog Diesel Works',
+                // External work also needs its receipt (FR-14, 2026-08).
+                'completion_receipt' => UploadedFile::fake()->create('receipt.pdf', 120, 'application/pdf'),
             ])
             ->assertRedirect('/pm');
 
