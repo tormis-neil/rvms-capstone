@@ -128,7 +128,7 @@
                                                 @if ($pm->completion_receipt_path)
                                                 <a href="{{ asset('storage/'.$pm->completion_receipt_path) }}" target="_blank" rel="noopener"
                                                    class="d-inline-flex align-items-center gap-1 small text-decoration-none mt-1">
-                                                    <i class="bi bi-paperclip"></i>Receipt
+                                                    <i class="bi bi-paperclip"></i>Document
                                                 </a>
                                                 @endif
                                             </td>
@@ -254,14 +254,17 @@
                             <label class="form-label fw-semibold">External Shop Name</label>
                             <input type="text" class="form-control" name="completion_external_shop_name" placeholder="Name of the external repair shop">
                         </div>
-                        {{-- Receipt for external work (FR-14, 2026-08 adviser
-                             consultation). Same rule and same wording as a repair log:
-                             the two modules record the same fact from the same three
-                             sources, so they demand the same evidence. --}}
-                        <div class="mb-3 js-shop-wrap" style="display:none;">
-                            <label class="form-label fw-semibold">Receipt / Service Document <span class="text-danger">*</span></label>
+                        {{-- Supporting document (FR-14, 2026-08). Same rule and same
+                             wording as a repair log — the two modules record the same fact
+                             from the same three sources, so they demand the same evidence.
+                             Offered for every source, required only for an external shop;
+                             the GSO Motorpool's job order is kept where one exists. --}}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Supporting Document <span class="text-danger js-doc-required" style="display:none;">*</span>
+                            </label>
                             <input type="file" class="form-control" name="completion_receipt" accept=".pdf,image/*">
-                            <div class="form-text">PDF or photo, up to 5&nbsp;MB.</div>
+                            <div class="form-text js-doc-hint"></div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Parts Replaced</label>
@@ -365,9 +368,15 @@
             // external repair (shop name AND receipt), not just the first.
             const wraps = root.querySelectorAll('.js-shop-wrap');
             if (!source || wraps.length === 0) return;
+            const hints = @json(\App\Models\RepairLog::DOCUMENT_HINTS);
+            const requiredSources = @json(\App\Models\RepairLog::REQUIRED_DOCUMENT_SOURCES);
+            const hint = root.querySelector('.js-doc-hint');
+            const star = root.querySelector('.js-doc-required');
             const sync = () => {
                 const external = source.value === 'External Repair Shop';
                 wraps.forEach(w => { w.style.display = external ? '' : 'none'; });
+                if (hint) hint.textContent = hints[source.value] || '';
+                if (star) star.style.display = requiredSources.includes(source.value) ? '' : 'none';
             };
             source.addEventListener('change', sync);
             sync();

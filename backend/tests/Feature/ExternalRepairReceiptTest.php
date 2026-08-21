@@ -152,11 +152,15 @@ class ExternalRepairReceiptTest extends TestCase
     }
 
     /**
-     * Correcting the source to in-house drops both external-only fields. A
-     * receipt from an outside shop has no meaning on a record that now says the
-     * office did the work itself — the same rule the shop name already followed.
+     * Correcting the source clears the shop NAME but keeps the DOCUMENT
+     * (2026-08, revised after lead review).
+     *
+     * The name identifies a private business and means nothing on a record that
+     * now says the GSO Motorpool did the work. The document is different: every
+     * source may carry one now, so wiping it on a source change would destroy
+     * the job order that the correction was made to record.
      */
-    public function test_correcting_the_source_to_in_house_clears_the_shop_and_receipt(): void
+    public function test_correcting_the_source_clears_the_shop_name_but_keeps_the_document(): void
     {
         $repair = RepairLog::factory()->create([
             'agency_id' => $this->agency->id,
@@ -170,7 +174,58 @@ class ExternalRepairReceiptTest extends TestCase
             ->assertOk();
 
         $this->assertNull($repair->fresh()->external_shop_name);
-        $this->assertNull($repair->fresh()->receipt_path);
+        $this->assertSame('repair-receipts/existing.pdf', $repair->fresh()->receipt_path);
+    }
+
+    /* ----------------- the GSO Motorpool, specifically -------------------- */
+
+    /**
+     * A GSO Motorpool job order can be attached (2026-08, lead-reported).
+     *
+     * The Motorpool is another City office, not a private shop — the vehicle
+     * still leaves and comes back with paperwork, so the record should be able
+     * to hold it.
+     */
+    public function test_a_gso_job_order_can_be_attached(): void
+    {
+        $this->postJson('/api/v1/repairs', $this->repairPayload(RepairLog::SOURCE_GSO, [
+            'receipt' => UploadedFile::fake()->create('job-order-88.pdf', 150, 'application/pdf'),
+        ]))->assertCreated();
+
+        $repair = RepairLog::query()->firstOrFail();
+
+        $this->assertNotNull($repair->receipt_path, 'A GSO job order was accepted but not stored.');
+        Storage::disk('public')->assertExists($repair->receipt_path);
+    }
+
+    /**
+     * ...but it is not demanded. The interviews established that the Motorpool
+     * does the work, not that it always issues paperwork the agency keeps.
+     * Requiring it on that assumption would leave the repair unrecordable, and
+     * no record is worse than one without an attachment.
+     */
+    public function test_a_gso_repair_without_a_job_order_is_still_recordable(): void
+    {
+        $this->postJson('/api/v1/repairs', $this->repairPayload(RepairLog::SOURCE_GSO))
+            ->assertCreated();
+
+        $this->assertDatabaseCount('repair_logs', 1);
+    }
+
+    /**
+     * The list is the single switch. If the Motorpool later confirms a job
+     * order is always issued, adding SOURCE_GSO to it is the whole change —
+     * both form requests and both dashboards read it.
+     */
+    public function test_only_the_external_shop_is_on_the_mandatory_list(): void
+    {
+        $this->assertSame([RepairLog::SOURCE_EXTERNAL], RepairLog::REQUIRED_DOCUMENT_SOURCES);
+
+        // Every source is named in the hints, so the form can always say what
+        // it is asking for.
+        foreach (RepairLog::SOURCES as $source) {
+            $this->assertArrayHasKey($source, RepairLog::DOCUMENT_HINTS);
+        }
     }
 
     /* --------------------------- PM completion ---------------------------- */

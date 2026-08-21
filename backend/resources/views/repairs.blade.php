@@ -105,12 +105,13 @@
                                     <td>{{ $repair->costLabel() }}</td>
                                     <td>
                                         <span class="badge bg-light text-dark border">{{ $repair->sourceLabel() }}</span>
-                                        {{-- The receipt for external work, where one is on
-                                             file (FR-13, 2026-08). --}}
+                                        {{-- The supporting document, where one is on file:
+                                             a receipt from an external shop, or a job order
+                                             from the GSO Motorpool (FR-13, 2026-08). --}}
                                         @if ($repair->receipt_path)
                                         <a href="{{ asset('storage/'.$repair->receipt_path) }}" target="_blank" rel="noopener"
                                            class="d-inline-flex align-items-center gap-1 small text-decoration-none mt-1">
-                                            <i class="bi bi-paperclip"></i>Receipt
+                                            <i class="bi bi-paperclip"></i>Document
                                         </a>
                                         @endif
                                     </td>
@@ -201,15 +202,18 @@
                             <label class="form-label fw-semibold">External Shop Name</label>
                             <input type="text" class="form-control js-shop" name="external_shop_name" placeholder="Name of the external repair shop">
                         </div>
-                        {{-- Receipt for external work (FR-13, 2026-08 adviser
-                             consultation): these are government offices spending public
-                             money at private shops, so the supporting document belongs
-                             with the record. Shown only for the external source — there
-                             is no third-party receipt for in-house work. --}}
-                        <div class="mb-3 js-shop-wrap" style="display:none;">
-                            <label class="form-label fw-semibold">Receipt / Service Document <span class="text-danger">*</span></label>
+                        {{-- Supporting document (FR-13, 2026-08). Offered for EVERY
+                             source, required only for an external shop. The GSO Motorpool
+                             is another City office rather than a private business: its job
+                             order is worth keeping, but no money leaves the LGU and we
+                             cannot assume one is always issued, so demanding it would
+                             leave the repair unrecordable. The hint changes per source. --}}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Supporting Document <span class="text-danger js-doc-required" style="display:none;">*</span>
+                            </label>
                             <input type="file" class="form-control" name="receipt" accept=".pdf,image/*">
-                            <div class="form-text">PDF or photo, up to 5&nbsp;MB.</div>
+                            <div class="form-text js-doc-hint"></div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Scope of Work</label>
@@ -284,10 +288,13 @@
                             <label class="form-label fw-semibold">External Shop Name</label>
                             <input type="text" class="form-control js-shop" name="external_shop_name" id="erShop" placeholder="Name of the external repair shop">
                         </div>
-                        <div class="mb-3 js-shop-wrap" style="display:none;">
-                            <label class="form-label fw-semibold">Receipt / Service Document</label>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Supporting Document <span class="text-danger js-doc-required" style="display:none;">*</span>
+                            </label>
                             <input type="file" class="form-control" name="receipt" accept=".pdf,image/*">
-                            <div class="form-text" id="erReceiptHint">PDF or photo, up to 5&nbsp;MB.</div>
+                            <div class="form-text js-doc-hint"></div>
+                            <div class="form-text" id="erReceiptHint"></div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Scope of Work</label>
@@ -332,9 +339,17 @@
             // external repair (shop name AND receipt), not just the first.
             const wraps = root.querySelectorAll('.js-shop-wrap');
             if (!source || wraps.length === 0) return;
+            const hints = @json(\App\Models\RepairLog::DOCUMENT_HINTS);
+            const requiredSources = @json(\App\Models\RepairLog::REQUIRED_DOCUMENT_SOURCES);
+            const hint = root.querySelector('.js-doc-hint');
+            const star = root.querySelector('.js-doc-required');
             const sync = () => {
                 const external = source.value === 'External Repair Shop';
                 wraps.forEach(w => { w.style.display = external ? '' : 'none'; });
+                // The document field is always shown; only its hint and its
+                // required marker change with the source.
+                if (hint) hint.textContent = hints[source.value] || '';
+                if (star) star.style.display = requiredSources.includes(source.value) ? '' : 'none';
             };
             source.addEventListener('change', sync);
             sync();
@@ -373,10 +388,10 @@
             editModal.querySelectorAll('.js-shop-wrap').forEach(w => {
                 w.style.display = d.source === 'External Repair Shop' ? '' : 'none';
             });
-            // An existing receipt is kept unless a new file is chosen.
+            // An existing document is kept unless a new file is chosen.
             document.getElementById('erReceiptHint').textContent = d.receipt
-                ? 'A receipt is already on file. Choose a file only to replace it.'
-                : 'PDF or photo, up to 5 MB.';
+                ? 'A document is already on file. Choose a file only to replace it.'
+                : '';
         });
 
     </script>

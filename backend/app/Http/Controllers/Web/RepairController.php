@@ -67,12 +67,13 @@ class RepairController extends Controller
             $data['receipt_path'] = $path;
         }
 
-        // Clear the shop name and the receipt unless the source is an external
-        // shop — both describe third-party work, so neither belongs on a record
-        // that has been corrected to in-house.
+        // The shop NAME is cleared when the source is no longer an external
+        // shop — it names a private business and means nothing on an in-house
+        // record. The DOCUMENT is kept: any source may have one now, and the
+        // GSO Motorpool's job order is exactly the case that would be destroyed
+        // by clearing it (2026-08, lead-reported).
         if ($data['repair_source'] !== RepairLog::SOURCE_EXTERNAL) {
             $data['external_shop_name'] = null;
-            $data['receipt_path'] = null;
         }
 
         return $data;

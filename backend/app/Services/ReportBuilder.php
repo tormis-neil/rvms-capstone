@@ -67,8 +67,20 @@ class ReportBuilder
      * rows, never from a second query — so the summary can never describe a
      * different set than the table printed underneath it.
      *
+     * A report may carry two visuals, and which one it gets is decided by the
+     * SHAPE of its data rather than by taste (2026-08, lead-reported that all
+     * six looked alike — four of them were compositions drawn as rankings):
+     *
+     *   - `breakdown`   a ranking. "Which of these happens most often?"
+     *                   Ordered bars, longest first. Right for flagged checklist
+     *                   items, or the vehicles reported most.
+     *   - `composition` a division of a whole. "How does this split up?"
+     *                   One stacked bar whose segments total 100%. Right for
+     *                   fleet status or repair spending by source, where the
+     *                   share is the finding and the ranking is noise.
+     *
      * @param  array{range?: ?string, vehicle_id?: ?int, driver_id?: ?int}  $filters
-     * @return array{title: string, columns: list<string>, rows: list<list<string>>, filter_summary: list<string>, summary: array{stats: list<array{label: string, value: string}>, breakdown: array{title: string, items: list<array{label: string, count: int}>}|null}}
+     * @return array{title: string, columns: list<string>, rows: list<list<string>>, filter_summary: list<string>, summary: array{stats: list<array{label: string, value: string}>, breakdown: array{title: string, items: list<array{label: string, count: int}>}|null, composition: array{title: string, note: string, segments: list<array{label: string, value: float, display: string, percent: float, tone: string}>}|null}}
      */
     public function build(string $type, int $agencyId, array $filters = []): array
     {
@@ -88,6 +100,7 @@ class ReportBuilder
             'filter_summary' => $this->filterSummary($type, $filters),
             'summary' => [
                 'stats' => $spec['stats'] ?? [],
+                'composition' => $spec['composition'] ?? null,
                 'breakdown' => $spec['breakdown'] ?? null,
             ],
         ];
@@ -134,6 +147,14 @@ class ReportBuilder
                 $this->stat('With Reported Issues', $flagged->count(), $records->count()),
                 $this->stat('Pending Review', $records->where('review_status', Inspection::STATUS_PENDING)->count()),
             ],
+            'composition' => $this->composition('Inspection Outcomes', [
+                'All OK' => [
+                    (float) ($records->count() - $flagged->count()),
+                    number_format($records->count() - $flagged->count()),
+                    'success',
+                ],
+                'Reported an Issue' => [(float) $flagged->count(), number_format($flagged->count()), 'warning'],
+            ]),
             'breakdown' => $this->breakdown('Most Frequently Flagged Items', $issueCounts),
         ];
     }
@@ -174,6 +195,18 @@ class ReportBuilder
                 $this->stat('Reviewed', $records->where('status', DamageReport::STATUS_REVIEWED)->count(), $records->count()),
                 $this->stat('With Photo Evidence', $records->filter(fn (DamageReport $d) => (bool) $d->photo_path)->count(), $records->count()),
             ],
+            'composition' => $this->composition('Review Progress', [
+                DamageReport::STATUS_REVIEWED => [
+                    (float) $records->where('status', DamageReport::STATUS_REVIEWED)->count(),
+                    number_format($records->where('status', DamageReport::STATUS_REVIEWED)->count()),
+                    'success',
+                ],
+                DamageReport::STATUS_PENDING => [
+                    (float) $records->where('status', DamageReport::STATUS_PENDING)->count(),
+                    number_format($records->where('status', DamageReport::STATUS_PENDING)->count()),
+                    'warning',
+                ],
+            ]),
             'breakdown' => $this->breakdown('Vehicles Most Reported', $byVehicle),
         ];
     }
@@ -205,8 +238,26 @@ class ReportBuilder
         $withCost = $records->filter(fn (RepairLog $r) => $r->cost !== null);
         $totalCost = (float) $withCost->sum(fn (RepairLog $r) => (float) $r->cost);
 
-        $bySource = $records
-            ->groupBy(fn (RepairLog $r) => $r->repair_source)
+        // By COST, not by count (2026-08). "Seven repairs were external" is
+        // trivia; "₱82,000 of ₱94,000 went to external shops" is the finding an
+        // officer acts on, and the one a government report exists to show.
+        $tones = [
+            RepairLog::SOURCE_INTERNAL => 'success',
+            RepairLog::SOURCE_GSO => 'primary',
+            RepairLog::SOURCE_EXTERNAL => 'warning',
+        ];
+
+        $costSegments = [];
+
+        foreach (RepairLog::SOURCES as $source) {
+            $sourceCost = (float) $withCost->where('repair_source', $source)
+                ->sum(fn (RepairLog $r) => (float) $r->cost);
+
+            $costSegments[$source] = [$sourceCost, '₱'.number_format($sourceCost, 2), $tones[$source]];
+        }
+
+        $byVehicle = $records
+            ->groupBy(fn (RepairLog $r) => $r->vehicle?->plate_number ?? 'Unknown')
             ->map->count()
             ->sortDesc();
 
@@ -222,7 +273,14 @@ class ReportBuilder
                 ],
                 $this->stat('External Shop Repairs', $records->where('repair_source', RepairLog::SOURCE_EXTERNAL)->count(), $records->count()),
             ],
-            'breakdown' => $this->breakdown('Repairs by Source', $bySource),
+            'composition' => $this->composition(
+                'Where the Money Went',
+                $costSegments,
+                $records->count() - $withCost->count() > 0
+                    ? sprintf('%d repair(s) carry no recorded cost and are not represented above.', $records->count() - $withCost->count())
+                    : '',
+            ),
+            'breakdown' => $this->breakdown('Vehicles Most Repaired', $byVehicle),
         ];
     }
 
@@ -264,7 +322,27 @@ class ReportBuilder
             $p->completion_remarks ?: '—',
         ]);
 
-        $byStatus = $records->groupBy('status')->map->count()->sortDesc();
+        // Documented order, not size order: Upcoming → Due Soon → Due →
+        // Completed is a progression, and reading it as one bar shows how much
+        // of the maintenance load is still outstanding.
+        $statusTones = [
+            PmSchedule::STATUS_UPCOMING => 'secondary',
+            PmSchedule::STATUS_DUE_SOON => 'warning',
+            PmSchedule::STATUS_DUE => 'danger',
+            PmSchedule::STATUS_COMPLETED => 'success',
+        ];
+
+        $statusSegments = [];
+
+        foreach ($statusTones as $status => $tone) {
+            $count = $records->where('status', $status)->count();
+            $statusSegments[$status] = [(float) $count, number_format($count), $tone];
+        }
+
+        $byVehicle = $records
+            ->groupBy(fn (PmSchedule $p) => $p->vehicle?->plate_number ?? 'Unknown')
+            ->map->count()
+            ->sortDesc();
 
         return [
             'columns' => ['Vehicle', 'Service Target', 'Type', 'Interval', 'Due', 'Status', 'Date Serviced', 'Repair Source', 'Parts Replaced', 'Remarks'],
@@ -277,7 +355,8 @@ class ReportBuilder
                 $this->stat('Due', $records->where('status', PmSchedule::STATUS_DUE)->count()),
                 $this->stat('Due Soon', $records->where('status', PmSchedule::STATUS_DUE_SOON)->count()),
             ],
-            'breakdown' => $this->breakdown('Schedules by Status', $byStatus),
+            'composition' => $this->composition('Maintenance Load by Status', $statusSegments),
+            'breakdown' => $this->breakdown('Vehicles with the Most Schedules', $byVehicle),
         ];
     }
 
@@ -330,6 +409,14 @@ class ReportBuilder
                     'value' => $averageMinutes === null ? '—' : $this->duration((int) round($averageMinutes)),
                 ],
             ],
+            'composition' => $this->composition('Dispatch Status', [
+                'Completed' => [(float) $closed->count(), number_format($closed->count()), 'success'],
+                'Still Active' => [
+                    (float) ($records->count() - $closed->count()),
+                    number_format($records->count() - $closed->count()),
+                    'primary',
+                ],
+            ]),
             'breakdown' => $this->breakdown('Dispatches by Mission Type', $byMission),
         ];
     }
@@ -355,11 +442,30 @@ class ReportBuilder
                 $v->status,
             ]);
 
-        // Every status listed, including the ones at zero: "no vehicles are Not
-        // Operational" is a finding, and a bar that silently disappears reads
-        // as missing data rather than as good news.
-        $byStatus = collect(Vehicle::STATUSES)
-            ->mapWithKeys(fn (string $status) => [$status => $records->where('status', $status)->count()]);
+        // The fleet availability bar — the single most-read figure in the whole
+        // system, and a composition rather than a ranking: what matters is the
+        // SHARE that is available right now, not which status happens to be
+        // most common. Statuses stay in their documented order, and one at zero
+        // keeps its place in the key, because "no vehicles are Not Operational"
+        // is a finding rather than an absence of data.
+        $statusTones = [
+            Vehicle::STATUS_OPERATIONAL => 'success',
+            Vehicle::STATUS_DISPATCHED => 'primary',
+            Vehicle::STATUS_NOT_OPERATIONAL => 'danger',
+            Vehicle::STATUS_UNDER_PM => 'warning',
+        ];
+
+        $statusSegments = [];
+
+        foreach ($statusTones as $status => $tone) {
+            $count = $records->where('status', $status)->count();
+            $statusSegments[$status] = [(float) $count, number_format($count), $tone];
+        }
+
+        $byType = $records
+            ->groupBy(fn (Vehicle $v) => $v->type)
+            ->map->count()
+            ->sortDesc();
 
         return [
             'columns' => ['Plate Number', 'Type', 'Make / Model', 'Engine No.', 'Chassis No.', 'Assigned Driver', 'Mileage', 'Status'],
@@ -370,7 +476,8 @@ class ReportBuilder
                 $this->stat('Unavailable', $records->whereIn('status', Vehicle::OUT_OF_SERVICE_STATUSES)->count(), $records->count()),
                 $this->stat('Unassigned', $records->whereNull('assigned_driver_id')->count()),
             ],
-            'breakdown' => $this->breakdown('Fleet by Status', $byStatus, keepZeroes: true),
+            'composition' => $this->composition('Fleet Availability', $statusSegments),
+            'breakdown' => $this->breakdown('Fleet by Vehicle Type', $byType),
         ];
     }
 
@@ -424,6 +531,43 @@ class ReportBuilder
                 ->values()
                 ->all(),
         ];
+    }
+
+    /**
+     * A division of a whole, drawn as one stacked bar.
+     *
+     * Segments keep the order they are given — a composition is not a ranking,
+     * and the four vehicle statuses read better in their documented order than
+     * sorted by size. Zero-value segments stay in the key, because "no vehicles
+     * are Not Operational" is a finding and a row that vanishes reads as
+     * missing data.
+     *
+     * @param  array<string, array{0: float, 1: string, 2: string}>  $segments  label => [value, display, tone]
+     * @return array{title: string, note: string, segments: list<array{label: string, value: float, display: string, percent: float, tone: string}>}|null
+     */
+    private function composition(string $title, array $segments, string $note = ''): ?array
+    {
+        $total = array_sum(array_map(fn (array $s) => $s[0], $segments));
+
+        // Nothing to divide. A bar of zero-width segments is not a statement
+        // about the fleet, it is a rendering artefact.
+        if ($total <= 0) {
+            return null;
+        }
+
+        $built = [];
+
+        foreach ($segments as $label => [$value, $display, $tone]) {
+            $built[] = [
+                'label' => $label,
+                'value' => $value,
+                'display' => $display,
+                'percent' => round($value / $total * 100, 1),
+                'tone' => $tone,
+            ];
+        }
+
+        return ['title' => $title, 'note' => $note, 'segments' => $built];
     }
 
     /** "2h 35m" — a duration an officer reads, not a minute count. */

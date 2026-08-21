@@ -8,6 +8,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="{{ asset('assets/css/style.css') }}" rel="stylesheet">
+    {{-- AFTER style.css, always. style.css is a byte-identical copy of the
+         prototype and is never edited (Rule 9); admin.css carries the additions
+         the backend cannot do without, and only wins because it loads last. --}}
+    <link href="{{ asset('assets/css/admin.css') }}" rel="stylesheet">
 </head>
 <body>
     <div class="wrapper">
