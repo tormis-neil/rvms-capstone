@@ -64,9 +64,10 @@ class RepairLogController extends Controller
             $data['receipt_path'] = $path;
         }
 
+        // The shop name goes when the source is no longer external; the
+        // document stays, because any source may carry one (2026-08).
         if ($data['repair_source'] !== RepairLog::SOURCE_EXTERNAL) {
             $data['external_shop_name'] = null;
-            $data['receipt_path'] = null;
         }
 
         return $data;

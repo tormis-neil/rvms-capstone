@@ -682,7 +682,7 @@
     "Yes",
     "—",
     "—",
-    "Path to the receipt or service document issued by the external repair shop. Required when the repair source is External Repair Shop."
+    "Path to the supporting document for the repair — the receipt or sales invoice from an external repair shop, or the job order issued by the GSO Motorpool. Required when the repair source is External Repair Shop."
    ],
    [
     "remarks",
@@ -836,7 +836,7 @@
     "Yes",
     "—",
     "—",
-    "Path to the receipt or service document issued by the external repair shop when the preventive maintenance was completed externally."
+    "Path to the supporting document for the completed service — the receipt or sales invoice from an external repair shop, or the job order issued by the GSO Motorpool. Required when the completion repair source is External Repair Shop."
    ],
    [
     "completion_parts_replaced",

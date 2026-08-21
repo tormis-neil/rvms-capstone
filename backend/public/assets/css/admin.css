@@ -1,0 +1,89 @@
+/*
+ * admin.css — backend-only additions that cannot live in style.css.
+ *
+ * `assets/css/style.css` is a byte-identical copy of the prototype's stylesheet
+ * and is never edited (Non-Negotiable Rule 9): every side-by-side checkpoint
+ * since R1 has depended on it being untouched. Anything the backend genuinely
+ * needs on top of it goes here instead, loaded AFTER style.css so these rules
+ * win, and each one carries the reason it exists.
+ */
+
+/* ---------------------------------------------------------------------------
+ * 1. Printed reports must keep their bars (FR-20, 2026-08, lead-reported).
+ *
+ * The report summary draws its ranked and composition bars with Bootstrap's
+ * .progress / .progress-bar, which are painted entirely with background-color.
+ * Browsers DROP background colours when printing or saving to PDF unless the
+ * page opts in — Chrome's "Background graphics" box is off by default — so the
+ * on-screen report showed its bars and the saved PDF showed only the labels and
+ * the numbers. The stat tiles survived because they are drawn with borders,
+ * which is exactly the tell: borders print, backgrounds do not.
+ *
+ * print-color-adjust: exact overrides that default for the report area only, so
+ * the rest of the page keeps the browser's normal ink-saving behaviour.
+ * ------------------------------------------------------------------------- */
+@media print {
+    #reportPrintArea,
+    #reportPrintArea * {
+        -webkit-print-color-adjust: exact; /* Chrome/Safari, still needed */
+        print-color-adjust: exact;
+    }
+
+    /*
+     * Belt and braces: a printer driver or a locked-down kiosk can still refuse
+     * background graphics whatever the page asks for. A hairline border keeps
+     * the track's extent readable in that case, so the bar degrades to an empty
+     * outline rather than to nothing at all.
+     */
+    #reportPrintArea .progress {
+        border: 1px solid #adb5bd;
+    }
+
+    /*
+     * Segments of a composition bar need to stay distinguishable from each
+     * other, not merely from the page.
+     */
+    #reportPrintArea .progress-bar + .progress-bar {
+        border-left: 1px solid #ffffff;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+ * 2. Composition bars (FR-20, 2026-08).
+ *
+ * A ranked bar answers "which of these happens most often?"; a composition bar
+ * answers "how does the whole divide up?". They are different questions and
+ * they need to look different, which is the point of these rules — the six
+ * reports were using one visual for both shapes.
+ * ------------------------------------------------------------------------- */
+.composition-bar {
+    height: 1.75rem;
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.composition-bar .progress-bar {
+    font-size: 0.75rem;
+    font-weight: 600;
+    /* A segment too narrow for its label must not spill over its neighbour. */
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/* The key under the bar, naming each segment with its share. */
+.composition-key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.25rem;
+    margin-top: 0.75rem;
+    font-size: 0.8125rem;
+}
+
+.composition-key .swatch {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 0.1875rem;
+    margin-right: 0.375rem;
+    vertical-align: -1px;
+}

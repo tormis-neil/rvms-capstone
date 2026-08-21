@@ -16,6 +16,7 @@
     Expects $summary = ['stats' => [...], 'breakdown' => [...]|null].
 --}}
 @php($stats = $summary['stats'] ?? [])
+@php($composition = $summary['composition'] ?? null)
 @php($breakdown = $summary['breakdown'] ?? null)
 
 @if (! empty($stats))
@@ -28,6 +29,43 @@
         </div>
     </div>
     @endforeach
+</div>
+@endif
+
+{{-- A composition: one stacked bar whose segments total 100%. A different
+     question from the ranked bars below — "how does the whole divide up?"
+     rather than "which happens most often?" — so it gets a different shape
+     (2026-08; all six reports previously drew rankings, four of them wrongly). --}}
+@if ($composition)
+<div class="border rounded-3 p-3 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-3">
+        <span class="fw-semibold">{{ $composition['title'] }}</span>
+        @if ($composition['note'])
+        <span class="small text-secondary">{{ $composition['note'] }}</span>
+        @endif
+    </div>
+    <div class="progress composition-bar" role="img"
+         aria-label="{{ collect($composition['segments'])->map(fn ($s) => "{$s['label']}: {$s['percent']}%")->implode(', ') }}">
+        @foreach ($composition['segments'] as $segment)
+        @if ($segment['percent'] > 0)
+        <div class="progress-bar bg-{{ $segment['tone'] }}{{ $segment['tone'] === 'warning' ? ' text-dark' : '' }}"
+             style="width:{{ $segment['percent'] }}%">
+            {{-- Below roughly a tenth of the bar the label cannot fit; the key
+                 underneath carries every figure, so nothing is lost. --}}
+            @if ($segment['percent'] >= 10){{ $segment['percent'] }}%@endif
+        </div>
+        @endif
+        @endforeach
+    </div>
+    <div class="composition-key text-secondary">
+        @foreach ($composition['segments'] as $segment)
+        <span>
+            <span class="swatch bg-{{ $segment['tone'] }}"></span>{{ $segment['label'] }}
+            <span class="text-dark fw-semibold">{{ $segment['display'] }}</span>
+            <span>({{ $segment['percent'] }}%)</span>
+        </span>
+        @endforeach
+    </div>
 </div>
 @endif
 

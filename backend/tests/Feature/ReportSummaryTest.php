@@ -163,23 +163,141 @@ class ReportSummaryTest extends TestCase
         $this->assertSame('2h 0m', $this->statValue($summary, 'Average Duration'));
     }
 
-    public function test_the_fleet_breakdown_keeps_statuses_that_are_at_zero(): void
+    /**
+     * The fleet report's ranking is by vehicle TYPE (2026-08).
+     *
+     * It used to rank the four statuses, which was the wrong shape — the
+     * statuses divide a whole and are now the composition bar. What a ranking
+     * usefully says about a fleet is what it is made of.
+     */
+    public function test_the_fleet_ranking_is_by_vehicle_type(): void
     {
-        // "No vehicles are Not Operational" is a finding. A bar that vanishes
-        // reads as missing data rather than as good news.
-        $summary = $this->build('vehicle-status')['summary'];
+        // Three against one, so the ranking cannot tie with the vehicle created
+        // in setUp() — its type is random, and a tie makes the order arbitrary.
+        Vehicle::factory()->count(3)->create(['agency_id' => $this->agency->id, 'type' => 'Fire Truck']);
+        Vehicle::factory()->create(['agency_id' => $this->agency->id, 'type' => 'Ambulance']);
 
-        $labels = array_column($summary['breakdown']['items'], 'label');
+        $breakdown = $this->build('vehicle-status')['summary']['breakdown'];
 
-        foreach (Vehicle::STATUSES as $status) {
-            $this->assertContains($status, $labels, "The fleet breakdown dropped the {$status} row.");
-        }
+        $this->assertSame('Fleet by Vehicle Type', $breakdown['title']);
+        $this->assertSame('Fire Truck', $breakdown['items'][0]['label']);
+        $this->assertGreaterThanOrEqual(3, $breakdown['items'][0]['count']);
     }
 
     /** A breakdown with nothing in it is omitted, not printed empty. */
     public function test_a_breakdown_with_no_data_is_omitted(): void
     {
         $this->assertNull($this->build('damage')['summary']['breakdown']);
+    }
+
+    /* ------------------------- compositions ------------------------------ */
+
+    /**
+     * Four reports were drawing a composition as a ranking (2026-08,
+     * lead-reported that all six looked the same). A composition answers a
+     * different question and has to look different: one stacked bar totalling
+     * 100%, in documented order rather than size order.
+     */
+    #[DataProvider('everyReportType')]
+    public function test_every_report_declares_the_composition_key(string $type): void
+    {
+        $this->assertArrayHasKey('composition', $this->build($type)['summary']);
+    }
+
+    public function test_the_fleet_availability_bar_totals_one_hundred_percent(): void
+    {
+        Vehicle::factory()->create(['agency_id' => $this->agency->id, 'status' => Vehicle::STATUS_DISPATCHED]);
+        Vehicle::factory()->create(['agency_id' => $this->agency->id, 'status' => Vehicle::STATUS_NOT_OPERATIONAL]);
+        Vehicle::factory()->create(['agency_id' => $this->agency->id, 'status' => Vehicle::STATUS_UNDER_PM]);
+        // Plus the Operational one from setUp() — four vehicles, one per status.
+
+        $composition = $this->build('vehicle-status')['summary']['composition'];
+
+        $this->assertSame('Fleet Availability', $composition['title']);
+        $this->assertSame(100.0, array_sum(array_column($composition['segments'], 'percent')));
+
+        // Documented order, NOT size order — the four statuses read as a fleet,
+        // not as a league table.
+        $this->assertSame(Vehicle::STATUSES, array_column($composition['segments'], 'label'));
+
+        foreach ($composition['segments'] as $segment) {
+            $this->assertSame(25.0, $segment['percent']);
+        }
+    }
+
+    /** A status at zero keeps its place in the key: that is a finding, not a gap. */
+    public function test_a_status_at_zero_is_still_named(): void
+    {
+        $composition = $this->build('vehicle-status')['summary']['composition'];
+
+        $notOperational = collect($composition['segments'])
+            ->firstWhere('label', Vehicle::STATUS_NOT_OPERATIONAL);
+
+        $this->assertNotNull($notOperational);
+        $this->assertSame(0.0, $notOperational['percent']);
+    }
+
+    /**
+     * Repairs divide by COST, not by count (2026-08). "Seven repairs were
+     * external" is trivia; the share of the money is the finding a government
+     * report exists to show.
+     */
+    public function test_repairs_divide_the_money_not_the_count(): void
+    {
+        // Three cheap in-house jobs against one expensive external one: by
+        // count the external share is 25%, by cost it is 80%. The report must
+        // say 80%.
+        $this->repair(1000.00, RepairLog::SOURCE_INTERNAL);
+        $this->repair(500.00, RepairLog::SOURCE_INTERNAL);
+        $this->repair(500.00, RepairLog::SOURCE_GSO);
+        $this->repair(8000.00, RepairLog::SOURCE_EXTERNAL);
+
+        $composition = $this->build('repairs-maintenance')['summary']['composition'];
+
+        $this->assertSame('Where the Money Went', $composition['title']);
+
+        $external = collect($composition['segments'])->firstWhere('label', RepairLog::SOURCE_EXTERNAL);
+
+        $this->assertSame(80.0, $external['percent']);
+        $this->assertSame('₱8,000.00', $external['display']);
+    }
+
+    /** Repairs with no cost cannot be drawn, so the report says how many. */
+    public function test_repairs_without_a_cost_are_declared_not_silently_dropped(): void
+    {
+        $this->repair(1000.00, RepairLog::SOURCE_GSO);
+        $this->repair(null, RepairLog::SOURCE_GSO);
+
+        $note = $this->build('repairs-maintenance')['summary']['composition']['note'];
+
+        $this->assertStringContainsString('1 repair', $note);
+        $this->assertStringContainsString('no recorded cost', $note);
+    }
+
+    /**
+     * A composition of nothing is a rendering artefact, not a statement — an
+     * empty report must omit the bar rather than draw zero-width segments.
+     */
+    public function test_a_composition_with_no_data_is_omitted(): void
+    {
+        $this->assertNull($this->build('damage')['summary']['composition']);
+        $this->assertNull($this->build('repairs-maintenance')['summary']['composition']);
+    }
+
+    public function test_the_page_renders_the_composition_bar_and_its_key(): void
+    {
+        $this->repair(2000.00, RepairLog::SOURCE_EXTERNAL);
+
+        $html = $this->actingAs($this->admin)
+            ->get('/reports?type=repairs-maintenance&range=all')
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('Where the Money Went', $html);
+        $this->assertStringContainsString('composition-bar', $html);
+        $this->assertStringContainsString('composition-key', $html);
+        // Still no canvas — a report has to print (FR-20).
+        $this->assertStringNotContainsString('<canvas', $html);
     }
 
     /* --------------- the property that matters most ---------------------- */
@@ -247,7 +365,7 @@ class ReportSummaryTest extends TestCase
 
         $this->assertStringContainsString('Repairs Logged', $html);
         $this->assertStringContainsString('₱1,500.00', $html);
-        $this->assertStringContainsString('Repairs by Source', $html);
+        $this->assertStringContainsString('Vehicles Most Repaired', $html);
         // Server-rendered bars, not a canvas — a report has to print (FR-20).
         $this->assertStringContainsString('progress-bar', $html);
         $this->assertStringNotContainsString('<canvas', $html);
@@ -290,7 +408,7 @@ class ReportSummaryTest extends TestCase
         return $inspection;
     }
 
-    private function repair(?float $cost): RepairLog
+    private function repair(?float $cost, string $source = RepairLog::SOURCE_GSO): RepairLog
     {
         return RepairLog::factory()->create([
             'agency_id' => $this->agency->id,
@@ -298,7 +416,7 @@ class ReportSummaryTest extends TestCase
             'driver_id' => $this->driver->id,
             'repair_date' => now()->toDateString(),
             'cost' => $cost,
-            'repair_source' => RepairLog::SOURCE_GSO,
+            'repair_source' => $source,
         ]);
     }
 }
