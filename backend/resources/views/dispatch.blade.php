@@ -139,13 +139,23 @@
                                 {{-- The plates this driver is primary for, among the vehicles
                                      actually dispatchable right now, so the reverse fill below
                                      never offers a truck that is out or under maintenance. --}}
+                                @php($licenseStatus = $driver->licenseStatus())
                                 <option value="{{ $driver->id }}"
                                         data-vehicle-ids="{{ $vehicles->where('assigned_driver_id', $driver->id)->pluck('id')->implode(',') }}"
-                                        data-vehicle-plates="{{ $vehicles->where('assigned_driver_id', $driver->id)->pluck('plate_number')->implode(', ') }}">{{ $driver->name }}</option>
+                                        data-vehicle-plates="{{ $vehicles->where('assigned_driver_id', $driver->id)->pluck('plate_number')->implode(', ') }}"
+                                        {{-- Licence state at the moment of dispatch (FR-08 -> FR-15).
+                                             Deliberately NOT disabled: these are emergency vehicles,
+                                             and a fire call cannot be stopped by paperwork. The admin
+                                             is told, confirms, and the decision stays theirs. --}}
+                                        data-license-status="{{ $licenseStatus }}"
+                                        data-license-expiry="{{ $driver->license_expiry_date?->format('M j, Y') }}">{{ $driver->name }}@if ($licenseStatus === 'Expired') — licence EXPIRED @elseif ($licenseStatus === 'Expiring Soon') — licence expires {{ $driver->license_expiry_date?->format('M j, Y') }}@endif</option>
                                 @endforeach
                             </select>
                             <div class="form-text js-nd-driver-hint"></div>
                         </div>
+                        {{-- Filled by the page script when the chosen driver's licence
+                             is expiring or expired (FR-08 -> FR-15, 2026-08). --}}
+                        <div class="js-nd-licence d-none"></div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Mission Type</label>
                             <select class="form-select js-mission" name="mission_type">
@@ -411,6 +421,64 @@
             vehicleSelect.addEventListener('change', syncDriver);
             driverSelect.addEventListener('change', syncVehicle);
             newDispatchModal.addEventListener('show.bs.modal', syncDriver);
+
+            /*
+             * Licence warning at the moment of dispatch (FR-08 -> FR-15, 2026-08).
+             *
+             * The system detected expiry and did nothing with it: a driver whose
+             * licence lapsed last year could be dispatched today without a word,
+             * from the very system built to watch licences.
+             *
+             * It WARNS rather than blocks, deliberately. These are emergency
+             * vehicles — refusing to dispatch during a fire or a medical call
+             * would be worse than the paperwork problem, and a system that does
+             * it will be worked around within a week. So the admin is told
+             * plainly, confirms, and the decision stays theirs.
+             */
+            const licenceBanner = newDispatchModal.querySelector('.js-nd-licence');
+
+            const syncLicence = () => {
+                const option = driverSelect.selectedOptions[0];
+                const status = option ? option.dataset.licenseStatus : '';
+
+                if (status === 'Expired') {
+                    licenceBanner.className = 'alert alert-danger d-flex align-items-center small mb-3';
+                    licenceBanner.innerHTML = '<i class="bi bi-exclamation-octagon-fill me-2"></i>'
+                        + '<span>This driver\'s licence <strong>expired</strong> on '
+                        + (option.dataset.licenseExpiry || 'an earlier date') + '.</span>';
+                } else if (status === 'Expiring Soon') {
+                    licenceBanner.className = 'alert alert-warning d-flex align-items-center small mb-3';
+                    licenceBanner.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-2"></i>'
+                        + '<span>This driver\'s licence expires on '
+                        + (option.dataset.licenseExpiry || 'a date soon') + '.</span>';
+                } else {
+                    licenceBanner.className = 'd-none';
+                    licenceBanner.textContent = '';
+                }
+            };
+
+            driverSelect.addEventListener('change', syncLicence);
+            newDispatchModal.addEventListener('show.bs.modal', syncLicence);
+
+            // An EXPIRED licence additionally needs an explicit confirmation, so
+            // dispatching on one is never something that merely happened.
+            const form = driverSelect.closest('form');
+
+            form.addEventListener('submit', event => {
+                const option = driverSelect.selectedOptions[0];
+                if (!option || option.dataset.licenseStatus !== 'Expired') return;
+
+                const name = option.textContent.split('—')[0].trim();
+                const expiry = option.dataset.licenseExpiry || 'an earlier date';
+
+                if (! window.confirm(
+                    name + "'s licence expired on " + expiry + '.\n\n'
+                    + 'Dispatching a driver without a valid licence is your decision to record. '
+                    + 'Continue with this dispatch?'
+                )) {
+                    event.preventDefault();
+                }
+            });
         })();
         const editModal = document.getElementById('editDispatchModal');
         bindMissionToggle(editModal);

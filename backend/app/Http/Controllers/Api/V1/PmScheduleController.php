@@ -63,6 +63,7 @@ class PmScheduleController extends Controller
         $pmSchedule->update([
             'status' => PmSchedule::STATUS_COMPLETED,
             'date_serviced' => $request->validated('date_serviced'),
+            'completion_mileage' => $request->validated('completion_mileage'),
             'completion_repair_source' => $request->validated('completion_repair_source'),
             'completion_external_shop_name' => $request->validated('completion_external_shop_name'),
             // Proof of the work when it was done outside (FR-14, 2026-08).

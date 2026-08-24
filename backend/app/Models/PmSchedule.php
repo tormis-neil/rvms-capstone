@@ -39,6 +39,7 @@ class PmSchedule extends Model
         'due_soon_threshold_days',
         'status',
         'date_serviced',
+        'completion_mileage',
         'completion_repair_source',
         'completion_external_shop_name',
         'completion_receipt_path',

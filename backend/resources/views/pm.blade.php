@@ -56,6 +56,7 @@
                                             data-due-soon-km="{{ $pm->due_soon_threshold_km }}"
                                             data-due-date="{{ $pm->due_date?->toDateString() }}"
                                             data-due-soon-days="{{ $pm->due_soon_threshold_days }}"
+                                            data-current-mileage="{{ $pm->vehicle->current_mileage ?? '' }}"
                                             data-vehicle-status="{{ $pm->vehicle->status ?? '' }}"
                                             data-status-origin="{{ $pm->vehicle?->statusOriginLabel() }}">
                                             <td>
@@ -116,7 +117,14 @@
                                                 <div class="small text-secondary">{{ $pm->vehicle->type ?? '' }}</div>
                                             </td>
                                             <td><div class="fw-semibold text-dark">{{ $pm->service_target }}</div></td>
-                                            <td><div class="fw-medium text-dark">{{ $pm->date_serviced?->format('M j, Y') ?? '—' }}</div></td>
+                                            <td>
+                                                <div class="fw-medium text-dark">{{ $pm->date_serviced?->format('M j, Y') ?? '—' }}</div>
+                                                {{-- The odometer at service (FR-14, 2026-08) — the
+                                                     starting point for the next cycle of this job. --}}
+                                                @if ($pm->completion_mileage !== null)
+                                                <div class="small text-secondary">{{ number_format($pm->completion_mileage) }} km</div>
+                                                @endif
+                                            </td>
                                             <td>
                                                 <span class="badge bg-light text-dark border">{{ $pm->completion_repair_source ?? '—' }}</span>
                                                 {{-- Naming the shop under the source, exactly as the
@@ -236,6 +244,23 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Date Serviced</label>
                             <input type="date" class="form-control" name="date_serviced" value="{{ now()->toDateString() }}" required>
+                        </div>
+                        {{-- Odometer AT THE TIME OF SERVICE (FR-14, 2026-08).
+                             Without it the next cycle's "Last PM Mileage" had to be
+                             typed from the vehicle's CURRENT reading, which has moved
+                             on since — so every cycle's target drifted later than the
+                             last, and the drift accumulated. Shown only for
+                             mileage-based schedules, because a time-based one has no
+                             mileage to record. Prefilled from the vehicle's current
+                             reading: right on the day of service, correctable when the
+                             paperwork is late. --}}
+                        <div class="mb-3 js-completion-mileage" style="display:none;">
+                            <label class="form-label fw-semibold">Odometer at Service</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="completion_mileage" id="cpMileage" min="0">
+                                <span class="input-group-text">km</span>
+                            </div>
+                            <div class="form-text">Used as the starting point for the next cycle of this service.</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Repair Source</label>
@@ -408,6 +433,14 @@
             const row = event.relatedTarget && event.relatedTarget.closest('tr');
             if (!row) return;
             document.getElementById('completePmForm').action = completePmTemplate.replace('__ID__', row.dataset.id);
+
+            // Only mileage-based schedules have an odometer to record.
+            const wrap = markCompletedModal.querySelector('.js-completion-mileage');
+            const input = document.getElementById('cpMileage');
+            const isMileage = row.dataset.pmType === 'Mileage-Based';
+
+            wrap.style.display = isMileage ? '' : 'none';
+            input.value = isMileage ? (row.dataset.currentMileage || '') : '';
         });
 
         // Edit — populate from the clicked row.

@@ -815,6 +815,14 @@
     "Date the service was carried out."
    ],
    [
+    "completion_mileage",
+    "Int",
+    "Yes",
+    "—",
+    "—",
+    "Odometer reading recorded at the time the preventive maintenance was serviced. Applies to mileage-based schedules and is the starting point for the next cycle of the same service."
+   ],
+   [
     "completion_repair_source",
     "Enum",
     "Yes",

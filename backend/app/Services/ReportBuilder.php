@@ -317,6 +317,7 @@ class ReportBuilder
             $this->pmDueLabel($p),
             $p->status,
             $this->date($p->date_serviced),
+            $p->completion_mileage === null ? '—' : number_format($p->completion_mileage).' km',
             $p->completion_repair_source ?: '—',
             $p->completion_parts_replaced ?: '—',
             $p->completion_remarks ?: '—',
@@ -345,7 +346,7 @@ class ReportBuilder
             ->sortDesc();
 
         return [
-            'columns' => ['Vehicle', 'Service Target', 'Type', 'Interval', 'Due', 'Status', 'Date Serviced', 'Repair Source', 'Parts Replaced', 'Remarks'],
+            'columns' => ['Vehicle', 'Service Target', 'Type', 'Interval', 'Due', 'Status', 'Date Serviced', 'Odometer at Service', 'Repair Source', 'Parts Replaced', 'Remarks'],
             'rows' => $rows->all(),
             'stats' => [
                 $this->stat('Schedules', $records->count()),

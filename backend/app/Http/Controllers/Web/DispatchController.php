@@ -44,12 +44,17 @@ class DispatchController extends Controller
             ->orderBy('plate_number')
             ->get(['id', 'plate_number', 'type', 'status', 'assigned_driver_id']);
 
+        // The licence columns ride along so the dropdown can flag an expired or
+        // expiring licence at the moment of dispatch (FR-08 -> FR-15, 2026-08).
+        // 'agency' is eager-loaded because licenseStatus() reads the agency's
+        // warning window — without it every driver costs an extra query.
         $drivers = User::query()
             ->drivers()
             ->where('agency_id', $request->user()->agency_id)
             ->where('status', User::STATUS_ACTIVE)
+            ->with('agency')
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'agency_id', 'license_number', 'license_expiry_date']);
 
         return view('dispatch', compact('dispatches', 'activeCount', 'vehicles', 'drivers'));
     }
