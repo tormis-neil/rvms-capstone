@@ -25,6 +25,12 @@ class CompletePmScheduleRequest extends FormRequest
     {
         return [
             'date_serviced' => ['required', 'date'],
+            // The odometer AT THE TIME OF SERVICE (FR-14, 2026-08). Optional
+            // because a time-based schedule has no mileage to record, and
+            // because the reading is not always to hand when the paperwork is
+            // filed late. Recording it is what stops each cycle's target
+            // drifting later than the last.
+            'completion_mileage' => ['nullable', 'integer', 'min:0'],
             'completion_repair_source' => ['required', Rule::in(RepairLog::SOURCES)],
             // Same rule, same wording as StoreRepairLogRequest: the two modules
             // record the same fact from the same three sources, so they must

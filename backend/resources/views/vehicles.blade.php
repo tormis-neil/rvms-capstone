@@ -68,6 +68,9 @@
                                 {{-- Live rows — same markup the prototype's demo JS painted per row --}}
                                 @forelse ($vehicles as $vehicle)
                                 <tr data-id="{{ $vehicle->id }}"
+                                    {{-- The shared status modal reads these two names --}}
+                                    data-vehicle-id="{{ $vehicle->id }}"
+                                    data-vehicle-status="{{ $vehicle->status }}"
                                     data-plate="{{ $vehicle->plate_number }}"
                                     data-type="{{ $vehicle->type }}"
                                     data-make="{{ $vehicle->make }}"
@@ -313,58 +316,8 @@
     </div>
 
     <!-- Update Vehicle Status Modal -->
-    <div class="modal fade" id="updateStatusModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-navy text-white">
-                    <h5 class="modal-title fw-bold">Update Vehicle Status</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                {{-- Live form — action is set per-row by the page script (vehicles.status, FR-18) --}}
-                <form method="POST" id="updateStatusForm" action="#">
-                @csrf
-                @method('PATCH')
-                <div class="modal-body p-4">
-                    <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-4">
-                        <div>
-                            <div class="fw-bold" id="usVehicle">ABC-1234 (Fire Truck)</div>
-                            <div class="small text-secondary" id="usDriver">Juan Dela Cruz</div>
-                        </div>
-                        <span class="badge badge-operational px-3 py-2 rounded-pill" id="usStatus">Operational</span>
-                    </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">New Operational Status</label>
-                            <select class="form-select" name="status">
-                                <option>Operational</option>
-                                <option>Not Operational</option>
-                                <option>Under Preventive Maintenance</option>
-                            </select>
-                            <div class="form-text">Dispatched status is set automatically by the Dispatch module and cannot be assigned here.</div>
-                        </div>
-                        {{-- Reinstated per project-lead decision (2026-07): stores only the LATEST
-                             note on the vehicle (like current_mileage), not a change history.
-                             Documented deviation from design decision 7 — see CLAUDE.md. --}}
-                        <div class="mb-2">
-                            {{-- Was "Remarks (Optional)" in the prototype. Made REQUIRED
-                                 2026-08 (adviser consultation): a manual status change is
-                                 the one write with no other record of why it happened —
-                                 a dispatch has its mission, a review has the report it
-                                 came from. Note this is a note on the CURRENT status, not
-                                 a history: it is overwritten by the next change, exactly
-                                 like current_mileage (design decision 7 amendment). --}}
-                            <label class="form-label fw-semibold">Reason for this change <span class="text-danger">*</span></label>
-                            <textarea class="form-control" name="remarks" id="usRemarks" rows="2" required placeholder="Why is the status changing? e.g. Returned from GSO Motorpool, brakes replaced"></textarea>
-                        </div>
-                </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn bg-navy text-white">Update Status</button>
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
     @include('partials.status-confirm')
+    @include('partials.update-status-modal')
 @endsection
 
 @section('scripts')
@@ -398,7 +351,6 @@
 
         // Live wiring: per-row form action URLs (vehicles.update / vehicles.status)
         const editActionTemplate = @json(route('vehicles.update', ['vehicle' => '__ID__']));
-        const statusActionTemplate = @json(route('vehicles.status', ['vehicle' => '__ID__']));
 
         document.getElementById('editVehicleModal').addEventListener('show.bs.modal', event => {
             const d = rowData(event);
@@ -414,56 +366,9 @@
             document.getElementById('evDriver').value = d.driverId || '';
         });
 
-        // Row context for the shared confirmation (design decision 9).
-        let statusRow = {};
-
-        document.getElementById('updateStatusModal').addEventListener('show.bs.modal', event => {
-            const d = rowData(event);
-            if (!d) return;
-            statusRow = d;
-            document.getElementById('updateStatusForm').action = statusActionTemplate.replace('__ID__', d.id);
-            document.getElementById('usVehicle').textContent = d.plate + ' (' + d.type + ')';
-            document.getElementById('usDriver').textContent = d.driver;
-            // Pre-filled with the existing note (like the Edit modal's other fields) so
-            // submitting without editing does not silently erase it.
-            document.getElementById('usRemarks').value = d.remarks || '';
-            const statusSelect = document.querySelector('#updateStatusForm select[name=status]');
-            if (d.status !== 'Dispatched') statusSelect.value = d.status;
-            const badge = document.getElementById('usStatus');
-            badge.classList.remove(...badgeClasses);
-            badge.classList.add('status-badge', d.badge);
-            badge.textContent = showStatus(d.status);
-        });
-
-        // Every status write goes through the shared confirmation, which also
-        // blocks the change outright while the vehicle is on an active dispatch.
-        // The server enforces the same rule regardless of this UI.
-        (function () {
-            const form = document.getElementById('updateStatusForm');
-            const modalEl = document.getElementById('updateStatusModal');
-
-            form.addEventListener('submit', event => {
-                if (form.dataset.confirmed === 'yes') return;
-                event.preventDefault();
-
-                const next = form.querySelector('select[name=status]').value;
-                if (next === statusRow.status && statusRow.status !== 'Dispatched') {
-                    form.dataset.confirmed = 'yes';
-                    form.submit();
-                    return;
-                }
-
-                bootstrap.Modal.getInstance(modalEl).hide();
-                window.confirmStatusChange({
-                    plate: statusRow.plate,
-                    type: statusRow.type,
-                    current: statusRow.status,
-                    origin: statusRow.statusOrigin,
-                    next: next,
-                    onConfirm: () => { form.dataset.confirmed = 'yes'; form.submit(); },
-                });
-            });
-        })();
-
+        // The Update Status modal and ALL of its wiring now live in
+        // partials/update-status-modal, included above and shared with
+        // Inspections & Damage, PM Schedules and Repair Logs. This page used to
+        // carry its own copy, which is how the two drifted apart (2026-08).
     </script>
 @endsection

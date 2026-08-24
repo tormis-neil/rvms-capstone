@@ -122,6 +122,7 @@ TABLES = {
  ("due_soon_threshold_days","Smallint","Yes","—","—","Days before the due date at which the schedule is flagged Due Soon. Configurable."),
  ("status","Enum","No","—","—","State of the schedule: Upcoming, Due Soon, Due, or Completed."),
  ("date_serviced","Date","Yes","—","—","Date the service was carried out."),
+ ("completion_mileage","Int","Yes","—","—","Odometer reading recorded at the time the preventive maintenance was serviced. Applies to mileage-based schedules and is the starting point for the next cycle of the same service."),
  ("completion_repair_source","Enum","Yes","—","—","Who carried out the service: Internal Office, GSO Motorpool, or External Repair Shop."),
  ("completion_external_shop_name","Varchar(255)","Yes","—","—","Name of the shop when the completion source is External Repair Shop."),
  ("completion_receipt_path","Varchar(255)","Yes","—","—","Path to the supporting document for the completed service — the receipt or sales invoice from an external repair shop, or the job order issued by the GSO Motorpool. Required when the completion repair source is External Repair Shop."),

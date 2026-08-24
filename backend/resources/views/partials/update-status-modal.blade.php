@@ -7,9 +7,17 @@
     Inspection/Damage rows. That removes the dead end where a vehicle was left
     Under Preventive Maintenance on a screen with no way to release it.
 
+    THE ONLY status form (2026-08, lead-reported). Vehicle Management used to
+    carry its own copy, so the two drifted: this one said "Remarks (Optional)"
+    while that one required a reason. The rule was enforced on the server in
+    both cases, so nothing was ever saved without one — but three screens let
+    the admin submit and then bounced them back, and one asked properly up
+    front. The copy is gone and every screen includes this file.
+
     Trigger it from a row button carrying these data attributes:
         data-vehicle-id, data-plate, data-type,
         data-vehicle-status, data-status-origin
+        data-driver (optional — shown when the row knows the assigned driver)
 
     Submitting always routes through the shared confirmation first, and the
     server refuses the write outright while a dispatch is open.
@@ -30,7 +38,13 @@
                 <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-4">
                     <div>
                         <div class="fw-bold" id="usVehicle">—</div>
+                        {{-- WHERE the current status came from — design decision 9
+                             requires the admin see this before committing. --}}
                         <div class="small text-secondary" id="usOrigin">—</div>
+                        {{-- The assigned driver, where the row knows it. Vehicle
+                             Management's old copy showed this INSTEAD of the origin;
+                             both are useful, so the merged form shows both. --}}
+                        <div class="small text-secondary" id="usDriver"></div>
                     </div>
                     <span class="badge px-3 py-2 rounded-pill" id="usBadge">—</span>
                 </div>
@@ -46,8 +60,15 @@
                     <div class="form-text">Dispatched status is set automatically by the Dispatch module and cannot be assigned here.</div>
                 </div>
                 <div class="mb-2">
-                    <label class="form-label fw-semibold">Remarks (Optional)</label>
-                    <textarea class="form-control" name="remarks" rows="2" placeholder="Reason for the status change..."></textarea>
+                    {{-- Required since 2026-08. A manual status change is the one
+                         status write with no other record of why it happened: a
+                         dispatch carries its mission, a review carries the report it
+                         came from, a PM carries its schedule. Note this is a note on
+                         the CURRENT status, not a history — the next change
+                         overwrites it, like current_mileage. --}}
+                    <label class="form-label fw-semibold">Reason for this change <span class="text-danger">*</span></label>
+                    <textarea class="form-control" name="remarks" id="usRemarks" rows="2" required
+                              placeholder="Why is the status changing? e.g. Returned from GSO Motorpool, brakes replaced"></textarea>
                 </div>
             </div>
             <div class="modal-footer border-0">
@@ -76,6 +97,13 @@
             document.getElementById('usVehicle').textContent =
                 row.plate + (row.type ? ' (' + row.type + ')' : '');
             document.getElementById('usOrigin').textContent = row.statusOrigin || '';
+            document.getElementById('usDriver').textContent = row.driver ? ('Driver: ' + row.driver) : '';
+
+            // Deliberately NOT prefilled with the stored note. That note explains
+            // the PREVIOUS change; carrying it forward would let the admin submit
+            // last month's reason for today's change and satisfy the requirement
+            // without writing anything true.
+            document.getElementById('usRemarks').value = '';
 
             const badge = document.getElementById('usBadge');
             badge.textContent = row.vehicleStatus || '—';

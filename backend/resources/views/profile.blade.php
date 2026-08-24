@@ -73,6 +73,15 @@
                                         </div>
                                     </div>
                                     <h6 class="fw-bold mb-3 border-top pt-4">Admin Account</h6>
+                                    {{-- The agency block above stays display-only (design
+                                         decision 7 — the agency's IDENTITY is not editable).
+                                         The licence warning window below is a separate thing:
+                                         an operational threshold FR-08 depends on, which the
+                                         Chapter 4 data dictionary already describes as
+                                         "configurable per agency" and which had no way to be
+                                         configured until 2026-08. It lives in its own form so
+                                         it cannot be confused with the personal fields, and so
+                                         saving one never silently saves the other. --}}
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold">Full Name</label>
@@ -93,6 +102,44 @@
                                             <label class="form-label fw-semibold">Confirm Password</label>
                                             <input type="password" name="password_confirmation" class="form-control" placeholder="Confirm new password" autocomplete="new-password">
                                         </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        {{-- Agency-wide monitoring setting (FR-08, 2026-08). Its own
+                             form and its own button: this changes what EVERY
+                             administrator of the agency sees, unlike the personal
+                             fields above. --}}
+                        <div class="card border-0 shadow-sm rounded-3 mt-4">
+                            <div class="card-header bg-white border-bottom p-4">
+                                <h5 class="fw-bold mb-0">Licence Monitoring</h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <form method="POST" action="{{ route('agency.license-window') }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <label class="form-label fw-semibold" for="licenseWindow">Warn me this many days before a licence expires</label>
+                                    <div class="row g-3 align-items-start">
+                                        <div class="col-sm-4">
+                                            <div class="input-group">
+                                                <input type="number" id="licenseWindow" name="license_expiry_warning_days"
+                                                       class="form-control @error('license_expiry_warning_days') is-invalid @enderror"
+                                                       value="{{ old('license_expiry_warning_days', $user->agency->license_expiry_warning_days) }}"
+                                                       min="1" max="365" required>
+                                                <span class="input-group-text">days</span>
+                                                @error('license_expiry_warning_days')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-8">
+                                            <button type="submit" class="btn btn-light border">Save setting</button>
+                                        </div>
+                                    </div>
+                                    <div class="form-text mt-2">
+                                        A driver's licence is flagged <strong>Expiring Soon</strong> once it is within this
+                                        many days of its expiry date, on the Drivers page and in the daily alert to every
+                                        administrator of {{ $user->agency->code }}. It does not change what counts as
+                                        <strong>Expired</strong> — that is always the day after the licence's expiry date.
                                     </div>
                                 </form>
                             </div>

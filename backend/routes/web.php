@@ -70,6 +70,9 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     // (design decision 7: no FR backs editing agency information).
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    // The agency's licence warning window (FR-08). Separate from the personal
+    // profile action: it changes what every administrator of the agency sees.
+    Route::patch('/agency/license-window', [ProfileController::class, 'updateLicenseWindow'])->name('agency.license-window');
 
     // Reports (FR-20). One route: the page, plus the generated report when a
     // ?type= is present — the prototype renders its report into the same page.
