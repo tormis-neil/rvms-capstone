@@ -188,6 +188,56 @@ class DoctorCommandTest extends TestCase
             ->expectsOutputToContain('queue:work');
     }
 
+    /**
+     * The licence warning window has no screen — it is set at deployment with
+     * `rvms:license-window` — so an agency quietly holding a different number
+     * is invisible until someone reads the sentence on the Drivers page. That
+     * is how CDRRMO ran on a 5-day window for weeks, giving its administrators
+     * five days' notice of a lapsing licence where the others had thirty.
+     * Reporting it here is the point at which that becomes visible.
+     */
+    public function test_it_reports_the_licence_warning_windows(): void
+    {
+        Artisan::call('rvms:doctor');
+
+        $this->assertStringContainsString('Licence warning windows', Artisan::output());
+    }
+
+    /** Identical windows read as one figure rather than a list. */
+    public function test_matching_windows_are_summarised_together(): void
+    {
+        Agency::factory()->create(['code' => 'PNP', 'license_expiry_warning_days' => 30]);
+
+        Artisan::call('rvms:doctor');
+
+        $this->assertStringContainsString('all 2 agencies at 30 days', Artisan::output());
+    }
+
+    /**
+     * Differing windows are PERMITTED — the column is per agency on purpose —
+     * so this must not fail the check. It names them and says to confirm the
+     * difference was deliberate, which is the honest reading: the usual cause
+     * is a stray value, but a genuine per-agency choice is legitimate.
+     */
+    public function test_differing_windows_are_named_but_do_not_fail_the_check(): void
+    {
+        config(['app.debug' => false, 'app.timezone' => 'Asia/Manila']);
+        Agency::factory()->create(['code' => 'CDRRMO', 'license_expiry_warning_days' => 5]);
+
+        $exit = Artisan::call('rvms:doctor');
+        $output = Artisan::output();
+
+        $this->assertStringContainsString('BFP 30', $output);
+        $this->assertStringContainsString('CDRRMO 5', $output);
+        $this->assertStringContainsString('rvms:license-window', $output);
+
+        if (! file_exists(public_path('storage'))) {
+            $this->markTestSkipped('storage:link is not present in this checkout.');
+        }
+
+        $this->assertSame(0, $exit, 'A differing window must be reported, not treated as a failure.');
+    }
+
     /** A clean deployment passes with exit code 0. */
     public function test_a_healthy_deployment_exits_zero(): void
     {

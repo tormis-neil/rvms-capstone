@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Agency;
 use App\Models\User;
 use App\Services\Fcm\FcmTransportFactory;
 use App\Services\Fcm\LogFcmTransport;
@@ -55,6 +56,7 @@ class Doctor extends Command
         $this->checkScheduler();
         $this->checkNotificationDelivery();
         $this->checkAccounts();
+        $this->checkLicenseWindows();
 
         $this->newLine();
 
@@ -355,6 +357,47 @@ class Doctor extends Command
             $this->failed("{$demoPasswords} account(s) still use the seeded demo password", 'Change them before the system is reachable by anyone else.');
         } elseif ($demoPasswords > 0) {
             $this->warning("{$demoPasswords} account(s) use the seeded demo password", 'Expected locally; must be changed before deployment.');
+        }
+    }
+
+    /**
+     * Report each agency's licence warning window (FR-08).
+     *
+     * Not a pass/fail: any window in range is a legitimate choice, so this
+     * REPORTS rather than judges. It exists because the value has no screen —
+     * it is set with `rvms:license-window` at deployment — and one agency
+     * quietly sitting on a different number is invisible until someone reads
+     * the sentence on the Drivers page weeks later. CDRRMO ran on a 5-day
+     * window that way. A handover check is the right place to see it, since
+     * the column decides how much warning an agency gets before a licence
+     * lapses, not merely what a page says.
+     */
+    private function checkLicenseWindows(): void
+    {
+        if (! $this->databaseUp || ! Schema::hasTable('agencies')) {
+            return;
+        }
+
+        $windows = Agency::query()->orderBy('code')->pluck('license_expiry_warning_days', 'code');
+
+        if ($windows->isEmpty()) {
+            $this->failed('No agencies exist', 'Run `php artisan db:seed`, or nothing is scoped to an agency.');
+
+            return;
+        }
+
+        $summary = $windows->unique()->count() === 1
+            ? "all {$windows->count()} agencies at {$windows->first()} days"
+            : $windows->map(fn ($days, $code) => "{$code} {$days}")->implode(', ');
+
+        $this->pass('Licence warning windows', $summary);
+
+        // Differing windows are allowed — the column is per agency on purpose —
+        // but they are worth a second look, because the usual cause is a stray
+        // value rather than a decision.
+        if ($windows->unique()->count() > 1) {
+            $this->hint('Agencies differ. That is permitted, but confirm it was deliberate: '
+                .'`php artisan rvms:license-window` lists them, and `rvms:license-window <CODE> <DAYS>` sets one.');
         }
     }
 
