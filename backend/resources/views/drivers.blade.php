@@ -61,13 +61,12 @@
 
                 {{-- What the three cards above actually mean (FR-08, 2026-08).
                      A statement, not a control. The warning window is stored per agency
-                     in `agencies.license_expiry_warning_days` and set at deployment with
-                     `php artisan rvms:license-window <CODE> <DAYS>`; an on-screen setting
-                     was tried and removed (lead-reported) because nobody needed to change
-                     it, while the RULE being invisible was a real gap — an administrator
-                     seeing "Expiring Soon" had no way to know what it meant. The number is
-                     read from the column, so this sentence stays true if an agency is
-                     deployed with a different one. --}}
+                     in `agencies.license_expiry_warning_days`, seeded at 30 for all four agencies;
+                     an on-screen setting was tried and removed (lead-reported) because nobody
+                     needed to change it, while the RULE being invisible was a real gap — an
+                     administrator seeing "Expiring Soon" had no way to know what it meant. The
+                     number is read from the column, so this sentence stays true if a deployment
+                     is ever set up with a different one. --}}
                 <p class="text-secondary small mb-4">
                     <i class="bi bi-info-circle me-1"></i>
                     A licence is flagged <strong>Expiring Soon</strong>

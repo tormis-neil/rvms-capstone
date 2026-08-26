@@ -298,32 +298,6 @@ opposite — the *rule* was invisible, so an administrator seeing "Expiring Soon
 had no way to know what it meant. The Drivers page now states it in plain
 language. The value is still per agency, so a deployment can still differ.
 
-**The follow-up you will get — *then how do you actually change it?*** One
-command at the server:
-
-```
-php artisan rvms:license-window              # shows all four agencies
-php artisan rvms:license-window CDRRMO 45    # sets one, after confirming
-```
-
-It refuses anything outside 1–365 days, names the old and new window before
-writing, and asks for confirmation. `php artisan rvms:doctor` prints all four
-windows at handover so a mismatch is caught then rather than months later.
-
-**Be honest if pressed on why this is a command and not a page.** The same
-reasoning as `rvms:create-admin` and `rvms:reset-password`: it is deployment
-configuration, changed once and by the person installing the system, not daily
-work for an administrator. Putting it on a screen makes it reachable from the
-internet and fat-fingerable during a demo, for a setting that should change
-roughly never.
-
-**And if a panelist finds the honest weakness** — *"so an agency cannot change
-it themselves"* — agree, and say what it would take: it is a single column with
-a single writer, so exposing it later is a form and a validation rule, not a
-redesign. The reason it is not exposed today is that no agency asked for it,
-and building an unused setting is how a system accumulates screens nobody
-maintains. That is a defensible engineering judgement, not an oversight, and
-saying so plainly is better than pretending the command is a feature.
 
 ---
 

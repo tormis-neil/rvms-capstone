@@ -40,7 +40,6 @@ php artisan schedule:list            # confirm scheduled PM/license alert jobs
 php artisan schedule:work            # run the scheduler in the foreground (dev/demo stand-in for cron)
 php artisan rvms:recalculate-pm      # recompute PM Due Soon/Due statuses
 php artisan rvms:license-alerts      # fire license expiry notifications
-php artisan rvms:license-window      # show/set an agency's FR-08 warning window (no screen — deployment setting)
 php artisan storage:link             # expose uploaded damage-report photos
 php artisan queue:work               # OPTIONAL — pushes go via ->afterResponse(); the scheduler drains the queue
 ```

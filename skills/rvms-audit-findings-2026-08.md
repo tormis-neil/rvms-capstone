@@ -361,10 +361,10 @@ manuscript catching up to the system, not a new claim.
 
 The agencies-table narrative reads *"…so that each agency may set its own warning
 period."* That implies an agency changes it themselves. They cannot, and
-deliberately so: it is deployment configuration, set with
-`php artisan rvms:license-window <CODE> <DAYS>`, with no screen — the same
-reasoning as administrator provisioning. The sentence as written would invite a
-panelist to ask where that screen is.
+deliberately so: there is no screen for it. The value is seeded at 30 for all
+four agencies, and a deployment that genuinely needed a different one would set
+it in the database — not something an agency does. The sentence as written would
+invite a panelist to ask where that screen is.
 
 **Fix — Chapter 4, the narrative paragraph under Table 5.** Replace:
 
@@ -423,5 +423,5 @@ Chapter 1 first — it holds the only 🔴 items and they are all in one paragra
 - [ ] Diagrams, ERD, data dictionary
 
 **Code:** nothing from the audit itself — the system passed clean. The Part 8
-additions also need no code: `rvms:license-window` and the `rvms:doctor` report
-they describe are already built and tested.
+additions also need no code — they bring the .docx in line with behaviour that
+is already built and tested.

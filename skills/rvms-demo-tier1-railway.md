@@ -246,40 +246,6 @@ created.
 
 ---
 
-### STEP 7.3b — Set each agency's licence warning window *(optional)*
-
-FR-08 flags a driver's licence as **Expiring Soon** a set number of days before
-it expires, and that number is configured **per agency**. The seeder gives all
-four **30 days**, which is the sensible default — this step only exists if an
-agency asks for something different.
-
-There is no screen for it, deliberately: it is a deployment setting, not
-something an administrator changes day to day. The Drivers page states the
-resulting rule in a sentence so they can still see what the badge means.
-
-See every agency's window:
-
-```
-php artisan rvms:license-window
-```
-
-Change one:
-
-```
-php artisan rvms:license-window CDRRMO 30
-```
-
-**You should see:** the current window, the new one, and a confirmation before
-anything is written. Add `--no-interaction` in a script to skip the prompt.
-
-> **Why it is worth checking even if you change nothing.** The window decides
-> how much warning an agency actually gets before a licence lapses, and a stray
-> value is invisible — it shows only as a different number in one sentence on
-> one page. `rvms:doctor` (Part 8) prints all four so a mismatch is caught at
-> handover rather than months later.
-
----
-
 ### STEP 7.4 — Test it
 
 Open your address in a browser.
@@ -330,11 +296,7 @@ php artisan rvms:doctor
 ```
 
 It checks the things that silently break a handover — scheduler, `storage:link`,
-`APP_DEBUG`, timezone, upload limits, licence warning windows.
-
-> **If the licence windows differ between agencies**, that is reported, not
-> failed — the setting is per agency on purpose. Confirm it was deliberate;
-> if it was not, Step 7.3b puts it back.
+`APP_DEBUG`, timezone, upload limits.
 
 > **If it reports the PHP upload limit is below 5M**, the `deploy/php.ini` file
 > is not being read. The variable that loads it is in `backend/nixpacks.toml`:
@@ -469,7 +431,6 @@ UPLOAD LIMITS   already in the repo: backend/deploy/php.ini, loaded by
                 the leading colon is required — without it pdo_mysql unloads
 
 AFTER DEPLOY    php artisan db:seed --force
-                php artisan rvms:license-window        <- optional, shows all 4
                 php artisan rvms:doctor
                 php artisan rvms:fcm-doctor
 
