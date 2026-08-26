@@ -86,7 +86,25 @@ Add a payment method under **Account → Billing**, and choose the **Hobby** pla
 
 ---
 
-### STEP 3.4 — Add the database
+### STEP 3.4 — Set the builder to Nixpacks  ⚠️ the other important one
+
+1. Still in **Settings** → find **Build** → **Builder**
+2. Change it from **Railpack** to **Nixpacks**
+3. Save
+
+**Why this is not optional.** Railway's default builder is now Railpack, and
+Railpack **ignores `backend/nixpacks.toml` completely**. That file is where the
+deploy's migrations, `storage:link`, upload limits and server workers live, so a
+Railpack build produces an app that starts against a database with no tables and
+404s every photo — with nothing in the log saying why.
+
+**How to tell which one ran.** Open the build log. The third line says either
+`using build driver railpack-…` (wrong — go back and change it) or
+`using build driver nixpacks-…` (right).
+
+---
+
+### STEP 3.5 — Add the database
 
 1. In the project canvas: **New** → **Database** → **Add MySQL**
 2. Wait for it to finish provisioning
@@ -188,14 +206,15 @@ unless something asks "is anything due?" once a minute.
 
 1. **New** → **GitHub Repo** → the same repository (a **second service**)
 2. **Settings** → **Root Directory** = `backend`
-3. **Settings** → **Custom Start Command**:
+3. **Settings** → **Build** → **Builder** = **Nixpacks** (same reason as Part 3.4)
+4. **Settings** → **Custom Start Command**:
 
    ```
    php artisan schedule:work
    ```
 
-4. **Variables** → paste the **same block** as Part 4
-5. **Settings** → **Networking** → make sure **no public domain** is generated.
+5. **Variables** → paste the **same block** as Part 4
+6. **Settings** → **Networking** → make sure **no public domain** is generated.
    This service has no website; it is a clock.
 
 > Two services on one plan. The web service serves pages; this one only runs the
@@ -334,6 +353,40 @@ names which one.
 
 ---
 
+### ❌ Build fails: "Your lock file does not contain a compatible set of packages"
+
+The log names `symfony/…` packages that require `php >=8.4.1` while the builder
+installed PHP 8.2. `composer.json` declares `"php": "^8.2"`, so the builder
+installs 8.2 — but if `composer update` was ever run on a machine with a newer
+PHP, the lock recorded packages that 8.2 cannot run.
+
+Fixed in the repository: `composer.json` now carries
+
+```json
+"config": { "platform": { "php": "8.2.0" } }
+```
+
+which forces Composer to resolve for 8.2 no matter what PHP the developer has.
+If you ever hit this again, run `composer update` locally (that block makes it
+resolve correctly), commit the new `composer.lock`, and redeploy.
+
+> **Do not "fix" it by raising `composer.json` to `^8.4`.** Chapter 3 states the
+> system runs on PHP 8.2+, so that would put the manuscript and the system out
+> of step to solve a problem the platform pin already solves.
+
+---
+
+### ❌ Deploy succeeds but every page 500s, and no tables exist
+
+The build ran under **Railpack**, not Nixpacks, so `nixpacks.toml` was ignored
+and the migrations never ran. Check the third line of the build log for
+`using build driver railpack-…` and fix it in Part 3.4.
+
+The same cause explains photos 404ing (no `storage:link`) and uploads silently
+failing (no `PHP_INI_SCAN_DIR`) — one setting, three symptoms.
+
+---
+
 ### ❌ Build succeeds, site shows 500
 
 Almost always `APP_KEY`. Check it is set and starts with `base64:`.
@@ -410,6 +463,7 @@ does.
 
 ```
 ROOT DIRECTORY = backend         <- NOT the repo root, NEVER web/
+BUILDER        = Nixpacks        <- NOT Railpack; Railpack ignores nixpacks.toml
 
 SERVICES        1. app       (root: backend)              -> public domain
                 2. MySQL     (Railway plugin)
