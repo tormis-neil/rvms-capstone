@@ -38,20 +38,52 @@ class LicenseWarningWindowTest extends TestCase
         $this->admin = User::factory()->admin()->create(['agency_id' => $this->agency->id]);
     }
 
-    public function test_the_profile_page_offers_the_setting(): void
+    /**
+     * It lives on the DRIVERS page (2026-08, lead-reported), beside the three
+     * licence summary cards it governs — the screen an administrator is on when
+     * they are thinking about expiry.
+     *
+     * Deliberately NOT on the Edit Driver form, which is the obvious-looking
+     * home and the wrong one: this is ONE value shared by every driver of the
+     * agency, so a per-driver form would make editing one driver silently
+     * change the threshold for all of them.
+     */
+    public function test_the_drivers_page_offers_the_setting(): void
+    {
+        $this->actingAs($this->admin)->get('/drivers')
+            ->assertOk()
+            ->assertSee('Flag a licence as Expiring Soon')
+            ->assertSee('license_expiry_warning_days', false);
+    }
+
+    public function test_it_is_not_on_the_agency_profile_page(): void
     {
         $this->actingAs($this->admin)->get('/profile')
             ->assertOk()
-            ->assertSee('Licence Monitoring')
-            ->assertSee('license_expiry_warning_days', false);
+            ->assertDontSee('license_expiry_warning_days', false);
+    }
+
+    /** And not inside the per-driver form, where it would read as per-driver. */
+    public function test_it_is_not_inside_the_edit_driver_form(): void
+    {
+        User::factory()->driver()->create(['agency_id' => $this->agency->id]);
+
+        $html = $this->actingAs($this->admin)->get('/drivers')->getContent();
+
+        $editModal = substr($html, strpos($html, 'id="editDriverModal"'));
+        $editModal = substr($editModal, 0, strpos($editModal, '</form>'));
+
+        $this->assertStringNotContainsString('license_expiry_warning_days', $editModal,
+            'The agency-wide warning window is inside the per-driver form, where editing one '
+            .'driver would appear to change only that driver.');
     }
 
     public function test_an_admin_changes_the_window(): void
     {
         $this->actingAs($this->admin)
-            ->from('/profile')
+            ->from('/drivers')
             ->patch('/agency/license-window', ['license_expiry_warning_days' => 60])
-            ->assertRedirect('/profile');
+            ->assertRedirect('/drivers');
 
         $this->assertSame(60, $this->agency->fresh()->license_expiry_warning_days);
     }
@@ -128,7 +160,7 @@ class LicenseWarningWindowTest extends TestCase
     public function test_a_window_of_zero_is_refused(): void
     {
         $this->actingAs($this->admin)
-            ->from('/profile')
+            ->from('/drivers')
             ->patch('/agency/license-window', ['license_expiry_warning_days' => 0])
             ->assertSessionHasErrors('license_expiry_warning_days');
 
@@ -138,7 +170,7 @@ class LicenseWarningWindowTest extends TestCase
     public function test_an_absurd_window_is_refused(): void
     {
         $this->actingAs($this->admin)
-            ->from('/profile')
+            ->from('/drivers')
             ->patch('/agency/license-window', ['license_expiry_warning_days' => 4000])
             ->assertSessionHasErrors('license_expiry_warning_days');
 
