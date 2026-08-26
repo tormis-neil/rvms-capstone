@@ -1,7 +1,14 @@
 # Railway start configuration.
 #
-# Railway builds with Nixpacks, which detects Laravel and runs composer install
-# on its own. Only the start command needs overriding, because three things have
+# ⚠ THIS FILE IS ONLY READ WHEN THE SERVICE'S BUILDER IS SET TO NIXPACKS.
+# Railway's default builder is now Railpack, which ignores this file entirely
+# and substitutes a plan of its own — no migrations on boot, no storage:link,
+# and none of the variables below. A build log that opens with
+# "using build driver railpack-…" is building WITHOUT any of this. Set
+# Settings → Build → Builder to Nixpacks (runbook Part 3.4).
+#
+# Nixpacks detects Laravel and runs composer install on its own. Only the start
+# command needs overriding, because three things have
 # to happen on every boot for a deployed RVMS to actually work and none of them
 # are automatic:
 #
@@ -36,8 +43,15 @@
 # i.e. no database at all. `:/app/deploy` APPENDS to the default instead, which
 # keeps pdo_mysql and still picks up our file. Do not "tidy" the colon away.
 
+# PHP_CLI_SERVER_WORKERS is what stops `artisan serve` handling one request at a
+# time. PHP's built-in server is single-process by default, so a driver's photo
+# upload would block every admin's page load until it finished — and this system
+# is used by four agencies plus their phones at once (NFR-01). Laravel's serve
+# command passes this straight through to the server.
+
 [variables]
 PHP_INI_SCAN_DIR = ":/app/deploy"
+PHP_CLI_SERVER_WORKERS = "4"
 
 [start]
 cmd = "php artisan migrate --force && (php artisan storage:link || true) && php artisan serve --host=0.0.0.0 --port=$PORT"
