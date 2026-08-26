@@ -182,15 +182,20 @@ class Doctor extends Command
      */
     private function checkUploadLimits(): void
     {
-        $required = 5;   // megabytes — must match the 'max:5120' rule on the photo
+        // Megabytes — must match the 'max:5120' rule on every upload surface:
+        // the damage photo (FR-11) and the repair/PM supporting document
+        // (FR-13, FR-14), which share the same limit.
+        $required = 5;
         $upload = $this->megabytes((string) ini_get('upload_max_filesize'));
         $post = $this->megabytes((string) ini_get('post_max_size'));
 
         if ($upload < $required) {
             $label = sprintf('PHP upload limit is %.0fM, below the %dM the app accepts', $upload, $required);
             $hint = sprintf('Set upload_max_filesize to at least %dM in php.ini (and post_max_size higher '
-                .'still), then restart the web server. Until then any damage photo over %.0fM is '
-                .'discarded by PHP before the app can explain why.', $required + 3, $upload);
+                .'still), then restart the web server. Until then any damage photo or repair '
+                .'receipt over %.0fM is discarded by PHP before the app can explain why. '
+                .'On Railway this is deploy/php.ini, loaded via PHP_INI_SCAN_DIR in nixpacks.toml.',
+                $required + 3, $upload);
 
             // A small limit on a developer's machine is a nuisance; on the
             // deployment machine it silently breaks FR-11 for real drivers.

@@ -22,6 +22,22 @@
 # They belong to a second Railway service running `php artisan schedule:work`:
 # this process restarts on every deploy, and a web server is the wrong place to
 # keep a clock.
+#
+# PHP_INI_SCAN_DIR loads deploy/php.ini, which raises the upload limits so a
+# 5 MB damage photo (FR-11) or repair receipt (FR-13/FR-14) is not discarded by
+# PHP before Laravel ever sees it. Setting it here rather than with `php -d` in
+# the start command is deliberate: it applies to EVERY php process in the
+# container, so `php artisan rvms:doctor` reports the same limit the web server
+# actually enforces instead of a stale default.
+#
+# THE LEADING COLON IS LOAD-BEARING. `PHP_INI_SCAN_DIR=/app/deploy` REPLACES the
+# default scan directory, which unloads every extension configured there —
+# verified in a container: the replace form reported pdo_mysql as NOT loaded,
+# i.e. no database at all. `:/app/deploy` APPENDS to the default instead, which
+# keeps pdo_mysql and still picks up our file. Do not "tidy" the colon away.
+
+[variables]
+PHP_INI_SCAN_DIR = ":/app/deploy"
 
 [start]
 cmd = "php artisan migrate --force && (php artisan storage:link || true) && php artisan serve --host=0.0.0.0 --port=$PORT"

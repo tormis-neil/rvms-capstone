@@ -156,9 +156,13 @@ Save. Railway redeploys automatically.
 
 ---
 
-## PART 5 — A disk for the damage photos
+## PART 5 — A disk for the uploaded files
 
-Without this, every damage-report photo (FR-11) disappears on the next deploy.
+Three things are uploaded and all three live in the same folder: damage-report
+photos (FR-11), repair receipts (FR-13) and PM completion documents (FR-14).
+Without this volume every one of them disappears on the next deploy — Railway
+rebuilds the container from the repository each time, and files written after
+the build are not in the repository.
 
 1. App service → **Settings** → **Volumes** → **New Volume**
 2. Mount path:
@@ -168,6 +172,12 @@ Without this, every damage-report photo (FR-11) disappears on the next deploy.
    ```
 
 3. Save and let it redeploy
+
+> **Nothing to do about upload SIZE.** The repository carries `backend/deploy/php.ini`
+> (8M upload / 10M post) and `backend/nixpacks.toml` loads it, so the deployed
+> app already accepts the 5 MB the forms allow. It is described here only so you
+> know where the setting lives if `rvms:doctor` ever complains about it — see the
+> note at the end of Part 8.
 
 ---
 
@@ -286,7 +296,22 @@ php artisan rvms:doctor
 ```
 
 It checks the things that silently break a handover — scheduler, `storage:link`,
-`APP_DEBUG`, timezone.
+`APP_DEBUG`, timezone, upload limits.
+
+> **If it reports the PHP upload limit is below 5M**, the `deploy/php.ini` file
+> is not being read. The variable that loads it is in `backend/nixpacks.toml`:
+>
+> ```
+> PHP_INI_SCAN_DIR = ":/app/deploy"
+> ```
+>
+> **The leading colon is not a typo and must not be removed.** Without it PHP
+> stops reading its own default configuration directory, which unloads the
+> database driver — the app would then fail with a connection error rather than
+> an upload one. With the colon, our file is read *in addition to* the defaults.
+>
+> If the variable is somehow missing on the service, add it under **Variables**
+> with exactly that value, including the colon.
 
 And for push specifically:
 
@@ -339,7 +364,7 @@ deploying older code. Make sure the branch with that fix is merged.
 
 ---
 
-### ❌ Damage photos show a broken image
+### ❌ Damage photos or repair receipts show a broken image
 
 Either the volume (Part 5) is missing, or `storage:link` did not run. Run it by
 hand:
@@ -347,6 +372,14 @@ hand:
 ```
 php artisan storage:link
 ```
+
+---
+
+### ❌ Uploading a photo or receipt does nothing, or errors on a big file
+
+PHP is rejecting it before Laravel sees it. Run `php artisan rvms:doctor` and
+read the upload-limit line, then follow the note in Part 8 about
+`PHP_INI_SCAN_DIR` — including why the leading colon matters.
 
 ---
 
@@ -391,7 +424,11 @@ VARIABLES       APP_KEY       = php artisan key:generate --show
                 DB_*          = ${{MySQL.MYSQL...}}
                 FIREBASE_CREDENTIALS = paste the whole JSON
 
-VOLUME          /app/storage/app/public        <- or photos vanish
+VOLUME          /app/storage/app/public        <- or photos + receipts vanish
+
+UPLOAD LIMITS   already in the repo: backend/deploy/php.ini, loaded by
+                nixpacks.toml via PHP_INI_SCAN_DIR = ":/app/deploy"
+                the leading colon is required — without it pdo_mysql unloads
 
 AFTER DEPLOY    php artisan db:seed --force
                 php artisan rvms:doctor
