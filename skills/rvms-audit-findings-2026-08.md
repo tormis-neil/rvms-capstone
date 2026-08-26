@@ -329,6 +329,63 @@ Figures 4 and 5 correspond one-to-one across all eight processes/functions.
 
 ---
 
+## PART 8 — POST-AUDIT ADDITIONS (found after the audit closed)
+
+> Kept separate so the audit above still reads as what it was on the day it was
+> run. These are found later, by ordinary work, and belong on the same checklist.
+
+### 8.1 — FR-08 in the .docx is a version behind the repo 🔴 *(added 2026-08-26)*
+
+The repo's source of truth expanded FR-08 twice after the audit — once when the
+warning window was confirmed as per-agency configuration, and once when the
+licence state was surfaced at the moment of dispatch. Neither reached the .docx.
+
+**Verified by reading the file**, not assumed: `RVMS-Chapter4-Draft-with-Data-Dictionary.docx`
+currently ends FR-08 at *"…through a consolidated monitoring view."*
+
+**Fix — Chapter 4, the Functional Requirements table, FR-08 Description.**
+Replace the whole cell with the source-of-truth wording:
+
+> Automatically detects driver licenses that are approaching expiry or have
+> expired and alerts the Agency Administrator through a consolidated monitoring
+> view. The number of days before expiry at which a license is flagged as
+> approaching expiry is configured per agency, and a license that is approaching
+> expiry or has expired is shown to the Agency Administrator when a driver is
+> selected for dispatch.
+
+Both added clauses describe behaviour that is built and tested
+(`DispatchLicenseWarningTest`, `LicenseWindowCommandTest`) — this is the
+manuscript catching up to the system, not a new claim.
+
+### 8.2 — Table 5 narrative overstates who sets the threshold 🟡 *(added 2026-08-26)*
+
+The agencies-table narrative reads *"…so that each agency may set its own warning
+period."* That implies an agency changes it themselves. They cannot, and
+deliberately so: it is deployment configuration, set with
+`php artisan rvms:license-window <CODE> <DAYS>`, with no screen — the same
+reasoning as administrator provisioning. The sentence as written would invite a
+panelist to ask where that screen is.
+
+**Fix — Chapter 4, the narrative paragraph under Table 5.** Replace:
+
+> That threshold is stored here rather than fixed in the program so that each
+> agency may set its own warning period.
+
+with:
+
+> That threshold is stored here rather than fixed in the program so that a
+> different warning period may be configured for each agency.
+
+One clause, and it makes the sentence true without weakening it — the point
+being made is still that the value is data rather than code.
+
+**Data dictionary: no change.** The `license_expiry_warning_days` row already
+reads *"Configurable per agency,"* which is accurate.
+
+**No other manuscript impact.** No new column, no ERD change, no FR renumbering.
+
+---
+
 ## EXECUTION CHECKLIST
 
 Chapter 1 first — it holds the only 🔴 items and they are all in one paragraph.
@@ -358,7 +415,13 @@ Chapter 1 first — it holds the only 🔴 items and they are all in one paragra
 **Chapter 2**
 - [ ] 2.1 — BLOWBAGETS sentence *(optional)*
 
+**Post-audit additions** — see Part 8
+- [ ] 8.1 — FR-08 description, replace the whole cell 🔴
+- [ ] 8.2 — Table 5 narrative, one clause 🟡
+
 **Deferred** — see `rvms-deferred-manuscript-work.md`
 - [ ] Diagrams, ERD, data dictionary
 
-**Code:** nothing. The system passed clean.
+**Code:** nothing from the audit itself — the system passed clean. The Part 8
+additions also need no code: `rvms:license-window` and the `rvms:doctor` report
+they describe are already built and tested.

@@ -22,7 +22,7 @@
 | Part | Investigation | Application |
 |---|---|---|
 | A — Diagrams (Figures 2–5) | ✅ done, exact edits below | ⏳ deferred |
-| B — ERD (Figure 6) | ✅ scope defined | ⏳ deferred — figure is still a placeholder |
+| B — ERD (Figure 6) | ✅ scope defined | ⏳ deferred — figure is still a placeholder · **B1 must be done first** |
 | C — Data dictionary | ✅ schema verified against migrations | ⏳ deferred — one decision needed first |
 
 **Blocked on:** the capstone instructor's format update. It should not change any
@@ -195,6 +195,31 @@ matches the migrations. Points that are easy to draw wrongly:
 **Framework tables are not drawn:** `personal_access_tokens`,
 `password_reset_tokens`, `jobs`, `failed_jobs`, `cache`, `sessions`.
 
+### ⚠️ B1 — `rvms-erd.sql` is three columns behind the migrations *(found 2026-08-26)*
+
+**Do this BEFORE anyone imports the file into Workbench.** `rvms-erd.sql` is
+hand-maintained — nothing generates it — and it is the file the ERD is drawn
+from. Three columns were added to the system after it was last touched
+(`1e00352`), so a diagram drawn from it today would be wrong in three places:
+
+| Table | Missing column | Added by |
+|---|---|---|
+| `repair_logs` | `receipt_path` | `59184a1` — proof of an external repair (FR-13) |
+| `pm_schedules` | `completion_mileage` | `17b8b52` — odometer at service (FR-14) |
+| `pm_schedules` | `completion_receipt_path` | `59184a1` — same document rule as repairs (FR-14) |
+
+Reproduce with `python3 verify.py` in `manuscript/` — it prints the three as
+`[DIFF] rvms-erd.sql …`. Note what it does NOT flag: `erd_model.py`, which feeds
+`model.json` and the .docx data dictionary, is **already correct**. Only the
+Workbench schema drifted, which is why the earlier "all match" reading was true
+of the data dictionary and not of this file.
+
+**No diagram consequence.** All three are attributes on entities that already
+exist — no new entity, no new relationship, so the drawn shapes and lines are
+unaffected. It matters only for the attribute lists inside the boxes, and for
+`ERD-MySQL-Workbench-Manual.md`, whose per-table field tables need the same
+three rows.
+
 ---
 
 ## PART C — Data dictionary
@@ -291,6 +316,9 @@ Work top to bottom; each line is independently completable.
 - [ ] **A5** — no change; confirm the reasoning is understood for the defense
 - [ ] **A6** — run the context↔DFD balance check
 - [ ] **Re-export Figures 2, 3 and 5** and re-paste into the .docx ⚠️
+- [ ] **B1** — add the three missing columns to `rvms-erd.sql` and
+      `ERD-MySQL-Workbench-Manual.md`, then re-run `python3 verify.py` ⚠️ **do
+      this before importing into Workbench**
 - [ ] **B** — draw the ERD; replace the `ERD heree……….` placeholder
 - [ ] **C** — build the data dictionary from `CLAUDE.md`; include `deleted_at` on
       `users` and `vehicles` (decided — see Part C)
