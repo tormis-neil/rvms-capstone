@@ -122,6 +122,11 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Vehicle</label>
                             <select class="form-select js-nd-vehicle" name="vehicle_id" required>
+                                {{-- Placeholder (2026-08, lead-reported). Without it the select
+                                     defaults to its first row, so the form opened with a vehicle
+                                     nobody had chosen — and `required` could never fire, because
+                                     a value was always selected. --}}
+                                <option value="" selected disabled>Select a vehicle…</option>
                                 @forelse ($vehicles as $v)
                                 {{-- data-driver-id lets the Driver select below preselect this
                                      vehicle's primary driver; the admin can still override it. --}}
@@ -135,6 +140,9 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Driver</label>
                             <select class="form-select js-nd-driver" name="driver_id" required>
+                                {{-- Same reason as the vehicle select above: no placeholder meant
+                                     an arbitrary driver was pre-paired with an arbitrary vehicle. --}}
+                                <option value="" selected disabled>Select a driver…</option>
                                 @foreach ($drivers as $driver)
                                 {{-- The plates this driver is primary for, among the vehicles
                                      actually dispatchable right now, so the reverse fill below
@@ -379,48 +387,136 @@
             const hint = newDispatchModal.querySelector('.js-nd-driver-hint');
             if (!vehicleSelect || !driverSelect) return;
 
-            const syncDriver = () => {
-                const option = vehicleSelect.selectedOptions[0];
-                const driverId = option ? option.dataset.driverId : '';
-                const assigned = driverId && [...driverSelect.options].some(o => o.value === driverId);
+            /*
+             * Auto-fill provenance (2026-08, lead-reported).
+             *
+             * Each select helps fill the other, which is what the admin wants —
+             * but the old code could not tell a value IT had filled from one the
+             * admin had chosen, and it only ever wrote to the vehicle select in
+             * one of its three branches. So selecting a driver with no assigned
+             * vehicle left the PREVIOUS driver's vehicle sitting in the field,
+             * and submitting paired a driver with a truck nobody had picked for
+             * them.
+             *
+             * These flags are the missing distinction. A value the system filled
+             * may be cleared when the reason for it goes away; a value the admin
+             * typed is never touched.
+             */
+            let vehicleAutoFilled = false;
+            let driverAutoFilled = false;
 
-                if (assigned) {
-                    driverSelect.value = driverId;
-                    hint.textContent = 'Primary driver assigned to this vehicle. You may choose another.';
+            /** Vehicle ids this driver is the primary driver of, among dispatchable ones. */
+            const assignedVehicleIds = (driverOption) =>
+                (driverOption?.dataset.vehicleIds || '').split(',').filter(Boolean);
+
+            const selectable = (id) => [...vehicleSelect.options].some(o => o.value === id);
+
+            /*
+             * The pairing note. Dispatching a driver who is NOT the vehicle's
+             * primary driver is deliberately allowed — Chapter 1 records that
+             * rotating, shift-based arrangements (as CHO practises) are
+             * attributed by the DISPATCH RECORD rather than the vehicle
+             * assignment. So this states the pairing plainly instead of
+             * refusing it, and says it is allowed, so a deliberate choice does
+             * not read as a mistake.
+             */
+            const describePairing = () => {
+                const vOption = vehicleSelect.selectedOptions[0];
+                const dOption = driverSelect.selectedOptions[0];
+
+                if (!vOption?.value || !dOption?.value) {
+                    // A driver with no vehicle yet: say why nothing was filled in,
+                    // rather than leaving the admin looking at an empty box.
+                    hint.textContent = (dOption?.value && assignedVehicleIds(dOption).length === 0)
+                        ? dOption.textContent.trim().split('—')[0].trim()
+                            + ' has no vehicle assigned. Choose any operational vehicle above.'
+                        : '';
+                    return;
+                }
+
+                const plate = vOption.textContent.trim().split(' ')[0];
+                const name = dOption.textContent.trim().split('—')[0].trim();
+
+                if (assignedVehicleIds(dOption).includes(vOption.value)) {
+                    hint.textContent = name + ' is the primary driver of ' + plate + '.';
                 } else {
-                    hint.textContent = 'This vehicle has no primary driver assigned.';
+                    hint.textContent = name + ' is not the primary driver of ' + plate
+                        + '. This is allowed — the dispatch record is what attributes the trip.';
                 }
             };
 
-            // And the same help in reverse (2026-08, lead-reported): picking the
-            // driver first left the admin hunting for their truck.
-            //
-            // It cannot always auto-select, because a driver may be the primary
-            // driver of MORE THAN ONE vehicle (Ch4 ERD, design decision 7). With
-            // exactly one dispatchable vehicle the choice is unambiguous and is
-            // filled in; with several, silently picking one would put a truck on
-            // a mission the admin never chose, so it names them and leaves the
-            // decision alone.
+            // Vehicle chosen -> offer its primary driver.
+            const syncDriver = () => {
+                const option = vehicleSelect.selectedOptions[0];
+                const driverId = option ? option.dataset.driverId : '';
+
+                if (driverId && [...driverSelect.options].some(o => o.value === driverId)) {
+                    // Only fill a driver the admin has not chosen for themselves.
+                    if (!driverSelect.value || driverAutoFilled) {
+                        driverSelect.value = driverId;
+                        driverAutoFilled = true;
+                    }
+                } else if (driverAutoFilled) {
+                    // This vehicle has no primary driver, and the name in the box
+                    // was put there for a DIFFERENT vehicle. Clear it.
+                    driverSelect.value = '';
+                    driverAutoFilled = false;
+                }
+
+                describePairing();
+            };
+
+            /*
+             * Driver chosen -> offer their vehicle.
+             *
+             * A driver may be the primary driver of MORE THAN ONE vehicle (Ch4
+             * ERD, design decision 7), so it cannot always auto-select: silently
+             * picking one would put a truck on a mission the admin never chose.
+             */
             const syncVehicle = () => {
                 const option = driverSelect.selectedOptions[0];
                 if (!option) return;
 
-                const ids = (option.dataset.vehicleIds || '').split(',').filter(Boolean);
-                const plates = option.dataset.vehiclePlates || '';
+                const ids = assignedVehicleIds(option);
+                const current = vehicleSelect.value;
 
-                if (ids.length === 1 && [...vehicleSelect.options].some(o => o.value === ids[0])) {
+                if (current && ids.includes(current)) {
+                    // Already one of theirs — leave it alone.
+                } else if (ids.length === 1 && selectable(ids[0])) {
                     vehicleSelect.value = ids[0];
-                    hint.textContent = 'Vehicle assigned to this driver. You may choose another.';
-                } else if (ids.length > 1) {
-                    hint.textContent = 'This driver is assigned to ' + plates + '. Choose one above.';
+                    vehicleAutoFilled = true;
+                } else if (vehicleAutoFilled) {
+                    // The truck in the box was filled in for a DIFFERENT driver.
+                    // This is the reported bug: it used to stay, and the admin
+                    // dispatched a pairing they never made.
+                    vehicleSelect.value = '';
+                    vehicleAutoFilled = false;
+                }
+                // else: the admin chose this vehicle themselves. Keep it — the
+                // reverse flow (vehicle first, then driver) depends on that.
+
+                if (ids.length > 1 && !vehicleSelect.value) {
+                    hint.textContent = 'This driver is assigned to ' + (option.dataset.vehiclePlates || '')
+                        + '. Choose one above.';
                 } else {
-                    hint.textContent = 'This driver has no operational vehicle assigned. You may choose any.';
+                    describePairing();
                 }
             };
 
-            vehicleSelect.addEventListener('change', syncDriver);
-            driverSelect.addEventListener('change', syncVehicle);
-            newDispatchModal.addEventListener('show.bs.modal', syncDriver);
+            // A change the ADMIN makes clears that field's auto-filled flag, so
+            // their choice is never overwritten or cleared afterwards.
+            vehicleSelect.addEventListener('change', () => { vehicleAutoFilled = false; syncDriver(); });
+            driverSelect.addEventListener('change', () => { driverAutoFilled = false; syncVehicle(); });
+
+            // Opening the modal starts from nothing chosen, so the form never
+            // proposes a pairing on the admin's behalf.
+            newDispatchModal.addEventListener('show.bs.modal', () => {
+                vehicleSelect.value = '';
+                driverSelect.value = '';
+                vehicleAutoFilled = false;
+                driverAutoFilled = false;
+                hint.textContent = '';
+            });
 
             /*
              * Licence warning at the moment of dispatch (FR-08 -> FR-15, 2026-08).
