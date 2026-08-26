@@ -9,18 +9,22 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * The licence warning window is actually configurable (FR-08, 2026-08).
+ * The licence warning window (FR-08).
  *
- * `agencies.license_expiry_warning_days` was read in four places and written in
- * none: no screen, no endpoint, no command. Every agency sat on the seeded
- * default of 30 forever, while the Chapter 4 data dictionary described the
- * column as "configurable per agency" and the Chapter 4 narrative said these
- * thresholds are "stored as columns rather than constants". The storage claim
- * was true; the capability claim was not.
+ * `agencies.license_expiry_warning_days` decides how early a licence is flagged
+ * Expiring Soon. It is stored per agency and set at deployment; it defaults
+ * to 30 days.
  *
- * This is deliberately NOT the agency-info editing that design decision 7
- * excludes. That covers the agency's IDENTITY — name, location, contact — which
- * remains display-only. This is an operational threshold FR-08 depends on.
+ * An on-screen control to change it was built and then REMOVED (2026-08,
+ * lead-reported). The reason is worth keeping: nobody needed to change the
+ * number, and a setting nobody uses is a thing to explain at a defense for no
+ * return. What WAS missing is different — the rule itself was invisible, so an
+ * administrator seeing "Expiring Soon" had no way to know what it meant. The
+ * Drivers page now states the rule in plain language instead of offering a box.
+ *
+ * Nothing about the logic changed when the control went: the column still
+ * exists, and the Drivers page, the row badges, the daily sweep and the
+ * driver's phone all still read it.
  */
 class LicenseWarningWindowTest extends TestCase
 {
@@ -38,64 +42,64 @@ class LicenseWarningWindowTest extends TestCase
         $this->admin = User::factory()->admin()->create(['agency_id' => $this->agency->id]);
     }
 
+    /* ------------------------- the rule is stated ------------------------- */
+
     /**
-     * It lives on the DRIVERS page (2026-08, lead-reported), beside the three
-     * licence summary cards it governs — the screen an administrator is on when
-     * they are thinking about expiry.
-     *
-     * Deliberately NOT on the Edit Driver form, which is the obvious-looking
-     * home and the wrong one: this is ONE value shared by every driver of the
-     * agency, so a per-driver form would make editing one driver silently
-     * change the threshold for all of them.
+     * The number is on screen, so "Expiring Soon" is self-explanatory. This is
+     * the half of the removed setting that was actually worth keeping.
      */
-    public function test_the_drivers_page_offers_the_setting(): void
+    public function test_the_drivers_page_states_the_rule(): void
     {
         $this->actingAs($this->admin)->get('/drivers')
             ->assertOk()
-            ->assertSee('Flag a licence as Expiring Soon')
-            ->assertSee('license_expiry_warning_days', false);
+            ->assertSee('Expiring Soon')
+            ->assertSee('30 days before it expires')
+            ->assertSee('the day after its expiry date');
     }
 
-    public function test_it_is_not_on_the_agency_profile_page(): void
+    /** It is read from the column, so a differently-deployed agency reads true. */
+    public function test_the_stated_rule_follows_the_agencys_own_value(): void
+    {
+        $this->agency->update(['license_expiry_warning_days' => 45]);
+
+        $this->actingAs($this->admin)->get('/drivers')
+            ->assertOk()
+            ->assertSee('45 days before it expires');
+    }
+
+    /**
+     * The control is gone and must stay gone — it is a statement, not a form.
+     */
+    public function test_there_is_no_control_to_change_it(): void
+    {
+        $html = $this->actingAs($this->admin)->get('/drivers')->getContent();
+
+        $this->assertStringNotContainsString('license_expiry_warning_days', $html,
+            'An input for the warning window is back on the Drivers page. It was removed '
+            .'deliberately: the rule is stated, not offered as a setting.');
+
+        $this->assertFalse(
+            \Illuminate\Support\Facades\Route::has('agency.license-window'),
+            'The route for editing the warning window is back.'
+        );
+    }
+
+    public function test_it_is_not_on_the_agency_profile_page_either(): void
     {
         $this->actingAs($this->admin)->get('/profile')
             ->assertOk()
             ->assertDontSee('license_expiry_warning_days', false);
     }
 
-    /** And not inside the per-driver form, where it would read as per-driver. */
-    public function test_it_is_not_inside_the_edit_driver_form(): void
-    {
-        User::factory()->driver()->create(['agency_id' => $this->agency->id]);
-
-        $html = $this->actingAs($this->admin)->get('/drivers')->getContent();
-
-        $editModal = substr($html, strpos($html, 'id="editDriverModal"'));
-        $editModal = substr($editModal, 0, strpos($editModal, '</form>'));
-
-        $this->assertStringNotContainsString('license_expiry_warning_days', $editModal,
-            'The agency-wide warning window is inside the per-driver form, where editing one '
-            .'driver would appear to change only that driver.');
-    }
-
-    public function test_an_admin_changes_the_window(): void
-    {
-        $this->actingAs($this->admin)
-            ->from('/drivers')
-            ->patch('/agency/license-window', ['license_expiry_warning_days' => 60])
-            ->assertRedirect('/drivers');
-
-        $this->assertSame(60, $this->agency->fresh()->license_expiry_warning_days);
-    }
+    /* --------------------- the logic still uses it ------------------------ */
 
     /**
-     * The point of the setting: it changes what the system reports.
-     *
-     * Licence status is derived on read rather than stored, so a driver whose
-     * licence is 45 days out reads Valid at a 30-day window and Expiring Soon
-     * at a 60-day one, with no other change and nothing to recompute.
+     * The point of the column: it changes what the system reports. Licence
+     * status is derived on read rather than stored, so a driver 45 days out
+     * reads Valid at a 30-day window and Expiring Soon at a 60-day one, with
+     * nothing to recompute.
      */
-    public function test_widening_the_window_reclassifies_a_licence_immediately(): void
+    public function test_the_window_decides_the_status(): void
     {
         $driver = User::factory()->driver()->create([
             'agency_id' => $this->agency->id,
@@ -104,14 +108,39 @@ class LicenseWarningWindowTest extends TestCase
 
         $this->assertSame('Valid', $driver->fresh()->load('agency')->licenseStatus());
 
-        $this->actingAs($this->admin)
-            ->patch('/agency/license-window', ['license_expiry_warning_days' => 60]);
+        $this->agency->update(['license_expiry_warning_days' => 60]);
 
         $this->assertSame('Expiring Soon', $driver->fresh()->load('agency')->licenseStatus());
     }
 
-    /** And the Drivers page moves with it, since the cards read the same method. */
-    public function test_the_drivers_page_reflects_the_new_window(): void
+    /** Expired needs no window — it is simply the day after the expiry date. */
+    public function test_expired_does_not_depend_on_the_window(): void
+    {
+        $driver = User::factory()->driver()->create([
+            'agency_id' => $this->agency->id,
+            'license_expiry_date' => now()->subDay(),
+        ]);
+
+        foreach ([1, 30, 365] as $window) {
+            $this->agency->update(['license_expiry_warning_days' => $window]);
+
+            $this->assertSame('Expired', $driver->fresh()->load('agency')->licenseStatus(),
+                "A window of {$window} changed what counts as Expired. It must not.");
+        }
+    }
+
+    /** A licence is valid THROUGH its expiry date, not up to the day before. */
+    public function test_a_licence_is_still_valid_on_its_expiry_date(): void
+    {
+        $driver = User::factory()->driver()->create([
+            'agency_id' => $this->agency->id,
+            'license_expiry_date' => now()->toDateString(),
+        ]);
+
+        $this->assertSame('Expiring Soon', $driver->fresh()->load('agency')->licenseStatus());
+    }
+
+    public function test_the_drivers_page_filter_follows_the_window(): void
     {
         User::factory()->driver()->create([
             'agency_id' => $this->agency->id,
@@ -123,16 +152,15 @@ class LicenseWarningWindowTest extends TestCase
             ->assertOk()
             ->assertDontSee('Ramon Villanueva');
 
-        $this->actingAs($this->admin)
-            ->patch('/agency/license-window', ['license_expiry_warning_days' => 60]);
+        $this->agency->update(['license_expiry_warning_days' => 60]);
 
         $this->actingAs($this->admin)->get('/drivers?license_status=Expiring Soon')
             ->assertOk()
             ->assertSee('Ramon Villanueva');
     }
 
-    /** The daily sweep uses the agency's own window too. */
-    public function test_the_daily_sweep_honours_the_new_window(): void
+    /** The daily sweep reads the same column. */
+    public function test_the_daily_sweep_honours_the_window(): void
     {
         User::factory()->driver()->create([
             'agency_id' => $this->agency->id,
@@ -142,8 +170,7 @@ class LicenseWarningWindowTest extends TestCase
         $this->artisan('rvms:license-alerts');
         $this->assertDatabaseCount('notifications', 0);
 
-        $this->actingAs($this->admin)
-            ->patch('/agency/license-window', ['license_expiry_warning_days' => 60]);
+        $this->agency->update(['license_expiry_warning_days' => 60]);
 
         $this->artisan('rvms:license-alerts');
 
@@ -153,59 +180,29 @@ class LicenseWarningWindowTest extends TestCase
         ]);
     }
 
-    /**
-     * A window of zero would send a licence straight from Valid to Expired with
-     * no warning at all, which is the one thing FR-08 exists to prevent.
-     */
-    public function test_a_window_of_zero_is_refused(): void
-    {
-        $this->actingAs($this->admin)
-            ->from('/drivers')
-            ->patch('/agency/license-window', ['license_expiry_warning_days' => 0])
-            ->assertSessionHasErrors('license_expiry_warning_days');
-
-        $this->assertSame(30, $this->agency->fresh()->license_expiry_warning_days);
-    }
-
-    public function test_an_absurd_window_is_refused(): void
-    {
-        $this->actingAs($this->admin)
-            ->from('/drivers')
-            ->patch('/agency/license-window', ['license_expiry_warning_days' => 4000])
-            ->assertSessionHasErrors('license_expiry_warning_days');
-
-        $this->assertSame(30, $this->agency->fresh()->license_expiry_warning_days);
-    }
-
-    /** FR-02: an admin sets their OWN agency's window and nobody else's. */
-    public function test_the_setting_only_touches_the_admins_own_agency(): void
+    /** FR-02: the window is per agency, so one agency's cannot affect another. */
+    public function test_the_window_is_per_agency(): void
     {
         $other = Agency::factory()->create(['code' => 'CHO', 'license_expiry_warning_days' => 30]);
+        $otherDriver = User::factory()->driver()->create([
+            'agency_id' => $other->id,
+            'license_expiry_date' => now()->addDays(45),
+        ]);
+        $ownDriver = User::factory()->driver()->create([
+            'agency_id' => $this->agency->id,
+            'license_expiry_date' => now()->addDays(45),
+        ]);
 
-        $this->actingAs($this->admin)
-            ->patch('/agency/license-window', ['license_expiry_warning_days' => 90]);
+        $this->agency->update(['license_expiry_warning_days' => 60]);
 
-        $this->assertSame(90, $this->agency->fresh()->license_expiry_warning_days);
-        $this->assertSame(30, $other->fresh()->license_expiry_warning_days,
-            "One agency's setting changed another agency's threshold.");
-    }
-
-    public function test_a_driver_cannot_reach_it(): void
-    {
-        $driver = User::factory()->driver()->create(['agency_id' => $this->agency->id]);
-
-        // 403 from the role middleware, not a redirect: the dashboard is
-        // admin-only and a driver holding a session is refused outright.
-        $this->actingAs($driver)
-            ->patch('/agency/license-window', ['license_expiry_warning_days' => 90])
-            ->assertForbidden();
-
-        $this->assertSame(30, $this->agency->fresh()->license_expiry_warning_days);
+        $this->assertSame('Expiring Soon', $ownDriver->fresh()->load('agency')->licenseStatus());
+        $this->assertSame('Valid', $otherDriver->fresh()->load('agency')->licenseStatus(),
+            "One agency's window changed another agency's licence status.");
     }
 
     /**
-     * Design decision 7 still holds: the agency's identity is not editable, and
-     * adding this setting must not have quietly opened that door.
+     * Design decision 7 still holds — the agency's identity is not editable,
+     * and none of this ever opened that door.
      */
     public function test_the_agency_identity_fields_are_still_read_only(): void
     {

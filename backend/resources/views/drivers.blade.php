@@ -59,50 +59,21 @@
                     </div>
                 </div>
 
-                {{-- The warning window behind the three cards above (FR-08, 2026-08).
-                     It lives HERE rather than on Agency Profile because this is the
-                     screen an administrator is on when they are thinking about licence
-                     expiry, and it sits above the whole list rather than inside one
-                     driver's form — which is the point: it is ONE value per agency,
-                     shared by every driver. Putting it on Edit Driver Details would
-                     make an agency-wide setting look like a per-driver field, so
-                     editing one driver would silently change the threshold for all of
-                     them. The per-driver licence data (number, expiry date) stays on
-                     the Edit Driver form, where it belongs. --}}
-                <div class="card border-0 shadow-sm rounded-3 mb-4">
-                    <div class="card-body p-3">
-                        <form method="POST" action="{{ route('agency.license-window') }}" class="row g-2 align-items-center">
-                            @csrf
-                            @method('PATCH')
-                            <div class="col-auto">
-                                <label class="col-form-label fw-semibold" for="licenseWindow">
-                                    <i class="bi bi-bell me-1 text-secondary"></i>Flag a licence as Expiring Soon
-                                </label>
-                            </div>
-                            <div class="col-auto">
-                                <div class="input-group input-group-sm">
-                                    <input type="number" id="licenseWindow" name="license_expiry_warning_days"
-                                           class="form-control @error('license_expiry_warning_days') is-invalid @enderror"
-                                           style="max-width:6rem;"
-                                           value="{{ old('license_expiry_warning_days', auth()->user()->agency->license_expiry_warning_days) }}"
-                                           min="1" max="365" required>
-                                    <span class="input-group-text">days before expiry</span>
-                                    @error('license_expiry_warning_days')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                                </div>
-                            </div>
-                            <div class="col-auto">
-                                <button type="submit" class="btn btn-sm btn-light border">Save</button>
-                            </div>
-                            <div class="col-12">
-                                <div class="form-text mb-0">
-                                    Applies to every driver of {{ auth()->user()->agency->code }} and to the daily alert sent to
-                                    every administrator. It does not change what counts as <strong>Expired</strong> —
-                                    that is always the day after the licence's expiry date.
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                {{-- What the three cards above actually mean (FR-08, 2026-08).
+                     A statement, not a control. The warning window is stored per agency
+                     in `agencies.license_expiry_warning_days` and set at deployment; an
+                     on-screen setting was tried and removed (lead-reported) because
+                     nobody needed to change it, while the RULE being invisible was a
+                     real gap — an administrator seeing "Expiring Soon" had no way to
+                     know what it meant. The number is read from the column, so this
+                     sentence stays true if an agency is deployed with a different one. --}}
+                <p class="text-secondary small mb-4">
+                    <i class="bi bi-info-circle me-1"></i>
+                    A licence is flagged <strong>Expiring Soon</strong>
+                    {{ auth()->user()->agency->license_expiry_warning_days }} days before it expires,
+                    and <strong>Expired</strong> the day after its expiry date.
+                    Every administrator of {{ auth()->user()->agency->code }} is alerted daily while either applies.
+                </p>
 
                 {{-- Access Requests — documented addition (FR-03): pending self-registrations are
                      NOT in the prototype (approval was added to scope later). Built with the

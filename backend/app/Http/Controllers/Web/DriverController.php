@@ -183,55 +183,6 @@ class DriverController extends Controller
             ->with('status', "Password reset for {$driver->name}. Give them the new password directly.");
     }
 
-
-
-/**
-     * Set the agency's licence warning window (FR-08, 2026-08).
-     *
-     * The Chapter 4 data dictionary has always described
-     * `license_expiry_warning_days` as "configurable per agency", and it was
-     * stored as a column precisely so it would not be a constant — but nothing
-     * ever wrote to it, so every agency sat on the seeded default of 30 forever
-     * and the claim was untrue.
-     *
-     * This is NOT the agency-info editing that design decision 7 excludes. That
-     * decision is about the agency's IDENTITY — name, location, contact — which
-     * no requirement allows editing and which stays display-only on the profile
-     * page. This is an operational threshold that FR-08 itself depends on.
-     *
-     * It lives on the DRIVERS page rather than Agency Profile (2026-08,
-     * lead-reported): that is the screen an administrator is on when thinking
-     * about licence expiry, and it sits above the whole list rather than inside
-     * one driver's form — because it is ONE value shared by every driver of the
-     * agency, not a property of any one of them.
-     *
-     * The change takes effect immediately everywhere: licence status is derived
-     * on read from this column rather than stored, so the Drivers page, the
-     * summary cards, the monitoring endpoint and tomorrow's sweep all move
-     * together.
-     */
-    public function updateLicenseWindow(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            // At least a day, because a window of zero would mean a licence is
-            // never "Expiring Soon" — it would go straight from Valid to
-            // Expired, which defeats FR-08. A year is the sensible ceiling: a
-            // window longer than the renewal cycle flags every licence forever.
-            'license_expiry_warning_days' => ['required', 'integer', 'min:1', 'max:365'],
-        ], [
-            'license_expiry_warning_days.min' => 'The warning window must be at least 1 day, '
-                .'otherwise a licence would go straight from Valid to Expired with no warning.',
-            'license_expiry_warning_days.max' => 'The warning window cannot exceed 365 days.',
-        ]);
-
-        $request->user()->agency->update($validated);
-
-        return back()->with('status', sprintf(
-            'Licences will now be flagged as expiring %d days before they lapse.',
-            $validated['license_expiry_warning_days'],
-        ));
-    }
-
     private function authorizeDriver(Request $request, User $driver): void
     {
         if ($driver->role !== User::ROLE_DRIVER || $driver->agency_id !== $request->user()->agency_id) {

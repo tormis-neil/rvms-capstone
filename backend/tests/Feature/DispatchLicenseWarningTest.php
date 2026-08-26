@@ -103,15 +103,18 @@ class DispatchLicenseWarningTest extends TestCase
         $this->assertStringNotContainsString('licence EXPIRED', $html);
     }
 
-    /** The warning follows the agency's own window (task 2). */
+    /**
+     * The flag follows the agency's own warning window, which is set per agency
+     * at deployment rather than from a screen (the on-screen control was
+     * removed, 2026-08 — see LicenseWarningWindowTest).
+     */
     public function test_the_flag_follows_the_agencys_configured_window(): void
     {
         $this->driver('Ramon Villanueva', now()->addDays(45)->toDateString());
 
         $this->assertStringContainsString('data-license-status="Valid"', $this->dispatchPage());
 
-        $this->actingAs($this->admin)
-            ->patch('/agency/license-window', ['license_expiry_warning_days' => 60]);
+        $this->agency->update(['license_expiry_warning_days' => 60]);
 
         $this->assertStringContainsString('data-license-status="Expiring Soon"', $this->dispatchPage());
     }

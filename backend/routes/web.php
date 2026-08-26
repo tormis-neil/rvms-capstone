@@ -43,10 +43,6 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject'])->name('drivers.reject');
     // A driver's password, when they can no longer sign in (FR-22).
     Route::patch('/drivers/{driver}/password', [DriverController::class, 'resetPassword'])->name('drivers.password');
-    // The agency's licence warning window (FR-08). It sits on the Drivers page,
-    // beside the licence summary cards it governs — one value shared by every
-    // driver of the agency, not a property of any one of them.
-    Route::patch('/agency/license-window', [DriverController::class, 'updateLicenseWindow'])->name('agency.license-window');
 
     // Inspections + Damage reports share one page (FR-10, FR-12).
     Route::get('/inspections', [InspectionController::class, 'index'])->name('inspections');
