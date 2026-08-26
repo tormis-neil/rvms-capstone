@@ -387,6 +387,26 @@ failing (no `PHP_INI_SCAN_DIR`) — one setting, three symptoms.
 
 ---
 
+### ❌ Build fails: "The iconv OR mbstring extension is required and both are missing"
+
+Composer itself cannot start, because the PHP the builder produced has no
+`mbstring`. The builder decides which extensions to install by reading
+`composer.json`'s `require` block for `ext-*` entries — and for a long time this
+project declared none, so it got a bare PHP.
+
+Fixed in the repository: `composer.json` now declares the nine extensions the
+system actually uses (`ctype`, `curl`, `dom`, `fileinfo`, `mbstring`, `openssl`,
+`pdo_mysql`, `tokenizer`, `zip`). Nothing to do unless you add a library that
+needs another one — in which case declare it there and both builders will pick
+it up.
+
+> **`ext-pdo_mysql` is the one that matters most**, and nothing declared it
+> before. Without it the app builds perfectly and then cannot reach MySQL at
+> all, failing with "could not find driver" — which reads like a password
+> problem and is not one.
+
+---
+
 ### ❌ Build succeeds, site shows 500
 
 Almost always `APP_KEY`. Check it is set and starts with `base64:`.
