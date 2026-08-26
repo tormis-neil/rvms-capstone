@@ -43,6 +43,10 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     Route::patch('/drivers/{driver}/reject', [DriverController::class, 'reject'])->name('drivers.reject');
     // A driver's password, when they can no longer sign in (FR-22).
     Route::patch('/drivers/{driver}/password', [DriverController::class, 'resetPassword'])->name('drivers.password');
+    // The agency's licence warning window (FR-08). It sits on the Drivers page,
+    // beside the licence summary cards it governs — one value shared by every
+    // driver of the agency, not a property of any one of them.
+    Route::patch('/agency/license-window', [DriverController::class, 'updateLicenseWindow'])->name('agency.license-window');
 
     // Inspections + Damage reports share one page (FR-10, FR-12).
     Route::get('/inspections', [InspectionController::class, 'index'])->name('inspections');
@@ -70,9 +74,6 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     // (design decision 7: no FR backs editing agency information).
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    // The agency's licence warning window (FR-08). Separate from the personal
-    // profile action: it changes what every administrator of the agency sees.
-    Route::patch('/agency/license-window', [ProfileController::class, 'updateLicenseWindow'])->name('agency.license-window');
 
     // Reports (FR-20). One route: the page, plus the generated report when a
     // ?type= is present — the prototype renders its report into the same page.
