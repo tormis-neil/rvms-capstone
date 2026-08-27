@@ -311,9 +311,8 @@ for now and just create the columns as ordinary `BIGINT` fields.
 | 10 | `license_expiry_date` | `DATE` |  |  |  |  | — |
 | 11 | `fcm_token` | `VARCHAR(255)` |  |  |  |  | — |
 | 12 | `remember_token` | `VARCHAR(100)` |  |  |  |  | — |
-| 13 | `deleted_at` | `TIMESTAMP` |  |  |  |  | — |
-| 14 | `created_at` | `TIMESTAMP` |  |  |  |  | — |
-| 15 | `updated_at` | `TIMESTAMP` |  |  |  |  | — |
+| 13 | `created_at` | `TIMESTAMP` |  |  |  |  | — |
+| 14 | `updated_at` | `TIMESTAMP` |  |  |  |  | — |
 
 **Foreign keys for this table** (Foreign Keys tab):
 
@@ -336,9 +335,8 @@ for now and just create the columns as ordinary `BIGINT` fields.
 | 9 | `chassis_number` | `VARCHAR(50)` |  |  |  |  | — |
 | 10 | `current_mileage` | `INT` |  | ✔ | ✔ |  | 0 |
 | 11 | `status` | `ENUM('Operational','Dispatched','Not Operational','Under Preventive Maintenance')` |  | ✔ |  |  | 'Operational' |
-| 12 | `deleted_at` | `TIMESTAMP` |  |  |  |  | — |
-| 13 | `created_at` | `TIMESTAMP` |  |  |  |  | — |
-| 14 | `updated_at` | `TIMESTAMP` |  |  |  |  | — |
+| 12 | `created_at` | `TIMESTAMP` |  |  |  |  | — |
+| 13 | `updated_at` | `TIMESTAMP` |  |  |  |  | — |
 
 **Foreign keys for this table** (Foreign Keys tab):
 
@@ -440,9 +438,10 @@ for now and just create the columns as ordinary `BIGINT` fields.
 | 8 | `cost` | `DECIMAL(10,2)` |  |  |  |  | — |
 | 9 | `repair_source` | `ENUM('Internal Office','GSO Motorpool','External Repair Shop')` |  | ✔ |  |  | — |
 | 10 | `external_shop_name` | `VARCHAR(255)` |  |  |  |  | — |
-| 11 | `remarks` | `TEXT` |  |  |  |  | — |
-| 12 | `created_at` | `TIMESTAMP` |  |  |  |  | — |
-| 13 | `updated_at` | `TIMESTAMP` |  |  |  |  | — |
+| 11 | `receipt_path` | `VARCHAR(255)` |  |  |  |  | — |
+| 12 | `remarks` | `TEXT` |  |  |  |  | — |
+| 13 | `created_at` | `TIMESTAMP` |  |  |  |  | — |
+| 14 | `updated_at` | `TIMESTAMP` |  |  |  |  | — |
 
 **Foreign keys for this table** (Foreign Keys tab):
 
@@ -469,12 +468,14 @@ for now and just create the columns as ordinary `BIGINT` fields.
 | 11 | `due_soon_threshold_days` | `SMALLINT` |  |  | ✔ |  | — |
 | 12 | `status` | `ENUM('Upcoming','Due Soon','Due','Completed')` |  | ✔ |  |  | 'Upcoming' |
 | 13 | `date_serviced` | `DATE` |  |  |  |  | — |
-| 14 | `completion_repair_source` | `ENUM('Internal Office','GSO Motorpool','External Repair Shop')` |  |  |  |  | — |
-| 15 | `completion_external_shop_name` | `VARCHAR(255)` |  |  |  |  | — |
-| 16 | `completion_parts_replaced` | `TEXT` |  |  |  |  | — |
-| 17 | `completion_remarks` | `TEXT` |  |  |  |  | — |
-| 18 | `created_at` | `TIMESTAMP` |  |  |  |  | — |
-| 19 | `updated_at` | `TIMESTAMP` |  |  |  |  | — |
+| 14 | `completion_mileage` | `INT` |  |  | ✔ |  | — |
+| 15 | `completion_repair_source` | `ENUM('Internal Office','GSO Motorpool','External Repair Shop')` |  |  |  |  | — |
+| 16 | `completion_external_shop_name` | `VARCHAR(255)` |  |  |  |  | — |
+| 17 | `completion_receipt_path` | `VARCHAR(255)` |  |  |  |  | — |
+| 18 | `completion_parts_replaced` | `TEXT` |  |  |  |  | — |
+| 19 | `completion_remarks` | `TEXT` |  |  |  |  | — |
+| 20 | `created_at` | `TIMESTAMP` |  |  |  |  | — |
+| 21 | `updated_at` | `TIMESTAMP` |  |  |  |  | — |
 
 **Foreign keys for this table** (Foreign Keys tab):
 
