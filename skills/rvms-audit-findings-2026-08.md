@@ -47,27 +47,45 @@ Chapter 1, not run ahead of it.**
 `profile`, `own name`, `own account` → **0 matches**.
 `password` → **1 match**, and only inside the Limitations sentence.
 
-Yet FR-04 (self-service profile), FR-05/FR-06 (delete + restore) and FR-22
-(password recovery) are all fully implemented and tested.
+Yet FR-04 (self-service profile), FR-05/FR-06 and FR-22 (password recovery) are
+all fully implemented and tested.
 
-**Fix — Chapter 1, Scope and Limitations, FIRST paragraph** (the inclusions
-paragraph). After the sentence ending *"…approaching and expired driver
-licenses."*, add these three sentences:
+> ### ⚠️ REVISED 2026-08-27 — do NOT paste the three sentences below
+>
+> **Two of the three are now false.** They were written before the 19 August
+> decisions, and the repo's Chapter 1 has since been rewritten to match the
+> system:
+>
+> - **Sentence 1 (remove and restore records) — WITHDRAWN.** Delete and restore
+>   no longer exist. Chapter 1 now states the opposite: records *"may be added
+>   and updated but not deleted."*
+> - **Sentence 2 (self-service profile) — still correct**, and already present in
+>   the repo's Chapter 1.
+> - **Sentence 3 (password recovery) — WRONG as written.** It says an
+>   administrator may reset the password of *"a fellow Agency Administrator."*
+>   They may not, deliberately: FR-22 and Chapter 1 both state that *"an Agency
+>   Administrator cannot reset the password of another Agency Administrator"* —
+>   such an administrator is recovered by a command run on the server.
+>
+> **What to do instead:** replace the .docx Chapter 1 *Scope and Limitations*
+> section wholesale with the current text from
+> `skills/rvms-source-of-truth.md`. It already carries the profile, password and
+> no-deletion material in the correct wording, so there is nothing to compose —
+> this is a copy, and it resolves 1.1, 1.3 and 1.4 in one pass.
 
-> Agency Administrators will also be able to remove vehicle and driver records
-> that are no longer in service and to restore them if removed in error; a
-> removed record leaves all lists and selections while the inspections, damage
-> reports, repairs, preventive maintenance schedules, and dispatch records
-> attached to it are retained, and a vehicle or driver currently out on an active
-> dispatch cannot be removed.
+*Original replacement text, kept only so the withdrawal is traceable:*
+
+> ~~Agency Administrators will also be able to remove vehicle and driver records
+> that are no longer in service and to restore them if removed in error…~~
+> **(withdrawn — the feature was removed)**
 
 > Authorized Drivers and Agency Administrators will also be able to update their
 > own name, email address, and password without administrator approval.
+> **(still correct)**
 
-> Agency Administrators will also be able to set a new password for an Authorized
-> Driver of their agency and for a fellow Agency Administrator after confirming
-> their own password, so that an account holder who can no longer sign in can be
-> restored to access.
+> ~~Agency Administrators will also be able to set a new password for an
+> Authorized Driver of their agency and for a fellow Agency Administrator…~~
+> **(withdrawn — administrators cannot reset each other's passwords)**
 
 ### 1.2 — Typos 🟠
 
@@ -205,14 +223,31 @@ features that do not align with actual agency operations."*, before the
 > finalization of the system. The sections that follow present the outputs of the
 > requirements analysis and design phases of this process.
 
-### 4.2 — FR-06 contradicts itself 🔴
+### 4.2 — FR-06 contradicts itself 🔴 ⚠️ **SUPERSEDED 2026-08-27 — do NOT apply as written**
 
-Its opening lists only three verbs, but its own next two sentences describe
-deletion and restoration. FR-05 (vehicles) has the full list; FR-06 does not.
+> **The replacement text below is now wrong and would introduce a false claim.**
+> Delete and restore were removed from the system on 19 August
+> (`2026_08_19_000001_drop_soft_deletes_from_vehicles_and_users`;
+> `RecordsAreNotDeletableTest` keeps them gone). Adding *"delete, and restore"*
+> to FR-06 would describe a feature that does not exist.
+>
+> **What to do instead:** take FR-05 and FR-06 verbatim from
+> `skills/rvms-source-of-truth.md`, which was rewritten to match. Both now end
+> with a retention sentence rather than a delete verb — FR-06 reads:
+>
+> > Enables Agency Administrators to add, update, and view driver records,
+> > including name, agency, license number, and license expiry date, and to
+> > assign a driver as the primary driver of one or more vehicles. Driver
+> > records are retained permanently so that the inspections and damage reports
+> > they submitted continue to identify their author.
+>
+> The full revised table is in `manuscript/manuscript-revision-plan-2026-08.md`
+> Part 2, which is the authority for this change.
 
-| Find | Replace |
-|---|---|
-| `Enables Agency Administrators to add, update, and view driver records` | `Enables Agency Administrators to add, update, view, delete, and restore driver records` |
+*Original finding, kept for the record:* its opening listed only three verbs,
+while its own next two sentences described deletion and restoration. That
+contradiction is now resolved in the other direction — the sentences went, not
+the verbs.
 
 ### 4.3 — FR-15 missing preposition 🟡
 
@@ -241,13 +276,15 @@ deletion and restoration. FR-05 (vehicles) has the full list; FR-06 does not.
 |---|---|
 | `dispatch logs, repair histories, preventive maintenance schedules, and dispatch records from which the system's reports are generated` | `dispatch logs, repair histories, and preventive maintenance schedules — the records from which the system's reports are generated` |
 
-### 4.7 — Optional: soft delete in the Table 3 narrative ⚪
+### 4.7 — Optional: soft delete in the Table 3 narrative ⚪ ⚠️ **WITHDRAWN 2026-08-27 — do NOT apply**
 
-The repo's version of the Table 3 narrative carries a clause the .docx lacks:
-*"…including the removal and restoration of records that are no longer in service
-while preserving the maintenance and dispatch history attached to them."*
-Worth adding to the .docx, since soft delete is a real capability the narrative
-should mention.
+This asked for a clause about *"the removal and restoration of records that are
+no longer in service"* to be added to the .docx. **That capability was removed on
+19 August**, and the repo's Table 3 narrative no longer carries the clause —
+it now says records are retained permanently instead. Adding it would put a
+removed feature back into the manuscript.
+
+Nothing to do. Superseded by `manuscript/manuscript-revision-plan-2026-08.md`.
 
 ---
 
@@ -284,10 +321,12 @@ matched (commit `8090d24`):
 
 ### Decisions recorded
 
-- **`deleted_at` IS documented** in the Chapter 4 data dictionary (lead-decided).
-  A column is documented when a requirement made it necessary; FR-05/FR-06
-  require deletion and restoration. Same rule that put the dispatch odometer
-  columns in.
+- ~~**`deleted_at` IS documented** in the Chapter 4 data dictionary~~
+  ⚠️ **REVERSED 2026-08-27.** The rule is unchanged — a column is documented when
+  a requirement made it necessary — but the requirement went: FR-05/FR-06 no
+  longer permit deletion, and the columns were dropped from the database on
+  19 August. `deleted_at` must appear **nowhere** in the Chapter 4 data
+  dictionary. See `manuscript/manuscript-revision-plan-2026-08.md` item 6.
 - **`vehicles.remarks`, `status_source`, `status_changed_at` stay OUT** — no FR
   backs them (design decisions 7 and 9).
 - **DFD stays at 8 data stores** — agency is a scoping attribute, not a store.
@@ -353,9 +392,18 @@ Replace the whole cell with the source-of-truth wording:
 > expiry or has expired is shown to the Agency Administrator when a driver is
 > selected for dispatch.
 
-Both added clauses describe behaviour that is built and tested
-(`DispatchLicenseWarningTest`, `LicenseWindowCommandTest`) — this is the
+Both added clauses describe behaviour that is built and tested — this is the
 manuscript catching up to the system, not a new claim.
+
+> **Test names corrected 2026-08-27.** This originally cited
+> `LicenseWindowCommandTest`, which no longer exists: `rvms:license-window` was
+> built and then reverted (`28b8b29`), and its test went with it. The surviving
+> coverage is `DispatchLicenseWarningTest` (the licence state shown when a driver
+> is selected for dispatch) and `LicenseWarningWindowTest` (the per-agency window
+> itself — the column, the badges, the daily sweep). **The FR-08 replacement
+> wording above is unaffected and still correct**: the window is genuinely
+> per-agency data, it is simply set at deployment rather than through a screen,
+> which is exactly the point finding 8.2 makes.
 
 ### 8.2 — Table 5 narrative overstates who sets the threshold 🟡 *(added 2026-08-26)*
 
@@ -391,7 +439,7 @@ reads *"Configurable per agency,"* which is accurate.
 Chapter 1 first — it holds the only 🔴 items and they are all in one paragraph.
 
 **Chapter 1**
-- [ ] 1.1 — add three sentences to Scope ¶1 🔴
+- [ ] 1.1 — replace Scope & Limitations wholesale from the source of truth 🔴 ⚠️ *revised — do not paste the original three sentences*
 - [ ] 1.2a — `Specifically;` → `Specifically:`
 - [ ] 1.2b — `electronic main` → `electronic mail`
 - [ ] 1.2c — `recovery common` → `recovery command`
@@ -405,12 +453,12 @@ Chapter 1 first — it holds the only 🔴 items and they are all in one paragra
 
 **Chapter 4**
 - [ ] 4.1 — insert the methodology paragraph 🔴
-- [ ] 4.2 — FR-06 verb list 🔴
+- [ ] 4.2 — FR-06: take the row verbatim from the source of truth ⚠️ *revised — the old "delete, and restore" replacement is withdrawn*
 - [ ] 4.3 — FR-15
 - [ ] 4.4 — FR-16
 - [ ] 4.5 — FR-22
 - [ ] 4.6 — System Architecture narrative
-- [ ] 4.7 — soft delete in the Table 3 narrative *(optional)*
+- [x] 4.7 — ~~soft delete in the Table 3 narrative~~ ⚠️ **withdrawn 2026-08-27 — nothing to do**
 
 **Chapter 2**
 - [ ] 2.1 — BLOWBAGETS sentence *(optional)*

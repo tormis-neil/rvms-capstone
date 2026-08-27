@@ -319,7 +319,6 @@ standard and not detailed below.
 | license_number | VARCHAR(50) | Yes | NULL | Driver license no. (FR-06). Null for admins. |
 | license_expiry_date | DATE | Yes | NULL | Driver license expiry; drives FR-08 monitoring. Null for admins. |
 | fcm_token | VARCHAR(255) | Yes | NULL | Firebase device token for push delivery (FR-21). |
-| deleted_at | TIMESTAMP | Yes | NULL | **Soft delete** (FR-06, extended 2026-08). Set when an admin deletes the driver; the record leaves every list, selection and login, while their inspections and damage reports are retained and still resolve their name (all such relations are `withTrashed()`). Cleared on restore. |
 | email_verified_at | TIMESTAMP | Yes | NULL | Framework field. |
 | remember_token | VARCHAR(100) | Yes | NULL | Framework field. |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
@@ -341,7 +340,6 @@ standard and not detailed below.
 | status_source | VARCHAR(100) | Yes | NULL | **Implementation-level addition, not in the manuscript's data dictionary** (design decision 9, 2026-07). Which module last set `status` (e.g. "PM Schedules", "Damage Review", "Dispatch Closed"); powers the status-change confirmation. Overwritten on each write, no history kept. No FR backs it. |
 | status_changed_at | DATETIME | Yes | NULL | **Implementation-level addition, not in the manuscript's data dictionary** (design decision 9, 2026-07). When `status` was last written. Paired with `status_source`. |
 | remarks | TEXT | Yes | NULL | **Implementation-level addition, not in the manuscript's data dictionary** (design decision 7 amendment, 2026-07). Optional note on the most recent manual status change via the Update Status modal; overwritten on each update, no history kept. No FR backs it. |
-| deleted_at | TIMESTAMP | Yes | NULL | **Soft delete** (FR-05, extended 2026-08). Set when an admin deletes the vehicle; it leaves every list and selection, while its inspections, damage reports, repairs, PM schedules and dispatches are retained and still resolve its plate. Cleared on restore. |
 | created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
 
 ### `inspection_checklist_items` — FR-09 (reference/seed catalog)
@@ -351,6 +349,7 @@ standard and not detailed below.
 | name | VARCHAR(100) | No | — | Item label (Battery, Lights, …, Hydraulic System, Fire Pump). |
 | is_bfp_only | TINYINT(1) | No | 0 | 1 for the two BFP-only items (Hydraulic System, Fire Pump). |
 | sort_order | SMALLINT UNSIGNED | No | 0 | Display order on the checklist. |
+| created_at / updated_at | TIMESTAMP | Yes | NULL | Audit timestamps. |
 
 ### `inspections` — FR-09, FR-10
 | Column | Type | Null | Default | Description |

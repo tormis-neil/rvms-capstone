@@ -22,8 +22,8 @@
 | Part | Investigation | Application |
 |---|---|---|
 | A — Diagrams (Figures 2–5) | ✅ done, exact edits below | ⏳ deferred |
-| B — ERD (Figure 6) | ✅ scope defined | ⏳ deferred — figure is still a placeholder · **B1 must be done first** |
-| C — Data dictionary | ✅ schema verified against migrations | ⏳ deferred — one decision needed first |
+| B — ERD (Figure 6) | ✅ scope defined | ⏳ deferred — figure is still a placeholder · **B1 ✅ done 2026-08-27** |
+| C — Data dictionary | ✅ schema verified against migrations | ⏳ deferred — the `deleted_at` decision is now SETTLED (reversed, see Part C) |
 
 **Blocked on:** the capstone instructor's format update. It should not change any
 of the *content* below — only how it is laid out — so nothing here needs to wait
@@ -195,9 +195,15 @@ matches the migrations. Points that are easy to draw wrongly:
 **Framework tables are not drawn:** `personal_access_tokens`,
 `password_reset_tokens`, `jobs`, `failed_jobs`, `cache`, `sessions`.
 
-### ⚠️ B1 — `rvms-erd.sql` is three columns behind the migrations *(found 2026-08-26)*
+### ✅ B1 — `rvms-erd.sql` was three columns behind the migrations *(found 2026-08-26, FIXED 2026-08-27)*
 
-**Do this BEFORE anyone imports the file into Workbench.** `rvms-erd.sql` is
+> **Done.** All three columns were added to `rvms-erd.sql`, and to the per-table
+> field tables in `ERD-MySQL-Workbench-Manual.md`, on 2026-08-27. The two stale
+> `deleted_at` rows were removed from the manual at the same time.
+> `python3 verify.py` now reports **ALL MATCH**. The file is safe to import into
+> Workbench. The record below is kept so the fix is traceable.
+
+**Originally: do this BEFORE anyone imports the file into Workbench.** `rvms-erd.sql` is
 hand-maintained — nothing generates it — and it is the file the ERD is drawn
 from. Three columns were added to the system after it was last touched
 (`1e00352`), so a diagram drawn from it today would be wrong in three places:
@@ -226,44 +232,57 @@ three rows.
 
 ### The verified schema
 
-The data dictionary in `CLAUDE.md` was checked column-by-column against the
-migrations during the 2026-08 audit and matches, with the one open decision
-below. **11 domain tables**, column counts including `id` and timestamps:
+The schema is verified against the migrations by `python3 verify.py` in
+`manuscript/`, which compares `erd_model.py` (what the .docx data dictionary is
+built from) and `rvms-erd.sql` (what the ERD is drawn from) against
+`backend/database/migrations/`. **Run it before starting Part C** — it is the
+authority, not this table. **11 domain tables**, manuscript-facing column counts
+including `id` and timestamps:
 
 | Table | Columns | Notes |
 |---|---|---|
 | `agencies` | 10 | includes `license_expiry_warning_days` (configurable threshold) |
-| `users` | 15 | includes `deleted_at` — see decision below |
-| `vehicles` | 17 | includes `remarks`, `status_source`, `status_changed_at`, `deleted_at` |
-| `inspection_checklist_items` | 4 | no timestamps, no agency scope |
-| `inspections` | 9 | |
+| `users` | 14 | no `deleted_at` — see the decision below |
+| `vehicles` | 13 | no `deleted_at`; the database also carries 3 repo-only columns that stay OUT (see below) |
+| `inspection_checklist_items` | 6 | no agency scope; does carry timestamps |
+| `inspections` | 10 | |
 | `inspection_items` | 5 | no timestamps |
-| `damage_reports` | 12 | |
-| `repair_logs` | 12 | |
-| `pm_schedules` | 18 | two configurable threshold columns; includes `completion_external_shop_name` (added 2026-08 — FR-14) |
-| `dispatches` | 14 | includes `odometer_out`, `odometer_in` |
-| `notifications` | 10 | `type` is a **10-value** enum |
+| `damage_reports` | 13 | |
+| `repair_logs` | 14 | includes `receipt_path` (added 2026-08 — FR-13) |
+| `pm_schedules` | 21 | two configurable threshold columns; includes `completion_mileage`, `completion_external_shop_name` and `completion_receipt_path` (all added 2026-08 — FR-14) |
+| `dispatches` | 15 | includes `odometer_out`, `odometer_in` |
+| `notifications` | 11 | `type` is a **10-value** enum |
 
-### ✅ DECIDED (2026-08, project lead): `deleted_at` IS in the manuscript
+### ⚠️ SUPERSEDED (2026-08-27): `deleted_at` is NOT in the manuscript — the columns no longer exist
 
-`users.deleted_at` and `vehicles.deleted_at` are documented in the Chapter 4
-data dictionary as ordinary columns.
+**This section previously recorded the opposite decision, and following it would
+put two columns into the Chapter 4 data dictionary that the database does not
+have.** It was written while delete and restore were still a feature. They are
+not any more.
 
-The rule this follows: **a column is documented when a functional requirement
-made it necessary, and left out when it exists only for the code's own
-convenience.** FR-05 and FR-06 state that administrators may delete and restore
-vehicle and driver records; that is impossible without a column marking which
-records are deleted, so the requirement is what put it there. Identical
-reasoning to `dispatches.odometer_out` / `odometer_in` (design decision 8),
-which are in the manuscript because FR-15 and FR-16 name odometer readings — and
-the opposite of the three columns below, which no requirement asked for.
+On **19 August** the project lead removed delete and restore altogether:
+`2026_08_19_000001_drop_soft_deletes_from_vehicles_and_users` dropped both
+columns, no model uses `SoftDeletes`, and `RecordsAreNotDeletableTest` asserts
+they stay gone. FR-05 and FR-06 were rewritten to match and now read that vehicle
+and driver records *"are retained permanently so that the … history referring to
+them remains complete."* The reasoning is in
+`manuscript/manuscript-revision-plan-2026-08.md`, which is the authority for this
+change and whose item 6 says plainly: remove the `deleted_at` row from the
+`vehicles` and `users` tables.
 
-Both are `TIMESTAMP`, nullable, default NULL. Suggested descriptions:
+The documentation rule itself is unchanged and still correct — *a column is
+documented when a functional requirement made it necessary, and left out when it
+exists only for the code's own convenience.* What changed is the requirement: no
+FR asks for deletion any more, so nothing justifies the column, and the column is
+gone regardless.
 
-| Table | Column | Description |
-|---|---|---|
-| `users` | `deleted_at` | Set when an Agency Administrator deletes the driver; the record leaves every list, selection and login while the inspections and damage reports they submitted are retained and still identify them. Cleared on restore. |
-| `vehicles` | `deleted_at` | Set when an Agency Administrator deletes the vehicle; it leaves every list and selection while its inspections, damage reports, repairs, preventive maintenance schedules and dispatches are retained and still resolve its plate number. Cleared on restore. |
+**What Part C must do:** ensure `users.deleted_at` and `vehicles.deleted_at`
+appear **nowhere** in the Chapter 4 data dictionary. They are still present in the
+four `.docx` files (see the ⚠️ note at the end of this document) and were removed
+from `CLAUDE.md`, `rvms-erd.sql` and `ERD-MySQL-Workbench-Manual.md` on
+2026-08-27.
+
+**The ERD needs no change** — `deleted_at` was never drawn on it.
 
 ### Columns deliberately EXCLUDED from the manuscript
 
@@ -316,18 +335,67 @@ Work top to bottom; each line is independently completable.
 - [ ] **A5** — no change; confirm the reasoning is understood for the defense
 - [ ] **A6** — run the context↔DFD balance check
 - [ ] **Re-export Figures 2, 3 and 5** and re-paste into the .docx ⚠️
-- [ ] **B1** — add the three missing columns to `rvms-erd.sql` and
-      `ERD-MySQL-Workbench-Manual.md`, then re-run `python3 verify.py` ⚠️ **do
-      this before importing into Workbench**
+- [x] **B1** — ✅ *done 2026-08-27* — three columns added to `rvms-erd.sql` and
+      `ERD-MySQL-Workbench-Manual.md`; two stale `deleted_at` rows removed from the
+      manual; `python3 verify.py` reports ALL MATCH
 - [ ] **B** — draw the ERD; replace the `ERD heree……….` placeholder
-- [ ] **C** — build the data dictionary from `CLAUDE.md`; include `deleted_at` on
-      `users` and `vehicles` (decided — see Part C)
+- [ ] **C** — build the data dictionary from `CLAUDE.md`; **exclude** `deleted_at`
+      on `users` and `vehicles` — the columns were dropped on 2026-08-19 (see Part C)
 - [ ] **C** — confirm the three excluded columns are absent
 - [ ] **C** — check `notifications.type` lists all ten values
 - [ ] Apply the capstone instructor's format update once received
 
+---
+
+## ⚠️ THE FOUR `.docx` FILES ARE STALE — verified 2026-08-27
+
+Every markdown and machine-readable source in the repo now matches the
+migrations. **The Word files do not.** They were last built at `1e00352`, before
+three schema changes landed, so they are the only remaining place describing a
+system that no longer exists.
+
+| File | Has `deleted_at` (dropped 2026-08-19) | Missing `receipt_path` / `completion_mileage` / `completion_receipt_path` |
+|---|---|---|
+| `RVMS-Chapter4-Data-Dictionary.docx` | — | ✗ all three |
+| `RVMS-Chapter4-Draft-with-Data-Dictionary.docx` | ✗ 2 rows | ✗ all three |
+| `RVMS-Chapter4-ERD-and-Data-Dictionary.docx` | ✗ 2 rows | ✗ all three |
+| `RVMS-ERD-MySQL-Workbench-Manual.docx` | ✗ 2 rows | ✗ all three |
+
+Reproduce with:
+
+```bash
+cd manuscript && python3 -c "
+import zipfile,re
+for f in ['RVMS-Chapter4-Data-Dictionary.docx','RVMS-Chapter4-Draft-with-Data-Dictionary.docx',
+          'RVMS-Chapter4-ERD-and-Data-Dictionary.docx','RVMS-ERD-MySQL-Workbench-Manual.docx']:
+    t=re.sub(r'<[^>]+>','',zipfile.ZipFile(f).read('word/document.xml').decode('utf8'))
+    print(f, {k:t.count(k) for k in ['deleted_at','receipt_path','completion_mileage','completion_receipt_path']})
+"
+```
+
+**Why they were left alone rather than rebuilt.** `model.json`, which the build
+scripts read, is already correct — so `node build_dd_docx.js` would emit a
+correct data dictionary. But `RVMS-Chapter4-Draft-with-Data-Dictionary.docx`
+carries hand-written Chapter 4 narrative spliced in by `merge_dd_into_ch4.py`,
+and rebuilding it risks losing edits made in Word that exist nowhere else.
+Chapter 4 is also the part this document is explicitly gated on: the capstone
+instructor's format update may change how these tables must be laid out, and
+rebuilding them twice is wasted work.
+
+**So this is Part C's job, done in one pass once the format update arrives** —
+either by regenerating from `model.json` (fast, but re-check the narrative
+survived) or by editing the six affected table rows in Word by hand (slower,
+safer). Whichever route, the target is the same and is now unambiguous
+everywhere else in the repo.
+
+---
+
 ## Sources
 
 - `skills/rvms-source-of-truth.md` — FR/NFR wording, Ch1 and Ch3 text
+- `manuscript/manuscript-revision-plan-2026-08.md` — the authority on the
+  no-deletion change (19 August); Part C follows it, not the superseded decision
 - `CLAUDE.md` — ERD plan, data dictionary, design decisions 7–10
-- `backend/database/migrations/` — the schema itself, which outranks both
+- `manuscript/verify.py` — run it first; it proves `erd_model.py` and
+  `rvms-erd.sql` against the migrations
+- `backend/database/migrations/` — the schema itself, which outranks them all
