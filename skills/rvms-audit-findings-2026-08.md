@@ -1,5 +1,18 @@
 # Manuscript ↔ System Audit — Findings and Disposition (2026-08)
 
+> ⚠️ **Scope note, 2026-08-27.** The `manuscript/` folder was removed from this
+> repository — it held several diverging copies of the same material. The
+> manuscript-side authority in the repo is now `CLAUDE.md` (ERD plan and data
+> dictionary) and `skills/rvms-source-of-truth.md` (chapter prose, FR/NFR); the
+> official manuscript itself lives in Google Docs with the project lead.
+>
+> The findings below still describe what must change, and their replacement text
+> is still good. What has changed is *where* it gets applied: the diagram, SQL
+> and FR/NFR-table work is deliberately deferred to the **system + manuscript
+> audit**, a three-way comparison of Google Docs against those two repo files
+> against the code, scheduled once the system is finalised. Deleted files are
+> recoverable with `git show 3fc5364:manuscript/<file>`.
+
 > **Result: 0 system bugs.** Every capability the manuscript claims, the code
 > implements. Every enumerated list matches the code word for word. All findings
 > below are documentation that fell behind the code, concentrated in Chapter 1.
@@ -241,8 +254,8 @@ features that do not align with actual agency operations."*, before the
 > > records are retained permanently so that the inspections and damage reports
 > > they submitted continue to identify their author.
 >
-> The full revised table is in `manuscript/manuscript-revision-plan-2026-08.md`
-> Part 2, which is the authority for this change.
+> The full revised table is in `skills/rvms-source-of-truth.md`, Table 3, which
+> is now the authority for the FR wording.
 
 *Original finding, kept for the record:* its opening listed only three verbs,
 while its own next two sentences described deletion and restoration. That
@@ -284,7 +297,8 @@ no longer in service"* to be added to the .docx. **That capability was removed o
 it now says records are retained permanently instead. Adding it would put a
 removed feature back into the manuscript.
 
-Nothing to do. Superseded by `manuscript/manuscript-revision-plan-2026-08.md`.
+Nothing to do. Superseded by the 19 August no-deletion decision, whose outcome
+is carried by `skills/rvms-source-of-truth.md` (FR-05, FR-06) and `CLAUDE.md`.
 
 ---
 
@@ -326,7 +340,7 @@ matched (commit `8090d24`):
   a requirement made it necessary — but the requirement went: FR-05/FR-06 no
   longer permit deletion, and the columns were dropped from the database on
   19 August. `deleted_at` must appear **nowhere** in the Chapter 4 data
-  dictionary. See `manuscript/manuscript-revision-plan-2026-08.md` item 6.
+  dictionary. `CLAUDE.md` and the source of truth already reflect this.
 - **`vehicles.remarks`, `status_source`, `status_changed_at` stay OUT** — no FR
   backs them (design decisions 7 and 9).
 - **DFD stays at 8 data stores** — agency is a scoping attribute, not a store.

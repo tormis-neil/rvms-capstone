@@ -28,7 +28,7 @@ The repository has several folders. Only one is the application.
 | **`backend/`** | The real Laravel app — API and admin dashboard | ✅ **This one** |
 | `web/` | The **frozen prototype**: hardcoded fake data, dead links, demo JavaScript | 🚫 **Never** |
 | `mobile/` | The Android driver app | 🚫 It is an APK, not a website |
-| `manuscript/`, `skills/` | Documents | 🚫 No |
+| `skills/` | Documents | 🚫 No |
 
 > 🚨 **`web/` is a mockup.** Deploying it would put a fake dashboard of invented
 > vehicles on the internet. It is also the reference every screen was checked

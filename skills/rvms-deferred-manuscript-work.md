@@ -14,6 +14,41 @@
 > .docx side by side. Applying them needs Word and diagrams.net. Doing the
 > finding early and the applying late is the cheaper order, and it means the
 > later session starts from a checklist rather than from scratch.
+>
+> ---
+>
+> ## ⚠️ READ FIRST — the `manuscript/` folder was removed on 2026-08-27
+>
+> **Every path below beginning `manuscript/` no longer exists in the working
+> tree.** The project lead removed the folder because it held several diverging
+> copies of the same material — the data dictionary lived in `erd_model.py`,
+> `model.json`, `rvms-erd.sql`, `ERD-MySQL-Workbench-Manual.md`, four `.docx`
+> files and this document at once, and they had drifted apart. `README.md` in
+> that folder was still asserting the withdrawn `deleted_at` decision on the day
+> it was deleted, which is the failure in one line.
+>
+> **The manuscript-side authority is now exactly two files:**
+>
+> | File | Holds |
+> |---|---|
+> | `CLAUDE.md` | the ERD plan and the data dictionary |
+> | `skills/rvms-source-of-truth.md` | Chapters 1/3/4 prose, FR-01–FR-22, NFR-01–NFR-05 |
+>
+> **The official manuscript itself is in Google Docs, held by the project lead.**
+> It is not in this repository and never was.
+>
+> **What this document is still for.** The *findings* below are intact and were
+> never the problem — the spelling errors in Figures 2 and 3, the FDD's missing
+> `PASSWORD RECOVERY` leaf, the DFD data-store decision, the enumerations to
+> reproduce verbatim. Read them as a checklist of what to fix. Ignore the file
+> paths and the regeneration commands; the diagrams, the SQL and the FR/NFR
+> tables are deliberately **out of scope until the system + manuscript audit**,
+> which the lead will schedule once the system is finalised. At that point the
+> comparison is three-way — Google Docs against these two repo files against the
+> code — and anything needed from the deleted folder can be recovered with
+> `git show 3fc5364:manuscript/<file>`.
+>
+> ---
 
 ---
 
@@ -232,12 +267,16 @@ three rows.
 
 ### The verified schema
 
-The schema is verified against the migrations by `python3 verify.py` in
-`manuscript/`, which compares `erd_model.py` (what the .docx data dictionary is
-built from) and `rvms-erd.sql` (what the ERD is drawn from) against
-`backend/database/migrations/`. **Run it before starting Part C** — it is the
-authority, not this table. **11 domain tables**, manuscript-facing column counts
-including `id` and timestamps:
+**`backend/database/migrations/` is the authority, not this table.** The
+`verify.py` checker that used to prove this automatically went with the
+`manuscript/` folder on 2026-08-27; it compared copies of the dictionary that no
+longer exist. `CLAUDE.md`'s data dictionary was confirmed to match the
+migrations column-for-column on the day the folder was removed, and re-checking
+it against the migrations is the first step of the audit task.
+
+**11 domain tables**, manuscript-facing column counts including `id` and
+timestamps (the three repo-only `vehicles` columns are excluded, as they must be
+from the manuscript):
 
 | Table | Columns | Notes |
 |---|---|---|
@@ -266,9 +305,11 @@ columns, no model uses `SoftDeletes`, and `RecordsAreNotDeletableTest` asserts
 they stay gone. FR-05 and FR-06 were rewritten to match and now read that vehicle
 and driver records *"are retained permanently so that the … history referring to
 them remains complete."* The reasoning is in
-`manuscript/manuscript-revision-plan-2026-08.md`, which is the authority for this
-change and whose item 6 says plainly: remove the `deleted_at` row from the
-`vehicles` and `users` tables.
+the 19 August revision plan, which was the authority for this change and said
+plainly: remove the `deleted_at` row from the `vehicles` and `users` tables. That
+plan lived in the now-deleted `manuscript/` folder; its outcome is already
+carried by `CLAUDE.md` and the source of truth, and the original is recoverable
+with `git show 3fc5364:manuscript/manuscript-revision-plan-2026-08.md`.
 
 The documentation rule itself is unchanged and still correct — *a column is
 documented when a functional requirement made it necessary, and left out when it
@@ -393,9 +434,8 @@ everywhere else in the repo.
 ## Sources
 
 - `skills/rvms-source-of-truth.md` — FR/NFR wording, Ch1 and Ch3 text
-- `manuscript/manuscript-revision-plan-2026-08.md` — the authority on the
-  no-deletion change (19 August); Part C follows it, not the superseded decision
 - `CLAUDE.md` — ERD plan, data dictionary, design decisions 7–10
-- `manuscript/verify.py` — run it first; it proves `erd_model.py` and
-  `rvms-erd.sql` against the migrations
-- `backend/database/migrations/` — the schema itself, which outranks them all
+- `backend/database/migrations/` — the schema itself, which outranks both
+- *(removed 2026-08-27)* `manuscript/` — `verify.py`, `erd_model.py`,
+  `rvms-erd.sql`, the figures and the `.docx` builds. Recover any of them with
+  `git show 3fc5364:manuscript/<file>` if the audit task needs them.
