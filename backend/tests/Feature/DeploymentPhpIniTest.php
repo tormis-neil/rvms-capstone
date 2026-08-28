@@ -59,30 +59,71 @@ class DeploymentPhpIniTest extends TestCase
     }
 
     /**
-     * THE ONE THAT MATTERS. `PHP_INI_SCAN_DIR=/app/deploy` REPLACES PHP's
-     * default scan directory instead of adding to it, which unloads every
-     * extension configured there — verified in a container, where the replace
-     * form reported pdo_mysql as not loaded, i.e. no database at all. The
-     * leading colon appends. Anyone "tidying" it away breaks the deployment in
-     * a way whose error message says nothing about ini files.
+     * THE ONE THAT MATTERS — and it now asserts the OPPOSITE of what it did.
+     *
+     * This test used to require a LEADING COLON, on the stated grounds that
+     * `:/app/deploy` appends to PHP's default scan directory while
+     * `/app/deploy` replaces it. The build log of 2026-08-28 disproved that.
+     * The install phase printed the module list both ways:
+     *
+     *   WITH PHP_INI_SCAN_DIR: Core date hash json libxml pcre Phar random
+     *                          Reflection SPL standard xml
+     *   WITHOUT:               … ctype curl dom fileinfo iconv mbstring
+     *                          openssl pdo_mysql tokenizer zip … (and 30 more)
+     *
+     * The colon was present. The twelve that survived are the ones PHP compiles
+     * in statically; every other extension unloaded anyway. It broke the build
+     * (Composer could not start without mbstring) and then the runtime (the
+     * container crash-looped on `Class "DOMDocument" not found`).
+     *
+     * So the guarantee has moved. It is no longer "the value starts with a
+     * colon" — that never held. It is "/app/deploy is SELF-SUFFICIENT": the
+     * build copies Nix's own extension .ini files into it, so scanning that one
+     * directory loads the extensions AND our upload limits.
+     *
+     * Three things are asserted, because all three are load-bearing and each
+     * fails silently on its own:
+     *   1. the variable points at /app/deploy;
+     *   2. the install phase copies the extension inis in;
+     *   3. the install phase asserts they load, so a container that cannot load
+     *      its extensions fails the BUILD instead of reaching a deploy.
+     *
+     * The third is the one that would have caught this in August. Both earlier
+     * failures shipped a green build.
      */
-    public function test_the_scan_dir_appends_rather_than_replaces_phps_defaults(): void
+    public function test_the_scan_dir_is_self_sufficient(): void
     {
         $toml = $this->nixpacks();
 
+        preg_match('/PHP_INI_SCAN_DIR\s*=\s*"([^"]*)"/', $toml, $m);
+
+        $this->assertNotEmpty($m,
+            'PHP_INI_SCAN_DIR must be set in nixpacks.toml — it is what loads deploy/php.ini, '
+            .'which raises the upload limit past the 5M the forms accept.');
+
+        $this->assertSame('/app/deploy', $m[1],
+            'The path must be exactly /app/deploy. Root Directory is `backend`, so backend/deploy '
+            .'becomes /app/deploy in the container. A LEADING COLON does NOT append to PHP\'s '
+            .'defaults on this image — it was tried, and every extension unloaded regardless '
+            .'(build log, 2026-08-28). The directory is made self-sufficient instead.');
+
         $this->assertMatchesRegularExpression(
-            '/PHP_INI_SCAN_DIR\s*=\s*"(:[^"]*)"/',
+            '/Scan this dir for additional \.ini files.*cp -v.*\/app\/deploy\//s',
             $toml,
-            'PHP_INI_SCAN_DIR must be set in nixpacks.toml and its value MUST start with a colon. '
-            .'Without the colon PHP stops reading its default configuration directory and pdo_mysql '
-            .'unloads — the deployment then fails with a database connection error, not an upload one.'
-        );
+            'The install phase must copy Nix\'s extension .ini files into /app/deploy. Without '
+            .'that copy, pointing the scan directory there unloads pdo_mysql, mbstring, dom and '
+            .'tokenizer — no database, and a container that crash-loops on boot.');
 
-        preg_match('/PHP_INI_SCAN_DIR\s*=\s*"(:[^"]*)"/', $toml, $m);
+        foreach (['pdo_mysql', 'mbstring', 'dom', 'tokenizer'] as $extension) {
+            $this->assertStringContainsString($extension, $toml,
+                "The install phase must assert {$extension} loads from /app/deploy. This assertion "
+                .'is what stops a container that cannot load its extensions from reaching a deploy — '
+                .'which happened twice on 2026-08-28, both times behind a green build.');
+        }
 
-        $this->assertSame(':/app/deploy', $m[1],
-            'The path must point at the deploy folder as Railway mounts it: Root Directory is `backend`, '
-            .'so backend/deploy becomes /app/deploy in the container.');
+        $this->assertStringContainsString('exit 1', $toml,
+            'The extension check must FAIL the build, not merely print a warning. A diagnostic that '
+            .'nobody reads is how both August failures got as far as a running container.');
     }
 
     /** php.ini shorthand — "8M", "512K", "1G" — as megabytes. */

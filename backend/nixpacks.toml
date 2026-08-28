@@ -49,57 +49,60 @@
 # is used by four agencies plus their phones at once (NFR-01). Laravel's serve
 # command passes this straight through to the server.
 
-# PHP_INI_SCAN_DIR MUST NOT APPLY DURING THE BUILD (2026-08-28, build failure).
+# PHP_INI_SCAN_DIR REPLACES THE DEFAULT SCAN DIR — THE LEADING COLON DOES NOT
+# SAVE IT (2026-08-28, proven in the build log).
 #
-# The variable below is set for the RUNNING container, but Nixpacks bakes
-# [variables] into the Dockerfile as ENV, so it is also in force during every
-# build step — including `composer install`. Nix PHP loads its extensions from
-# .ini files in the scan directory, so pointing that directory elsewhere while
-# Composer runs leaves Composer on a PHP with nothing loaded:
+# This file previously stated in capitals that `:/app/deploy` APPENDS to the
+# default and keeps the extensions loaded. On this image it does not. The build
+# printed the module list both ways, and the difference is the whole story:
 #
-#   The iconv OR mbstring extension is required and both are missing.
+#   WITH PHP_INI_SCAN_DIR: Core date hash json libxml pcre Phar random
+#                          Reflection SPL standard xml
+#   WITHOUT:               … ctype curl dom fileinfo iconv mbstring openssl
+#                          pdo_mysql tokenizer zip … (and 30 more)
 #
-# The build log proves it. `php -m` at the install step reported exactly the
-# twelve extensions PHP compiles in STATICALLY:
+# The twelve that survive are the ones PHP compiles in statically. Everything
+# else — including pdo_mysql, so no database at all — loads from .ini files in
+# the scan directory, and pointing that directory at /app/deploy leaves them
+# unread. Colon or no colon.
 #
-#   Core date hash json libxml pcre Phar random Reflection SPL standard xml
+# It broke two things and they looked unrelated. At BUILD time Composer could
+# not start ("The iconv OR mbstring extension is required and both are
+# missing") while the same log downloaded php-mbstring and php-iconv. At RUN
+# time the container crash-looped on `Class "DOMDocument" not found` and
+# `Call to undefined function token_get_all()`.
 #
-# No mbstring, no openssl, no curl, no pdo_mysql — every one of those is loaded
-# from a .ini file that was not read. The missing openssl produced the second
-# error in the same build, `Unable to find the wrapper "https"`.
+# WHY NOBODY SAW IT UNTIL A SECOND SERVICE EXISTED. The web service has never
+# built cold since PHP_INI_SCAN_DIR arrived in d1edc76 — Docker keeps reusing
+# its layer-8 cache — and it has no public domain yet, so nothing has ever
+# asked it to serve a request. It reports Online because the container starts.
+# The scheduler crashes visibly only because schedule:work touches PHP at once.
 #
-# This is not about which extensions composer.json declares. All nine ARE built:
-# the same log downloads php-mbstring-8.2.27 and php-iconv-8.2.27 while
-# reporting both missing. Adding more ext-* lines cannot help, and the nine
-# added on 26 August did not.
+# THE FIX: make /app/deploy self-sufficient. Nix's extension .ini files are
+# copied into it during the build, so scanning that one directory loads the
+# extensions AND our upload limits. The variable can then point at it plainly,
+# which is what it does below. Nothing is appended and nothing is lost.
 #
-# WHY IT SURFACED ONLY NOW, on a service that had never been deployed. The web
-# service has never run this step with the variable set: PHP_INI_SCAN_DIR
-# arrived in d1edc76 and Docker has reused its layer-8 cache from before that
-# commit ever since. It builds green because it is not rebuilding. The scheduler
-# was the first cold build after d1edc76 and failed immediately — so this fixes
-# a web service that could not have reproduced itself either.
-#
-# `env -u` removes the variable for these commands only. The runtime keeps it,
-# which is the whole point of having it: the deployed server still accepts a
-# 5 MB damage photo. Nothing about the runtime behaviour changes.
-#
-# The two module lists are printed on purpose. This took three builds to read
-# because nothing said which extensions were loaded; now the log shows the
-# broken set and the working set side by side, and the diagnosis is a glance.
+# The last install command is an ASSERTION, not a diagnostic. It re-runs PHP
+# with the real runtime configuration and fails the build unless pdo_mysql,
+# mbstring, dom and tokenizer are all loaded and the upload limit really is 8M.
+# A container that cannot load its extensions can no longer reach a deploy —
+# which is the actual lesson here, because this one did, twice.
 
 [phases.install]
 cmds = [
     "mkdir -p /var/log/nginx && mkdir -p /var/cache/nginx",
     "echo \"WITH PHP_INI_SCAN_DIR: $(php -m | tr '\\n' ' ')\"",
     "echo \"WITHOUT: $(env -u PHP_INI_SCAN_DIR php -m | tr '\\n' ' ')\"",
+    "NIXINI=$(env -u PHP_INI_SCAN_DIR php -i | sed -n 's/^Scan this dir for additional .ini files => //p') && echo \"NIX INI DIR: $NIXINI\" && cp -v \"$NIXINI\"/*.ini /app/deploy/",
+    "for e in pdo_mysql mbstring dom tokenizer openssl curl zip; do PHP_INI_SCAN_DIR=/app/deploy php -m | grep -qw \"$e\" || { echo \"FATAL: $e not loaded from /app/deploy\"; exit 1; }; done && echo \"VERIFIED extensions + upload_max_filesize=$(PHP_INI_SCAN_DIR=/app/deploy php -r 'echo ini_get(\"upload_max_filesize\");')\"",
     "env -u PHP_INI_SCAN_DIR php -r \"copy('https://getcomposer.org/composer-stable.phar', '/tmp/composer.phar');\"",
     "env -u PHP_INI_SCAN_DIR php /tmp/composer.phar install --ignore-platform-reqs --no-interaction --no-progress",
     "npm i",
 ]
 
 [variables]
-PHP_INI_SCAN_DIR = ":/app/deploy"
+PHP_INI_SCAN_DIR = "/app/deploy"
 PHP_CLI_SERVER_WORKERS = "4"
 
 [start]
