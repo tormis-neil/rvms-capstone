@@ -49,42 +49,52 @@
 # is used by four agencies plus their phones at once (NFR-01). Laravel's serve
 # command passes this straight through to the server.
 
-# COMPOSER MUST RUN ON *OUR* PHP, NOT NIX'S (2026-08-28, build failure).
+# PHP_INI_SCAN_DIR MUST NOT APPLY DURING THE BUILD (2026-08-28, build failure).
 #
-# Nixpacks installs two PHPs and does not tell you. The first is the one it
-# builds from the `ext-*` lines in composer.json:
-#
-#   php.withExtensions (pe: pe.enabled ++ [pe.all.ctype … pe.all.mbstring …])
-#
-# The second arrives as a dependency of `phpPackages.composer`, which is a
-# wrapper around a hardcoded interpreter with NO extensions compiled in. The
-# install phase then runs that wrapper, so `composer install` executes on the
-# bare PHP and dies before it reads a single dependency:
+# The variable below is set for the RUNNING container, but Nixpacks bakes
+# [variables] into the Dockerfile as ENV, so it is also in force during every
+# build step — including `composer install`. Nix PHP loads its extensions from
+# .ini files in the scan directory, so pointing that directory elsewhere while
+# Composer runs leaves Composer on a PHP with nothing loaded:
 #
 #   The iconv OR mbstring extension is required and both are missing.
 #
-# This is why it looks impossible. `php-mbstring-8.2.27` AND `php-iconv-8.2.27`
-# are both downloaded in the same build that reports both missing — they are
-# attached to the PHP that Composer never touches. Declaring more `ext-*` lines
-# cannot fix it and did not: the nine already there produced exactly this.
+# The build log proves it. `php -m` at the install step reported exactly the
+# twelve extensions PHP compiles in STATICALLY:
 #
-# It is also why it passed for weeks and then failed. Which interpreter wins on
-# PATH is not deterministic, so the web service built green on 26 August and the
-# scheduler service failed on the 28th from identical code. The web service is
-# still serving a CACHED layer 8; it would hit the same coin flip on a cold
-# rebuild, which is the actual risk this fixes.
+#   Core date hash json libxml pcre Phar random Reflection SPL standard xml
 #
-# The fix is to take Nix's Composer out of the path entirely: fetch the official
-# phar and run it with the PHP that has the extensions. `php -v && php -m` is
-# kept deliberately — the build log then states which interpreter and which
-# extensions were used, so the next person reads it instead of deducing it.
+# No mbstring, no openssl, no curl, no pdo_mysql — every one of those is loaded
+# from a .ini file that was not read. The missing openssl produced the second
+# error in the same build, `Unable to find the wrapper "https"`.
+#
+# This is not about which extensions composer.json declares. All nine ARE built:
+# the same log downloads php-mbstring-8.2.27 and php-iconv-8.2.27 while
+# reporting both missing. Adding more ext-* lines cannot help, and the nine
+# added on 26 August did not.
+#
+# WHY IT SURFACED ONLY NOW, on a service that had never been deployed. The web
+# service has never run this step with the variable set: PHP_INI_SCAN_DIR
+# arrived in d1edc76 and Docker has reused its layer-8 cache from before that
+# commit ever since. It builds green because it is not rebuilding. The scheduler
+# was the first cold build after d1edc76 and failed immediately — so this fixes
+# a web service that could not have reproduced itself either.
+#
+# `env -u` removes the variable for these commands only. The runtime keeps it,
+# which is the whole point of having it: the deployed server still accepts a
+# 5 MB damage photo. Nothing about the runtime behaviour changes.
+#
+# The two module lists are printed on purpose. This took three builds to read
+# because nothing said which extensions were loaded; now the log shows the
+# broken set and the working set side by side, and the diagnosis is a glance.
 
 [phases.install]
 cmds = [
     "mkdir -p /var/log/nginx && mkdir -p /var/cache/nginx",
-    "php -v && echo \"MODULES: $(php -m | tr '\\n' ' ')\"",
-    "php -r \"copy('https://getcomposer.org/composer-stable.phar', '/tmp/composer.phar');\"",
-    "php /tmp/composer.phar install --ignore-platform-reqs --no-interaction --no-progress",
+    "echo \"WITH PHP_INI_SCAN_DIR: $(php -m | tr '\\n' ' ')\"",
+    "echo \"WITHOUT: $(env -u PHP_INI_SCAN_DIR php -m | tr '\\n' ' ')\"",
+    "env -u PHP_INI_SCAN_DIR php -r \"copy('https://getcomposer.org/composer-stable.phar', '/tmp/composer.phar');\"",
+    "env -u PHP_INI_SCAN_DIR php /tmp/composer.phar install --ignore-platform-reqs --no-interaction --no-progress",
     "npm i",
 ]
 
