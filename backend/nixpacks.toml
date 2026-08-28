@@ -49,6 +49,45 @@
 # is used by four agencies plus their phones at once (NFR-01). Laravel's serve
 # command passes this straight through to the server.
 
+# COMPOSER MUST RUN ON *OUR* PHP, NOT NIX'S (2026-08-28, build failure).
+#
+# Nixpacks installs two PHPs and does not tell you. The first is the one it
+# builds from the `ext-*` lines in composer.json:
+#
+#   php.withExtensions (pe: pe.enabled ++ [pe.all.ctype … pe.all.mbstring …])
+#
+# The second arrives as a dependency of `phpPackages.composer`, which is a
+# wrapper around a hardcoded interpreter with NO extensions compiled in. The
+# install phase then runs that wrapper, so `composer install` executes on the
+# bare PHP and dies before it reads a single dependency:
+#
+#   The iconv OR mbstring extension is required and both are missing.
+#
+# This is why it looks impossible. `php-mbstring-8.2.27` AND `php-iconv-8.2.27`
+# are both downloaded in the same build that reports both missing — they are
+# attached to the PHP that Composer never touches. Declaring more `ext-*` lines
+# cannot fix it and did not: the nine already there produced exactly this.
+#
+# It is also why it passed for weeks and then failed. Which interpreter wins on
+# PATH is not deterministic, so the web service built green on 26 August and the
+# scheduler service failed on the 28th from identical code. The web service is
+# still serving a CACHED layer 8; it would hit the same coin flip on a cold
+# rebuild, which is the actual risk this fixes.
+#
+# The fix is to take Nix's Composer out of the path entirely: fetch the official
+# phar and run it with the PHP that has the extensions. `php -v && php -m` is
+# kept deliberately — the build log then states which interpreter and which
+# extensions were used, so the next person reads it instead of deducing it.
+
+[phases.install]
+cmds = [
+    "mkdir -p /var/log/nginx && mkdir -p /var/cache/nginx",
+    "php -v && echo \"MODULES: $(php -m | tr '\\n' ' ')\"",
+    "php -r \"copy('https://getcomposer.org/composer-stable.phar', '/tmp/composer.phar');\"",
+    "php /tmp/composer.phar install --ignore-platform-reqs --no-interaction --no-progress",
+    "npm i",
+]
+
 [variables]
 PHP_INI_SCAN_DIR = ":/app/deploy"
 PHP_CLI_SERVER_WORKERS = "4"
