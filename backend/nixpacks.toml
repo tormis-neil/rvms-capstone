@@ -49,61 +49,43 @@
 # is used by four agencies plus their phones at once (NFR-01). Laravel's serve
 # command passes this straight through to the server.
 
-# PHP_INI_SCAN_DIR REPLACES THE DEFAULT SCAN DIR — THE LEADING COLON DOES NOT
-# SAVE IT (2026-08-28, proven in the build log).
+# NO PHP_INI_SCAN_DIR HERE — IT BELONGS AT RUNTIME (2026-08-28).
 #
-# This file previously stated in capitals that `:/app/deploy` APPENDS to the
-# default and keeps the extensions loaded. On this image it does not. The build
-# printed the module list both ways, and the difference is the whole story:
+# This file used to set PHP_INI_SCAN_DIR=":/app/deploy" to raise the upload
+# limits, and asserted in capitals that the leading colon APPENDS to PHP's
+# default scan directory. On this image it does not. It replaces it, and every
+# dynamically loaded extension unloads with it — the build log printed the
+# module list both ways and the difference was 12 extensions against 45.
 #
-#   WITH PHP_INI_SCAN_DIR: Core date hash json libxml pcre Phar random
-#                          Reflection SPL standard xml
-#   WITHOUT:               … ctype curl dom fileinfo iconv mbstring openssl
-#                          pdo_mysql tokenizer zip … (and 30 more)
+# It broke two stages and the errors looked unrelated. Composer could not start
+# ("The iconv OR mbstring extension is required and both are missing") in the
+# same build that downloaded php-mbstring and php-iconv. Then the container
+# crash-looped on `Class "DOMDocument" not found`. Neither message mentions ini
+# files.
 #
-# The twelve that survive are the ones PHP compiles in statically. Everything
-# else — including pdo_mysql, so no database at all — loads from .ini files in
-# the scan directory, and pointing that directory at /app/deploy leaves them
-# unread. Colon or no colon.
+# Copying Nix's extension .ini files next to ours during the install phase fixed
+# the build and changed nothing at runtime: Nixpacks is a multi-stage build and
+# re-copies the source over /app afterwards, so the files were provably present
+# during the build and provably absent in the running container.
 #
-# It broke two things and they looked unrelated. At BUILD time Composer could
-# not start ("The iconv OR mbstring extension is required and both are
-# missing") while the same log downloaded php-mbstring and php-iconv. At RUN
-# time the container crash-looped on `Class "DOMDocument" not found` and
-# `Call to undefined function token_get_all()`.
+# So the whole thing moved to deploy/start.sh, which assembles the scan
+# directory inside the running container where nothing can copy over it, and
+# falls back to PHP's defaults rather than crash-looping if it cannot. With the
+# variable gone from here the build needs no workarounds at all: Nixpacks'
+# default `composer install` runs on a PHP with its extensions, which is what it
+# did before any of this was added.
 #
-# WHY NOBODY SAW IT UNTIL A SECOND SERVICE EXISTED. The web service has never
-# built cold since PHP_INI_SCAN_DIR arrived in d1edc76 — Docker keeps reusing
-# its layer-8 cache — and it has no public domain yet, so nothing has ever
-# asked it to serve a request. It reports Online because the container starts.
-# The scheduler crashes visibly only because schedule:work touches PHP at once.
+# PHP_CLI_SERVER_WORKERS stays. PHP's built-in server is single-process by
+# default, so a driver's photo upload would block every admin's page load until
+# it finished, and four agencies plus their phones use this at once (NFR-01).
 #
-# THE FIX: make /app/deploy self-sufficient. Nix's extension .ini files are
-# copied into it during the build, so scanning that one directory loads the
-# extensions AND our upload limits. The variable can then point at it plainly,
-# which is what it does below. Nothing is appended and nothing is lost.
-#
-# The last install command is an ASSERTION, not a diagnostic. It re-runs PHP
-# with the real runtime configuration and fails the build unless pdo_mysql,
-# mbstring, dom and tokenizer are all loaded and the upload limit really is 8M.
-# A container that cannot load its extensions can no longer reach a deploy —
-# which is the actual lesson here, because this one did, twice.
-
-[phases.install]
-cmds = [
-    "mkdir -p /var/log/nginx && mkdir -p /var/cache/nginx",
-    "echo \"WITH PHP_INI_SCAN_DIR: $(php -m | tr '\\n' ' ')\"",
-    "echo \"WITHOUT: $(env -u PHP_INI_SCAN_DIR php -m | tr '\\n' ' ')\"",
-    "NIXINI=$(env -u PHP_INI_SCAN_DIR php -i | sed -n 's/^Scan this dir for additional .ini files => //p') && echo \"NIX INI DIR: $NIXINI\" && cp -v \"$NIXINI\"/*.ini /app/deploy/",
-    "for e in pdo_mysql mbstring dom tokenizer openssl curl zip; do PHP_INI_SCAN_DIR=/app/deploy php -m | grep -qw \"$e\" || { echo \"FATAL: $e not loaded from /app/deploy\"; exit 1; }; done && echo \"VERIFIED extensions + upload_max_filesize=$(PHP_INI_SCAN_DIR=/app/deploy php -r 'echo ini_get(\"upload_max_filesize\");')\"",
-    "env -u PHP_INI_SCAN_DIR php -r \"copy('https://getcomposer.org/composer-stable.phar', '/tmp/composer.phar');\"",
-    "env -u PHP_INI_SCAN_DIR php /tmp/composer.phar install --ignore-platform-reqs --no-interaction --no-progress",
-    "npm i",
-]
+# Both services run the same script with different roles. The scheduler is a
+# separate service because this process restarts on every deploy and a web
+# server is the wrong place to keep a clock; its Custom Start Command in Railway
+# is `bash deploy/start.sh scheduler`.
 
 [variables]
-PHP_INI_SCAN_DIR = "/app/deploy"
 PHP_CLI_SERVER_WORKERS = "4"
 
 [start]
-cmd = "php artisan migrate --force && (php artisan storage:link || true) && php artisan serve --host=0.0.0.0 --port=$PORT"
+cmd = "bash deploy/start.sh web"

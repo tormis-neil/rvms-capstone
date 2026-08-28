@@ -58,72 +58,93 @@ class DeploymentPhpIniTest extends TestCase
             .'fields, so equal values still fail an upload sitting exactly at the limit.');
     }
 
+    private function startScript(): string
+    {
+        $path = base_path('deploy/start.sh');
+
+        $this->assertFileExists($path,
+            'deploy/start.sh is the container entrypoint; nixpacks.toml runs it for both services.');
+
+        return (string) file_get_contents($path);
+    }
+
     /**
-     * THE ONE THAT MATTERS — and it now asserts the OPPOSITE of what it did.
+     * THE ONE THAT MATTERS — and it has now been wrong twice, so read the
+     * history before changing it.
      *
-     * This test used to require a LEADING COLON, on the stated grounds that
-     * `:/app/deploy` appends to PHP's default scan directory while
-     * `/app/deploy` replaces it. The build log of 2026-08-28 disproved that.
-     * The install phase printed the module list both ways:
+     * It first required PHP_INI_SCAN_DIR to carry a LEADING COLON, on the
+     * grounds that `:/app/deploy` appends to PHP's default scan directory while
+     * `/app/deploy` replaces it. The build log of 2026-08-28 printed the module
+     * list both ways and disproved it: 12 extensions with the variable set,
+     * 45 without, colon included. The colon does nothing on this image.
      *
-     *   WITH PHP_INI_SCAN_DIR: Core date hash json libxml pcre Phar random
-     *                          Reflection SPL standard xml
-     *   WITHOUT:               … ctype curl dom fileinfo iconv mbstring
-     *                          openssl pdo_mysql tokenizer zip … (and 30 more)
+     * It was then rewritten to require the build to copy Nix's extension .ini
+     * files into /app/deploy. That fixed the build and changed nothing at
+     * runtime — Nixpacks is a multi-stage build that re-copies the source over
+     * /app after the install phase, so the files were provably present during
+     * the build and provably absent in the running container.
      *
-     * The colon was present. The twelve that survived are the ones PHP compiles
-     * in statically; every other extension unloaded anyway. It broke the build
-     * (Composer could not start without mbstring) and then the runtime (the
-     * container crash-looped on `Class "DOMDocument" not found`).
+     * What holds is this: the variable is set NOWHERE at build time, and
+     * deploy/start.sh assembles the scan directory inside the running container.
+     * Both failures came from configuring PHP where the configuration could not
+     * survive to where PHP actually runs.
      *
-     * So the guarantee has moved. It is no longer "the value starts with a
-     * colon" — that never held. It is "/app/deploy is SELF-SUFFICIENT": the
-     * build copies Nix's own extension .ini files into it, so scanning that one
-     * directory loads the extensions AND our upload limits.
-     *
-     * Three things are asserted, because all three are load-bearing and each
-     * fails silently on its own:
-     *   1. the variable points at /app/deploy;
-     *   2. the install phase copies the extension inis in;
-     *   3. the install phase asserts they load, so a container that cannot load
-     *      its extensions fails the BUILD instead of reaching a deploy.
-     *
-     * The third is the one that would have caught this in August. Both earlier
-     * failures shipped a green build.
+     * The fallback is asserted too, and it is not a detail. If the assembly
+     * fails the script unsets the variable and PHP starts on its own defaults —
+     * a working system with a low upload limit, which rvms:doctor then reports.
+     * Both of the earlier attempts crash-looped instead. An upload limit is
+     * never worth the app.
      */
-    public function test_the_scan_dir_is_self_sufficient(): void
+    public function test_php_is_configured_at_runtime_not_at_build_time(): void
     {
         $toml = $this->nixpacks();
 
-        preg_match('/PHP_INI_SCAN_DIR\s*=\s*"([^"]*)"/', $toml, $m);
+        // Comments are stripped first: this file explains at length WHY the
+        // variable is not set here, and that prose must not fail the check.
+        $settings = implode("\n", array_filter(
+            array_map('trim', explode("\n", $toml)),
+            fn (string $line): bool => $line !== '' && ! str_starts_with($line, '#')
+        ));
 
-        $this->assertNotEmpty($m,
-            'PHP_INI_SCAN_DIR must be set in nixpacks.toml — it is what loads deploy/php.ini, '
-            .'which raises the upload limit past the 5M the forms accept.');
+        $this->assertStringNotContainsString('PHP_INI_SCAN_DIR', $settings,
+            'PHP_INI_SCAN_DIR must NOT be set in nixpacks.toml. Nixpacks bakes [variables] into the '
+            .'Dockerfile as ENV, so it applies during the build too — and setting it there unloads '
+            .'every dynamically loaded extension, which stops Composer from running at all. '
+            .'The scan directory is assembled at runtime by deploy/start.sh instead.');
 
-        $this->assertSame('/app/deploy', $m[1],
-            'The path must be exactly /app/deploy. Root Directory is `backend`, so backend/deploy '
-            .'becomes /app/deploy in the container. A LEADING COLON does NOT append to PHP\'s '
-            .'defaults on this image — it was tried, and every extension unloaded regardless '
-            .'(build log, 2026-08-28). The directory is made self-sufficient instead.');
+        $this->assertStringContainsString('bash deploy/start.sh web', $toml,
+            'The start command must run deploy/start.sh, which configures PHP before starting the '
+            .'server. Calling `php artisan serve` directly skips that and loses the upload limits.');
 
-        $this->assertMatchesRegularExpression(
-            '/Scan this dir for additional \.ini files.*cp -v.*\/app\/deploy\//s',
-            $toml,
-            'The install phase must copy Nix\'s extension .ini files into /app/deploy. Without '
-            .'that copy, pointing the scan directory there unloads pdo_mysql, mbstring, dom and '
-            .'tokenizer — no database, and a container that crash-loops on boot.');
+        $script = $this->startScript();
 
-        foreach (['pdo_mysql', 'mbstring', 'dom', 'tokenizer'] as $extension) {
-            $this->assertStringContainsString($extension, $toml,
-                "The install phase must assert {$extension} loads from /app/deploy. This assertion "
-                .'is what stops a container that cannot load its extensions from reaching a deploy — '
-                .'which happened twice on 2026-08-28, both times behind a green build.');
+        $this->assertStringContainsString('unset PHP_INI_SCAN_DIR', $script,
+            'The script must unset the variable before reading PHP\'s real scan directory — with it '
+            .'set, `php -i` reports our value back and the true directory can never be found.');
+
+        $this->assertStringContainsString('Scan this dir for additional .ini files', $script,
+            'The script must read PHP\'s own scan directory and copy those .ini files alongside '
+            .'ours. Without them, pointing PHP at our directory unloads pdo_mysql, dom and '
+            .'tokenizer, and the container crash-loops on boot.');
+
+        $this->assertMatchesRegularExpression('/grep -qw pdo_mysql[\s\S]*unset PHP_INI_SCAN_DIR/', $script,
+            'The script must VERIFY pdo_mysql loaded and FALL BACK to PHP\'s defaults if not. '
+            .'A container that cannot reach its database must still start and say so, rather than '
+            .'crash-loop — that is what both earlier attempts did.');
+
+        foreach (['web', 'scheduler'] as $role) {
+            $this->assertStringContainsString($role, $script,
+                "The script must handle the '{$role}' role. Both Railway services run this same "
+                .'file, so both get the same PHP configuration; a second entrypoint would drift.');
         }
 
-        $this->assertStringContainsString('exit 1', $toml,
-            'The extension check must FAIL the build, not merely print a warning. A diagnostic that '
-            .'nobody reads is how both August failures got as far as a running container.');
+        $this->assertStringContainsString('artisan migrate --force', $script,
+            'The web role must run migrations on boot — a fresh database gets its tables and a '
+            .'redeploy picks up new ones.');
+
+        $this->assertStringNotContainsString('migrate', substr($script, strpos($script, 'scheduler)'), 200),
+            'The scheduler must NOT migrate. Two services migrating the same database at the same '
+            .'moment is a race with no upside; the web service owns the schema.');
     }
 
     /** php.ini shorthand — "8M", "512K", "1G" — as megabytes. */
