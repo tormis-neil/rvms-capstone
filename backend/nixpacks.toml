@@ -49,9 +49,43 @@
 # is used by four agencies plus their phones at once (NFR-01). Laravel's serve
 # command passes this straight through to the server.
 
+# NO PHP_INI_SCAN_DIR HERE — IT BELONGS AT RUNTIME (2026-08-28).
+#
+# This file used to set PHP_INI_SCAN_DIR=":/app/deploy" to raise the upload
+# limits, and asserted in capitals that the leading colon APPENDS to PHP's
+# default scan directory. On this image it does not. It replaces it, and every
+# dynamically loaded extension unloads with it — the build log printed the
+# module list both ways and the difference was 12 extensions against 45.
+#
+# It broke two stages and the errors looked unrelated. Composer could not start
+# ("The iconv OR mbstring extension is required and both are missing") in the
+# same build that downloaded php-mbstring and php-iconv. Then the container
+# crash-looped on `Class "DOMDocument" not found`. Neither message mentions ini
+# files.
+#
+# Copying Nix's extension .ini files next to ours during the install phase fixed
+# the build and changed nothing at runtime: Nixpacks is a multi-stage build and
+# re-copies the source over /app afterwards, so the files were provably present
+# during the build and provably absent in the running container.
+#
+# So the whole thing moved to deploy/start.sh, which assembles the scan
+# directory inside the running container where nothing can copy over it, and
+# falls back to PHP's defaults rather than crash-looping if it cannot. With the
+# variable gone from here the build needs no workarounds at all: Nixpacks'
+# default `composer install` runs on a PHP with its extensions, which is what it
+# did before any of this was added.
+#
+# PHP_CLI_SERVER_WORKERS stays. PHP's built-in server is single-process by
+# default, so a driver's photo upload would block every admin's page load until
+# it finished, and four agencies plus their phones use this at once (NFR-01).
+#
+# Both services run the same script with different roles. The scheduler is a
+# separate service because this process restarts on every deploy and a web
+# server is the wrong place to keep a clock; its Custom Start Command in Railway
+# is `bash deploy/start.sh scheduler`.
+
 [variables]
-PHP_INI_SCAN_DIR = ":/app/deploy"
 PHP_CLI_SERVER_WORKERS = "4"
 
 [start]
-cmd = "php artisan migrate --force && (php artisan storage:link || true) && php artisan serve --host=0.0.0.0 --port=$PORT"
+cmd = "bash deploy/start.sh web"
