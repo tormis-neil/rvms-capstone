@@ -113,4 +113,91 @@ class FcmCredentialsFromEnvTest extends TestCase
 
         $this->assertStringContainsString('client_email', (string) $factory->fallbackReason());
     }
+
+    /**
+     * THE ONE THAT COST AN EVENING (2026-08-28).
+     *
+     * Railway's raw variable editor rewrites the two characters \ and n inside
+     * a JSON string into a REAL line break when the value is saved — verified
+     * on the deployed service, where the stored value was the full 2,296 bytes,
+     * ended correctly, and still failed with "Control character error,
+     * possibly incorrectly encoded".
+     *
+     * A raw newline cannot legally sit inside a JSON string, so json_decode
+     * refuses the whole document and the deployment reports a key that is
+     * present, complete and unusable. Nothing about the key is wrong — only
+     * its transport — so it is repaired rather than rejected.
+     */
+    public function test_a_key_whose_newlines_an_editor_rewrote_is_repaired(): void
+    {
+        $good = $this->fakeKey();
+
+        // Exactly what the editor did: \n inside the private key became a real
+        // line break. Whitespace BETWEEN fields would have been harmless.
+        $mangled = str_replace('\\n', "\n", $good);
+
+        $this->assertNull(json_decode($mangled, true),
+            'The premise of this test is that the mangled value does not parse.');
+        $this->assertSame(JSON_ERROR_CTRL_CHAR, json_last_error(),
+            'It must fail specifically as a control-character error — that is what is repaired.');
+
+        $path = FcmTransportFactory::resolveCredentialsPath($mangled);
+
+        $this->assertNotNull($path, 'A key broken only by its transport must still be usable.');
+
+        $written = json_decode((string) file_get_contents($path), true);
+
+        $this->assertIsArray($written, 'The repaired key must be written back as valid JSON.');
+        $this->assertSame(
+            json_decode($good, true)['private_key'],
+            $written['private_key'],
+            'The private key must come back byte-identical — a repair that alters the key is worse '
+            .'than a refusal, because it fails later and somewhere else.'
+        );
+    }
+
+    /**
+     * base64 is the recommended transport precisely because nothing can damage
+     * it: letters, digits, '+', '/' and '=' only. No quotes for an editor to
+     * escape, no newlines for it to rewrite.
+     */
+    public function test_the_key_may_be_supplied_as_base64(): void
+    {
+        $path = FcmTransportFactory::resolveCredentialsPath(base64_encode($this->fakeKey()));
+
+        $this->assertNotNull($path);
+        $this->assertSame(
+            json_decode($this->fakeKey(), true),
+            json_decode((string) file_get_contents($path), true)
+        );
+    }
+
+    /** Some tools wrap base64 at 64 columns; the value is still the same key. */
+    public function test_base64_survives_being_wrapped_across_lines(): void
+    {
+        $this->assertNotNull(
+            FcmTransportFactory::resolveCredentialsPath(chunk_split(base64_encode($this->fakeKey()), 64))
+        );
+    }
+
+    /**
+     * The base64 check runs before the path check, so it must not swallow a
+     * filesystem path — which is still how a laptop supplies the key.
+     */
+    public function test_a_filesystem_path_is_not_mistaken_for_base64(): void
+    {
+        $this->assertSame(
+            '/etc/rvms/firebase.json',
+            FcmTransportFactory::resolveCredentialsPath('/etc/rvms/firebase.json')
+        );
+    }
+
+    /** Repairing transport damage must not become accepting nonsense. */
+    public function test_a_value_that_is_not_a_key_is_still_refused(): void
+    {
+        $this->assertNull(FcmTransportFactory::resolveCredentialsPath('{not json'));
+        $this->assertNull(FcmTransportFactory::resolveCredentialsPath(
+            base64_encode('{"type":"service_account"}')
+        ), 'Decoding is not enough — a key still needs client_email and private_key.');
+    }
 }
