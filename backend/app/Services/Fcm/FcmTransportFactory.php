@@ -103,15 +103,27 @@ class FcmTransportFactory
     {
         $trimmed = trim($credentials);
 
+        // Base64 first, because it is the only form no editor can damage. A
+        // filesystem path survives this check: '.' and '-' are outside the
+        // base64 alphabet, and anything that does decode still has to start
+        // with '{' before it is taken as a key.
+        if ($decoded = self::fromBase64($trimmed)) {
+            $trimmed = $decoded;
+        }
+
         if (! str_starts_with($trimmed, '{')) {
             return self::resolvePath($credentials);
         }
 
-        $key = json_decode($trimmed, true);
+        $key = self::decodeServiceAccount($trimmed);
 
         if (! is_array($key) || blank($key['client_email'] ?? null) || blank($key['private_key'] ?? null)) {
             return null;
         }
+
+        // Re-encode, so a REPAIRED key is written to disk in the form Google's
+        // library can read rather than the broken form that arrived.
+        $trimmed = json_encode($key, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         $path = storage_path('app/firebase-credentials.json');
 
@@ -126,6 +138,114 @@ class FcmTransportFactory
         }
 
         return $path;
+    }
+
+    /**
+     * The service-account key as an array, repairing the one corruption that
+     * platform variable editors reliably introduce (2026-08).
+     *
+     * A key carries its PEM private key as a single JSON string whose line
+     * breaks are written as the two characters \ and n. Several editors —
+     * Railway's raw editor among them, verified on this deployment — turn those
+     * into REAL line breaks when the value is saved. A raw newline inside a
+     * JSON string is a control character, so json_decode refuses the whole
+     * document with "Control character error, possibly incorrectly encoded",
+     * and the deployment reports a key that is present, complete and unusable.
+     *
+     * Nothing about the key is wrong; only its transport. So a failed parse is
+     * retried once with control characters inside string literals escaped back
+     * to what they were.
+     *
+     * Prefer base64 (see fromBase64) — it cannot be mangled in the first place.
+     * This exists because by the time anyone reads that advice, the value has
+     * usually already been pasted.
+     */
+    private static function decodeServiceAccount(string $json): ?array
+    {
+        $key = json_decode($json, true);
+
+        if (is_array($key)) {
+            return $key;
+        }
+
+        if (json_last_error() !== JSON_ERROR_CTRL_CHAR) {
+            return null;
+        }
+
+        $key = json_decode(self::escapeControlCharactersInStrings($json), true);
+
+        return is_array($key) ? $key : null;
+    }
+
+    /**
+     * Escape raw control characters that appear INSIDE JSON string literals.
+     *
+     * The scan tracks whether it is inside a quoted string and honours
+     * backslash escapes, so the newlines and indentation BETWEEN fields — which
+     * are legal JSON whitespace — are left exactly as they are. Only a byte
+     * that could not legally appear where it sits gets rewritten.
+     */
+    private static function escapeControlCharactersInStrings(string $json): string
+    {
+        $out = '';
+        $inString = false;
+        $escaped = false;
+
+        foreach (str_split($json) as $char) {
+            if ($escaped) {
+                $out .= $char;
+                $escaped = false;
+
+                continue;
+            }
+
+            if ($inString && $char === '\\') {
+                $out .= $char;
+                $escaped = true;
+
+                continue;
+            }
+
+            if ($char === '"') {
+                $inString = ! $inString;
+                $out .= $char;
+
+                continue;
+            }
+
+            $out .= ($inString && ord($char) < 0x20)
+                ? match ($char) {
+                    "\n" => '\\n',
+                    "\r" => '\\r',
+                    "\t" => '\\t',
+                    default => sprintf('\\u%04x', ord($char)),
+                }
+                : $char;
+        }
+
+        return $out;
+    }
+
+    /**
+     * The JSON behind a base64 value, or null when it is not one.
+     *
+     * base64 is the recommended way to carry a service-account key in a
+     * platform environment variable: letters, digits, '+', '/' and '=' only —
+     * no quotes to escape, no newlines to rewrite, nothing an editor can
+     * reformat. Checked FIRST so a correctly-encoded key never reaches the
+     * repair path above.
+     */
+    private static function fromBase64(string $value): ?string
+    {
+        if ($value === '' || ! preg_match('/^[A-Za-z0-9+\/=\s]+$/', $value)) {
+            return null;
+        }
+
+        $decoded = base64_decode((string) preg_replace('/\s+/', '', $value), true);
+
+        return is_string($decoded) && str_starts_with(ltrim($decoded), '{')
+            ? ltrim($decoded)
+            : null;
     }
 
     public static function resolvePath(string $credentials): string
