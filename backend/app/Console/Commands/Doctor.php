@@ -191,10 +191,13 @@ class Doctor extends Command
 
         if ($upload < $required) {
             $label = sprintf('PHP upload limit is %.0fM, below the %dM the app accepts', $upload, $required);
-            $hint = sprintf('Set upload_max_filesize to at least %dM in php.ini (and post_max_size higher '
-                .'still), then restart the web server. Until then any damage photo or repair '
-                .'receipt over %.0fM is discarded by PHP before the app can explain why. '
-                .'On Railway this is deploy/php.ini, loaded via PHP_INI_SCAN_DIR in nixpacks.toml.',
+            $hint = sprintf('Set upload_max_filesize to at least %dM (and post_max_size higher still), '
+                .'then restart the web server. Until then any damage photo or repair receipt '
+                .'over %.0fM is discarded by PHP before the app can explain why. '
+                .'CAVEAT: this reads the CLI\'s configuration, which is NOT always the web '
+                .'server\'s — under FrankenPHP they differ, and a reading of 0M means the CLI has '
+                .'no value set rather than a limit of zero. Confirm by uploading a photo larger '
+                .'than the figure above before changing anything.',
                 $required + 3, $upload);
 
             // A small limit on a developer's machine is a nuisance; on the
@@ -309,11 +312,13 @@ class Doctor extends Command
         // No portable way to read the host's crontab, so this is stated rather
         // than tested, because a silent pass here would be the worst outcome.
         $this->hint(
-            'The scheduler only runs if the OS calls it. Confirm the deployment machine has: '.
-            '`* * * * * cd '.base_path().' && php artisan schedule:run >> /dev/null 2>&1` '.
+            'The scheduler only runs if SOMETHING calls it, and this check cannot see what. '.
+            'On a server: `* * * * * cd '.base_path().' && php artisan schedule:run >> /dev/null 2>&1` '.
             '(Linux) or the equivalent Task Scheduler entry every 1 minute (Windows). '.
-            'This ONE entry is the whole requirement — it fires the licence and PM alerts AND '.
-            'drains the queue. Without it, none of them run.'
+            'On a platform like Railway, a SECOND SERVICE running `php artisan schedule:work` does '.
+            'the same job and no cron entry is needed or possible — check its logs show queue:work '.
+            'firing each minute. Either way it is ONE thing, and it fires the licence and PM alerts '.
+            'AND drains the queue. Without it, none of them run.'
         );
     }
 

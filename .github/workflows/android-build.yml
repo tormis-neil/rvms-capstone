@@ -38,6 +38,33 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      # Without this file the google-services plugin is skipped (see
+      # mobile/app/build.gradle.kts) and the APK is built WITHOUT Firebase:
+      # every screen works, no device token is ever registered, and FR-21
+      # pushes are inert no matter how the server is configured. The file is
+      # gitignored because it is per-project config, so CI has to be handed it.
+      #
+      # It is not a private key — it holds the project id, app id and client
+      # API key, all of which ship inside any published Android app. It lives in
+      # a secret so the repository does not pin one Firebase project, and so a
+      # fork does not build against yours.
+      - name: Write google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -z "$GOOGLE_SERVICES_JSON" ]; then
+            echo "::warning::GOOGLE_SERVICES_JSON is not set — building WITHOUT Firebase. Push notifications will be inert."
+            exit 0
+          fi
+          printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
+          # Fail loudly on a malformed secret rather than shipping a broken APK.
+          python3 - <<'CHECK'
+          import json
+          d = json.load(open('app/google-services.json'))
+          print('Firebase project :', d['project_info']['project_id'])
+          print('Android packages :', [c['client_info']['android_client_info']['package_name'] for c in d['client']])
+          CHECK
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
