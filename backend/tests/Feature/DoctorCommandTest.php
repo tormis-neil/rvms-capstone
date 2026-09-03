@@ -49,19 +49,30 @@ class DoctorCommandTest extends TestCase
      * There is no portable way to read the host's crontab, so the command
      * states the requirement rather than silently passing.
      */
-    public function test_it_states_the_cron_requirement_it_cannot_test(): void
+    public function test_it_states_the_scheduler_requirement_it_cannot_test(): void
     {
-        // Captured rather than chained through expectsOutputToContain: the
-        // hint is wrapped at 100 characters, so the phrase spans lines and the
-        // chained matcher is line-oriented. Asserting on the whole buffer is
-        // what this test actually means.
+        // Captured rather than chained through expectsOutputToContain, AND
+        // whitespace-normalised: the hint is wrapped at 100 characters with
+        // indentation, so any phrase long enough to be worth asserting on gets
+        // split across lines. Collapsing runs of whitespace lets the assertions
+        // describe what the hint SAYS rather than where the wrapper happened to
+        // break it.
         Artisan::call('rvms:doctor');
-        $output = Artisan::output();
+        $output = (string) preg_replace('/\s+/', ' ', Artisan::output());
 
+        // A server is driven by cron.
         $this->assertStringContainsString('schedule:run', $output);
-        // One entry now covers alerts AND the queue drain, so the hint must say
-        // so — a handover that skips it loses both.
-        $this->assertStringContainsString('ONE entry', $output);
+
+        // A platform is not, and the hint used to say cron was the only way —
+        // which sent the deployed Railway setup chasing a crontab it can
+        // neither have nor need, while a second service running schedule:work
+        // was already doing the job (2026-08-28).
+        $this->assertStringContainsString('schedule:work', $output);
+        $this->assertStringContainsString('SECOND SERVICE', $output);
+
+        // Whichever shape, it is one thing and it covers alerts AND the queue
+        // drain — a handover that skips it loses both.
+        $this->assertStringContainsString('ONE thing', $output);
     }
 
     /** A wrong timezone dates every pre-8am record to the previous day. */
