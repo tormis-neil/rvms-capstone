@@ -112,11 +112,10 @@ class DriverController extends Controller
     {
         $this->authorizeDriver($request, $driver);
 
+        // Password is deliberately absent: Edit Driver cannot change a password
+        // (2026-08). It goes only through resetPassword() (FR-22), which
+        // re-authenticates the admin and notifies the driver.
         $data = $request->safe()->only(['name', 'email', 'license_number', 'license_expiry_date']);
-
-        if ($password = $request->validated('password')) {
-            $data['password'] = $password;
-        }
 
         $driver->update($data);
 

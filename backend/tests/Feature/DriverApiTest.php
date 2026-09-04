@@ -166,15 +166,22 @@ class DriverApiTest extends TestCase
         $this->assertSame($otherDriver->id, $stolenVehicle->fresh()->assigned_driver_id);
     }
 
-    public function test_update_without_password_keeps_the_existing_password(): void
+    public function test_update_ignores_any_password_and_keeps_the_existing_one(): void
     {
+        // Edit Driver cannot change a password (2026-08). A password in the payload
+        // is ignored — password changes go only through resetPassword() (FR-22),
+        // which re-authenticates the admin and notifies the driver.
         $driver = User::factory()->driver()->create(['agency_id' => $this->agency->id, 'password' => 'original-password']);
         $originalHash = $driver->password;
 
         $this->actingAsAdmin();
 
-        $this->putJson("/api/v1/drivers/{$driver->id}", ['name' => 'New Name', 'email' => $driver->email])
-            ->assertOk();
+        $this->putJson("/api/v1/drivers/{$driver->id}", [
+            'name' => 'New Name',
+            'email' => $driver->email,
+            'password' => 'attempted-new-password',
+            'password_confirmation' => 'attempted-new-password',
+        ])->assertOk();
 
         $this->assertSame($originalHash, $driver->fresh()->password);
     }

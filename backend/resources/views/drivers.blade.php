@@ -330,19 +330,10 @@
                             <input type="email" name="email" class="form-control" id="edEmail" required>
                             <div class="form-text">Used as the driver's sign-in account for the mobile app.</div>
                         </div>
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">New Password</label>
-                                <input type="password" name="password" class="form-control" placeholder="Leave blank to keep current password">
-                            </div>
-                            {{-- Confirm field added — documented deviation. The prototype's Edit
-                                 modal had a single password field with no confirmation, but the
-                                 'confirmed' validation rule (matching the Add Driver modal) needs it. --}}
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Confirm New Password</label>
-                                <input type="password" name="password_confirmation" class="form-control" placeholder="Re-enter new password">
-                            </div>
-                        </div>
+                        {{-- Password fields removed 2026-08 (deviation from the prototype's
+                             Edit modal). Editing a driver never changes a password; that is done
+                             only through the Reset Password action (the key icon on each row),
+                             which re-authenticates the admin and notifies the driver (FR-22). --}}
                         <div class="mb-3">
                             <label class="form-label fw-semibold">License Number</label>
                             <input type="text" name="license_number" class="form-control" id="edLicense">

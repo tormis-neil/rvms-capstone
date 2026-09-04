@@ -8,10 +8,11 @@ use Illuminate\Validation\Rule;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * Admin edit of a driver record (FR-06). Password is optional (leave blank
- * to keep current). The vehicle select defaults to "no change" and can only
- * ever pick a vehicle that is unassigned or already this driver's own — it
- * can never steal a vehicle belonging to another driver.
+ * Admin edit of a driver record (FR-06). Editing NEVER changes a password:
+ * that goes only through resetPassword() (FR-22), which re-authenticates the
+ * admin and notifies the driver. The vehicle select defaults to "no change"
+ * and can only ever pick a vehicle that is unassigned or already this driver's
+ * own — it can never steal a vehicle belonging to another driver.
  */
 class UpdateDriverRequest extends FormRequest
 {
@@ -45,7 +46,10 @@ class UpdateDriverRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email:strict', 'max:255', Rule::unique('users', 'email')->ignore($driverId)],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            // No password rule: Edit Driver cannot change a password (design decision,
+            // 2026-08). Password changes go only through resetPassword() (FR-22), which
+            // re-authenticates the admin and notifies the driver — safeguards this path
+            // silently lacked. A `password` field in the request is simply ignored.
             // Per agency and nullable; ignores this driver so an edit that leaves
             // the licence untouched does not collide with itself.
             'license_number' => [
@@ -72,7 +76,6 @@ class UpdateDriverRequest extends FormRequest
         return [
             'email.unique' => 'An account with this email address already exists.',
             'license_number.unique' => 'A driver with this license number already exists in your agency.',
-            'password.confirmed' => 'The password confirmation does not match.',
             'assigned_vehicle_id.exists' => 'That vehicle is not available to assign (it may already have a different driver).',
         ];
     }
