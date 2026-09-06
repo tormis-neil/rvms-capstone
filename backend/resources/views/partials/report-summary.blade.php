@@ -9,8 +9,8 @@
     manual test is Ctrl+P), and a <canvas> prints unreliably across browsers and
     is blank when scripting has not run — a printed report with an empty white
     box is worse than no chart. These are server-rendered Bootstrap progress
-    bars, the same markup the Inspections page already uses for Frequently
-    Reported Issues, so the visual language is the prototype's own (Rule 9) and
+    bars, the same markup the Dashboard already uses for Frequently Reported
+    Issues, so the visual language is the prototype's own (Rule 9) and
     nothing is added to the page's dependencies.
 
     Expects $summary = ['stats' => [...], 'breakdown' => [...]|null].

@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Models\Agency;
 use App\Models\DamageReport;
 use App\Models\Inspection;
+use App\Models\InspectionChecklistItem;
 use App\Models\User;
 use App\Models\Vehicle;
+use Database\Seeders\InspectionChecklistSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -160,6 +162,44 @@ class WebDashboardPageTest extends TestCase
         foreach ([$this->admin, $second] as $user) {
             $this->actingAs($user)->get('/dashboard')->assertOk()
                 ->assertSee('js-metric-total">2<', false);
+        }
+    }
+
+    /**
+     * Frequently Reported Issues now lives on the dashboard (moved from the
+     * Inspections page, 2026-09) — a ranked list of flagged checklist items.
+     */
+    public function test_frequent_issues_render_on_the_dashboard(): void
+    {
+        $this->seed(InspectionChecklistSeeder::class);
+        $this->flaggedInspection('Brakes');
+        $this->flaggedInspection('Brakes');
+
+        $this->actingAs($this->admin)
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSee('Frequently Reported Issues')
+            ->assertSee('Brakes');
+    }
+
+    /** An inspection with one flagged checklist item, for this agency. */
+    private function flaggedInspection(string $flag): void
+    {
+        $driver = User::factory()->driver()->create(['agency_id' => $this->agency->id]);
+        $vehicle = Vehicle::factory()->create(['agency_id' => $this->agency->id]);
+
+        $inspection = Inspection::factory()->create([
+            'agency_id' => $this->agency->id,
+            'vehicle_id' => $vehicle->id,
+            'driver_id' => $driver->id,
+        ]);
+
+        foreach (InspectionChecklistItem::forAgencyCode($this->agency->code)->get() as $item) {
+            $inspection->items()->create([
+                'checklist_item_id' => $item->id,
+                'status' => $item->name === $flag ? 'Has Issue' : 'OK',
+                'remarks' => $item->name === $flag ? 'Noise on braking' : null,
+            ]);
         }
     }
 
