@@ -7,7 +7,9 @@ use App\Models\Inspection;
 use App\Models\InspectionItem;
 use App\Models\User;
 use App\Models\Vehicle;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -175,6 +177,40 @@ class DashboardSummary
         return $this->activeDrivers($agencyId)
             ->filter(fn (User $driver) => in_array($driver->licenseStatus(), ['Expiring Soon', 'Expired'], true))
             ->count();
+    }
+
+    /**
+     * Has-Issue counts grouped by checklist item, ranked most frequent first,
+     * with the last-reported date (FR-10).
+     *
+     * Moved here from the Inspections page (2026-09, lead-approved): the
+     * dashboard is where fleet-wide patterns are read at a glance. This makes
+     * the dashboard more than counts alone — a deliberate, documented departure
+     * from the prototype's counts-only dashboard.
+     *
+     * @return Collection<int, array{issue: string, count: int, last: string}>
+     */
+    public function frequentIssues(int $agencyId): Collection
+    {
+        return InspectionItem::query()
+            ->join('inspections', 'inspections.id', '=', 'inspection_items.inspection_id')
+            ->join('inspection_checklist_items', 'inspection_checklist_items.id', '=', 'inspection_items.checklist_item_id')
+            ->where('inspections.agency_id', $agencyId)
+            ->where('inspection_items.status', InspectionItem::STATUS_HAS_ISSUE)
+            ->groupBy('inspection_items.checklist_item_id', 'inspection_checklist_items.name')
+            ->select([
+                'inspection_checklist_items.name',
+                DB::raw('COUNT(*) as count'),
+                DB::raw('MAX(inspections.inspection_date) as last_reported'),
+            ])
+            ->orderByDesc('count')
+            ->orderBy('inspection_checklist_items.name')
+            ->get()
+            ->map(fn ($row) => [
+                'issue' => $row->name,
+                'count' => (int) $row->count,
+                'last' => $row->last_reported ? Carbon::parse($row->last_reported)->format('M j, Y') : '—',
+            ]);
     }
 
     /**

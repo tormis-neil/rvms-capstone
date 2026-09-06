@@ -69,16 +69,15 @@ class WebInspectionPageTest extends TestCase
             ->assertSee('Noise on braking');
     }
 
-    public function test_frequent_issues_render_on_the_page(): void
+    /** Frequently Reported Issues moved to the Dashboard (2026-09) — see WebDashboardPageTest. */
+    public function test_frequent_issues_no_longer_render_on_this_page(): void
     {
-        $this->makeInspection($this->agency, flag: 'Brakes');
         $this->makeInspection($this->agency, flag: 'Brakes');
 
         $this->actingAs($this->admin)
             ->get('/inspections')
             ->assertOk()
-            ->assertSee('Frequently Reported Issues')
-            ->assertSee('Brakes');
+            ->assertDontSee('Frequently Reported Issues');
     }
 
     public function test_review_marks_reviewed_and_updates_the_vehicle(): void

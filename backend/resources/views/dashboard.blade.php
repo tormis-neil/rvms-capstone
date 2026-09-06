@@ -238,4 +238,37 @@
                     </div>
                 </div>
 
+                {{-- Frequently Reported Issues — moved here from the Inspections & Damage
+                     page (2026-09, lead-approved). A documented departure from the
+                     prototype's counts-only dashboard: fleet-wide inspection patterns
+                     are read at a glance here. Same markup as the card it replaced. --}}
+                <div class="d-flex align-items-center gap-2 mb-3 mt-5">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-graph-up-arrow me-2"></i>Frequently Reported Issues</h5>
+                    <span class="badge bg-light text-dark border rounded-pill px-3 py-2">This agency</span>
+                </div>
+                <div class="card border-0 shadow-sm rounded-3 mb-5">
+                    <div class="card-body p-4">
+                        <p class="text-secondary small mb-3">Recurring vehicle issues across recent BLOWBAGETS inspections, ranked by how often they appear. Use this to spot fleet-wide maintenance patterns.</p>
+                        <div id="freq-issues">
+                            @forelse ($frequentIssues as $index => $issue)
+                            <div class="d-flex align-items-center gap-3 py-2{{ $index ? ' border-top' : '' }}">
+                                <span class="text-secondary fw-bold" style="min-width:1.5rem;">#{{ $index + 1 }}</span>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-semibold text-dark">{{ $issue['issue'] }}</span>
+                                        <span class="small text-secondary ms-2">Last: {{ $issue['last'] }}</span>
+                                    </div>
+                                    <div class="progress mt-1" style="height:6px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width:{{ (int) round($issue['count'] / $frequentIssues->max('count') * 100) }}%"></div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-warning text-dark rounded-pill">{{ $issue['count'] }}×</span>
+                            </div>
+                            @empty
+                            <div class="text-secondary small">No recurring issues recorded.</div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+
 @endsection

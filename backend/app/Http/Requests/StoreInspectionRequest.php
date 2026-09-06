@@ -78,15 +78,20 @@ class StoreInspectionRequest extends FormRequest
     }
 
     /**
-     * A daily inspection is a pre-trip check, so the vehicle has to be in
-     * service (2026-08, adviser-reported).
+     * A daily inspection is a pre-trip check, so the vehicle has to be available
+     * for one (2026-08 adviser-reported; extended 2026-09 to Dispatched).
      *
      * Before this, a driver could file a full BLOWBAGETS checklist against a
      * truck the system was reporting as Not Operational or Under Preventive
      * Maintenance — recording a trip that could not happen, and storing an
      * all-OK result that contradicts the vehicle's own status (FR-09 vs FR-18).
      *
-     * The message names the status so the driver knows why, rather than being
+     * A Dispatched vehicle is refused too (interviews: inspections happen before
+     * deployment / before vehicle use), but via Vehicle::isAvailableForDailyInspection()
+     * rather than isInService() — a dispatched vehicle is out on a mission, not
+     * out of service, and must not be mislabelled as the latter.
+     *
+     * The message names the reason so the driver knows why, rather than being
      * refused by a form that will not say what is wrong.
      */
     private function assertVehicleIsInService(Validator $validator): void
@@ -99,13 +104,24 @@ class StoreInspectionRequest extends FormRequest
 
         $vehicle = Vehicle::query()->find($this->input('vehicle_id'));
 
-        if ($vehicle && ! $vehicle->isInService()) {
-            $validator->errors()->add('vehicle_id', sprintf(
+        if (! $vehicle || $vehicle->isAvailableForDailyInspection()) {
+            return;
+        }
+
+        // A Dispatched vehicle is in service but out on a mission, so the advice
+        // differs: it is not a fault to report, it just cannot be inspected yet.
+        $message = $vehicle->status === Vehicle::STATUS_DISPATCHED
+            ? sprintf(
+                '%s is currently out on a dispatch, so it cannot be inspected until it returns.',
+                $vehicle->plate_number,
+            )
+            : sprintf(
                 '%s is currently %s, so it is not in service for a daily inspection. '
                 .'Report a new fault as a damage report instead.',
                 $vehicle->plate_number,
                 $vehicle->status,
-            ));
-        }
+            );
+
+        $validator->errors()->add('vehicle_id', $message);
     }
 }
