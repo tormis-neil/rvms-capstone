@@ -79,6 +79,35 @@ class LoginThrottleTest extends TestCase
         $this->assertStringContainsString('Too many login attempts', session('errors')->first('email'));
     }
 
+    /**
+     * The paced-attacker hole (2026-09): a blocked attempt slides the window, so
+     * the door reopens only after DECAY_SECONDS with NO attempt at all — not
+     * DECAY_SECONDS after the FIRST failure.
+     */
+    public function test_a_blocked_attempt_extends_the_lockout_window(): void
+    {
+        for ($i = 0; $i < LoginThrottle::MAX_ATTEMPTS; $i++) {
+            $this->failWebLogin();
+        }
+
+        // Almost at the end of the window, one more guess arrives — refused, and
+        // it resets the clock.
+        $this->travel(LoginThrottle::DECAY_SECONDS - 5)->seconds();
+        $this->failWebLogin();
+        $this->assertStringContainsString('Too many login attempts', session('errors')->first('email'));
+
+        // Past the ORIGINAL window but inside the slid one → still locked. A
+        // fixed window would have reopened here, handing the attacker more guesses.
+        $this->travel(10)->seconds();
+        $this->failWebLogin();
+        $this->assertStringContainsString('Too many login attempts', session('errors')->first('email'));
+
+        // Only a full quiet DECAY_SECONDS reopens the door.
+        $this->travel(LoginThrottle::DECAY_SECONDS + 1)->seconds();
+        $this->failWebLogin();
+        $this->assertStringNotContainsString('Too many login attempts', session('errors')->first('email'));
+    }
+
     /** A success before the limit clears the counter — typos are forgiven. */
     public function test_a_successful_login_resets_the_counter(): void
     {
