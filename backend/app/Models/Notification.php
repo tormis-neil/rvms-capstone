@@ -53,6 +53,12 @@ class Notification extends Model
      */
     public const TYPE_PASSWORD_RESET = 'Password_Reset';
 
+    /**
+     * Another administrator was created for the agency (2026-09). Raised for the
+     * agency's EXISTING administrators, never for the actor or the new account.
+     */
+    public const TYPE_NEW_ADMIN = 'New_Admin';
+
     public const TYPES = [
         self::TYPE_PM_REMINDER,
         self::TYPE_VEHICLE_STATUS_UPDATE,
@@ -64,6 +70,7 @@ class Notification extends Model
         self::TYPE_PM_DUE,
         self::TYPE_NEW_ACCESS_REQUEST,
         self::TYPE_PASSWORD_RESET,
+        self::TYPE_NEW_ADMIN,
     ];
 
     /**
@@ -86,6 +93,8 @@ class Notification extends Model
         // Routed to the profile page, which is where the recipient can set a
         // password of their own choosing straight away (FR-04).
         self::TYPE_PASSWORD_RESET => ['icon' => 'bi-key', 'tone' => 'warning', 'route' => 'profile'],
+        // Routed to the profile page, where the agency's administrators are listed.
+        self::TYPE_NEW_ADMIN => ['icon' => 'bi-person-badge', 'tone' => 'primary', 'route' => 'profile'],
     ];
 
     protected $fillable = [
