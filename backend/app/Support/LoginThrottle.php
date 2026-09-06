@@ -3,7 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -21,17 +21,31 @@ use Illuminate\Validation\ValidationException;
  *
  * A SUCCESSFUL login clears the counter, so the limit only ever counts
  * failures — an admin who mistypes twice and then gets it right starts fresh.
+ *
+ * **Sliding window (2026-09).** Every attempt while the account is failing —
+ * including one that is already locked out — pushes the unlock time
+ * DECAY_SECONDS into the future. The door therefore reopens only after
+ * DECAY_SECONDS with NO attempt at all. The earlier version let Laravel's
+ * RateLimiter start a fixed window at the FIRST failure and never extend it, so
+ * an attacker who paced one guess every twelve seconds kept five live guesses a
+ * minute forever; and the countdown, measured from that first failure, read
+ * several seconds short of the real wait. A window that resets on each attempt
+ * closes both.
  */
 class LoginThrottle
 {
     /** Failures allowed before the door closes. */
     public const MAX_ATTEMPTS = 5;
 
-    /** How long it stays closed, in seconds. */
+    /** How long the door stays closed after the LAST attempt, in seconds. */
     public const DECAY_SECONDS = 60;
 
     /**
      * Refuse early when the caller is already locked out.
+     *
+     * A blocked attempt is itself activity, so it slides the window forward
+     * before refusing — trickling guesses can never keep the count just under
+     * the limit, because each one resets the clock.
      *
      * @throws ValidationException a 422 carrying the wait, matching how every
      *                             other credential failure is reported (the
@@ -41,28 +55,49 @@ class LoginThrottle
     {
         $key = self::key($request, $email);
 
-        if (! RateLimiter::tooManyAttempts($key, self::MAX_ATTEMPTS)) {
+        if (self::attempts($key) < self::MAX_ATTEMPTS) {
             return;
         }
 
-        $seconds = RateLimiter::availableIn($key);
+        // Slide the window: this blocked attempt keeps the door shut for a fresh
+        // DECAY_SECONDS, so the countdown below is always the true remaining wait.
+        self::touch($key);
 
         throw ValidationException::withMessages([
-            'email' => "Too many login attempts. Please try again in {$seconds} ".
-                Str::plural('second', $seconds).'.',
+            'email' => 'Too many login attempts. Please try again in '.self::DECAY_SECONDS.' '.
+                Str::plural('second', self::DECAY_SECONDS).'.',
         ])->status(429);
     }
 
-    /** Record a failed attempt. */
+    /** Record a failed attempt, resetting the decay window from now. */
     public static function recordFailure(Request $request, string $email): void
     {
-        RateLimiter::hit(self::key($request, $email), self::DECAY_SECONDS);
+        self::touch(self::key($request, $email));
     }
 
     /** Clear the counter after a successful sign-in. */
     public static function clear(Request $request, string $email): void
     {
-        RateLimiter::clear(self::key($request, $email));
+        Cache::forget(self::key($request, $email));
+    }
+
+    /** How many failures are on record for this key right now. */
+    private static function attempts(string $key): int
+    {
+        return (int) Cache::get($key, 0);
+    }
+
+    /**
+     * Add one to the counter and (re)start the decay window from now.
+     *
+     * Writing with a fresh TTL on every call is what makes the window slide:
+     * the counter — and therefore the lockout — only expires after
+     * DECAY_SECONDS with no further attempt. A plain increment would keep the
+     * TTL of the first write, which is the fixed window this replaces.
+     */
+    private static function touch(string $key): void
+    {
+        Cache::put($key, self::attempts($key) + 1, self::DECAY_SECONDS);
     }
 
     /**
