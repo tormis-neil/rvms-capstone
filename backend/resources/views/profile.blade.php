@@ -107,5 +107,101 @@
                     </button>
                 </div>
 
+                {{-- Agency Administrators — documented addition (design decision 6
+                     revised, 2026-09). An administrator can provision another
+                     administrator for their OWN agency in-app, instead of only via
+                     the rvms:create-admin server command. Confirms the actor's own
+                     password and notifies the agency's existing admins. No prototype
+                     page backs this; it reuses the prototype's card + modal conventions. --}}
+                <div class="card border-0 shadow-sm rounded-3 mt-5">
+                    <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="fw-bold mb-0">Agency Administrators</h5>
+                            <p class="text-secondary small mb-0">Administrators can view and manage every record in your agency.</p>
+                        </div>
+                        <button class="btn btn-navy text-white fw-medium px-3 py-2 bg-navy rounded-3" data-bs-toggle="modal" data-bs-target="#createAdminModal">
+                            <i class="bi bi-person-plus me-2"></i>Create Administrator
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            @foreach ($admins as $admin)
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-4 py-3">
+                                <div>
+                                    <span class="fw-semibold">{{ $admin->name }}</span>
+                                    @if ($admin->id === $user->id)
+                                    <span class="badge bg-light text-dark border rounded-pill ms-2">You</span>
+                                    @endif
+                                    <div class="text-secondary small">{{ $admin->email }}</div>
+                                </div>
+                                <i class="bi bi-person-badge text-secondary"></i>
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
 
+@endsection
+
+@section('modals')
+    {{-- Create Administrator (design decision 6 revised, 2026-09). Fields are
+         prefixed admin_* so a validation failure never cross-populates the
+         profile form above. The modal auto-opens on error (see script). --}}
+    <div class="modal fade" id="createAdminModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-navy text-white">
+                    <h5 class="modal-title fw-bold">Create Administrator</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ route('profile.administrators.store') }}">
+                    @csrf
+                    <div class="modal-body p-4">
+                        <p class="text-secondary small mb-3">The new administrator belongs to your agency ({{ $user->agency->name }}) and can sign in immediately. Give them the password directly.</p>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Full Name</label>
+                            <input type="text" name="admin_name" class="form-control @error('admin_name') is-invalid @enderror" value="{{ old('admin_name') }}" required>
+                            @error('admin_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email Address</label>
+                            <input type="email" name="admin_email" class="form-control @error('admin_email') is-invalid @enderror" value="{{ old('admin_email') }}" required>
+                            @error('admin_email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Password</label>
+                                <input type="password" name="admin_password" class="form-control @error('admin_password') is-invalid @enderror" minlength="8" required autocomplete="new-password">
+                                @error('admin_password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Confirm Password</label>
+                                <input type="password" name="admin_password_confirmation" class="form-control" minlength="8" required autocomplete="new-password">
+                            </div>
+                        </div>
+                        {{-- Confirm your own password before creating a peer with equal reach. --}}
+                        <div class="mt-3 border-top pt-3">
+                            <label class="form-label fw-semibold">Your Current Password</label>
+                            <input type="password" name="current_password" class="form-control @error('current_password') is-invalid @enderror" required autocomplete="current-password">
+                            @error('current_password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-navy text-white fw-medium bg-navy">Create Administrator</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Re-open the modal when a create-admin submission failed validation, so the
+         messages are seen in context rather than silently behind a closed dialog. --}}
+    @if ($errors->hasAny(['admin_name', 'admin_email', 'admin_password', 'current_password']))
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            new bootstrap.Modal(document.getElementById('createAdminModal')).show();
+        });
+    </script>
+    @endif
 @endsection

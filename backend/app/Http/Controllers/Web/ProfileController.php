@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreAdminRequest;
 use App\Http\Requests\UpdateProfileRequest;
+use App\Models\User;
+use App\Services\NotificationDispatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,7 +31,41 @@ class ProfileController extends Controller
     {
         return view('profile', [
             'user' => $request->user()->load('agency'),
+            // The agency's administrators, for the "Agency Administrators" section
+            // (design decision 6 revised, 2026-09). Own agency only.
+            'admins' => User::query()
+                ->where('agency_id', $request->user()->agency_id)
+                ->where('role', User::ROLE_ADMIN)
+                ->where('status', User::STATUS_ACTIVE)
+                ->orderBy('name')
+                ->get(),
         ]);
+    }
+
+    /**
+     * Create another administrator for the acting admin's own agency (2026-09,
+     * design decision 6 revised).
+     *
+     * Provisioning stays "within the system" (Ch1): the agency is forced to the
+     * actor's own, the actor confirms their own password (StoreAdminRequest),
+     * and the agency's other administrators are notified. The server command
+     * rvms:create-admin remains the fallback for when nobody can sign in.
+     */
+    public function storeAdmin(StoreAdminRequest $request): RedirectResponse
+    {
+        $admin = User::create([
+            'agency_id' => $request->user()->agency_id, // forced — never taken from input
+            'role' => User::ROLE_ADMIN,
+            'status' => User::STATUS_ACTIVE,
+            'name' => $request->validated('admin_name'),
+            'email' => $request->validated('admin_email'),
+            'password' => $request->validated('admin_password'),
+        ]);
+
+        app(NotificationDispatcher::class)->adminAdded($admin, $request->user());
+
+        return redirect()->route('profile')
+            ->with('status', "Administrator {$admin->name} was created. Give them the password directly.");
     }
 
     public function update(UpdateProfileRequest $request): RedirectResponse

@@ -133,6 +133,9 @@ class WebNotificationPageTest extends TestCase
             // The profile page is where the recipient can immediately replace
             // the password someone else just set for them (FR-22 → FR-04).
             Notification::TYPE_PASSWORD_RESET => route('profile'),
+            // The profile page lists the agency's administrators, where a newly
+            // created one appears (design decision 6 revised, 2026-09).
+            Notification::TYPE_NEW_ADMIN => route('profile'),
         ];
 
         // Every type is covered — a new type must not slip through untested.

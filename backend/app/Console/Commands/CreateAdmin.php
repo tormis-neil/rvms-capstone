@@ -24,11 +24,17 @@ use function Laravel\Prompts\password as promptPassword;
  * `migrate:fresh --seed` erases every real record in the process. That is not
  * an answer that belongs in a handover document.
  *
- * Deliberately a console command, for the same reason as rvms:reset-password:
- * it needs no authentication, so it must only be reachable by someone already
- * standing at the server. A screen for this would be a way to mint an
- * administrator from the internet, which is precisely what design decision 6
- * rules out.
+ * As of 2026-09 there is also an in-app path (design decision 6 revised): an
+ * existing administrator can create another for their OWN agency from the
+ * Profile page, after confirming their own password, with the agency's other
+ * admins notified. That is authenticated and agency-scoped, so it is not the
+ * "mint an administrator from the internet" that design decision 6 ruled out —
+ * public self-registration stays driver-only.
+ *
+ * This command remains the fallback the in-app path cannot cover: provisioning
+ * the FIRST administrator of an agency, or recovering one when nobody can sign
+ * in at all. It needs no authentication, so it must only be reachable by
+ * someone already standing at the server.
  */
 class CreateAdmin extends Command
 {

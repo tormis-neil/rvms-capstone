@@ -120,6 +120,41 @@ class NotificationDispatcher
         );
     }
 
+    /**
+     * Tell an agency's existing administrators that a new one was created (2026-09).
+     *
+     * Creating a peer administrator hands out an account with the same reach
+     * across the agency's records, so the others are told — the same reasoning
+     * as passwordWasReset(). Deliberately NOT sent to the actor (who just did
+     * it) or to the new account (who is its subject), so the audience is every
+     * OTHER active admin of the agency.
+     *
+     * @return Collection<int, Notification>
+     */
+    public function adminAdded(User $newAdmin, User $actor): Collection
+    {
+        $recipients = $this->adminsOf($newAdmin->agency_id)
+            ->reject(fn (User $admin) => in_array($admin->id, [$actor->id, $newAdmin->id], true));
+
+        return $this->sendToMany(
+            $recipients,
+            Notification::TYPE_NEW_ADMIN,
+            'New Administrator Added',
+            sprintf('%s added %s (%s) as an administrator on %s.',
+                $actor->name,
+                $newAdmin->name,
+                $newAdmin->email,
+                now()->format('M j, Y \a\t g:i A'),
+            ),
+            [
+                'actor_id' => $actor->id,
+                'actor_name' => $actor->name,
+                'new_admin_id' => $newAdmin->id,
+                'new_admin_name' => $newAdmin->name,
+            ],
+        );
+    }
+
     /** Every administrator of an agency — the audience for FR-21's admin alerts. */
     public function adminsOf(int $agencyId): Collection
     {
