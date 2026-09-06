@@ -23,16 +23,20 @@ use Tests\TestCase;
  *     Operational or Under Preventive Maintenance is not making a trip, so the
  *     submission records something that did not happen — and an all-OK result
  *     on a vehicle the system calls broken is a contradiction between FR-09 and
- *     FR-18 stored in the database. Refused.
+ *     FR-18 stored in the database. Refused. A Dispatched vehicle is refused too
+ *     (2026-09, interviews: inspections happen "before deployment / before
+ *     vehicle use") — it is out on a mission and cannot be given a pre-trip
+ *     check right now. This second case is gated by
+ *     Vehicle::isAvailableForDailyInspection(), NOT isInService(): a dispatched
+ *     vehicle is in service, just not present to be inspected.
  *
  *   - A damage report is how a fault gets reported at all. A vehicle is usually
  *     Not Operational BECAUSE it is damaged, so refusing reports would make a
  *     second, unrelated fault unreportable, and would close the door behind the
  *     very report that took the vehicle off the road. It would also contradict
  *     the GSO Motorpool finding recorded in Chapter 1 — that further defects
- *     are routinely discovered after the original report. Always allowed.
- *
- * The adviser asked for both to be blocked. Only the first is.
+ *     are routinely discovered after the original report. Always allowed,
+ *     Dispatched included.
  */
 class OutOfServiceSubmissionTest extends TestCase
 {
@@ -52,6 +56,7 @@ class OutOfServiceSubmissionTest extends TestCase
         $this->seed(\Database\Seeders\InspectionChecklistSeeder::class);
     }
 
+    /** Off the road: refused for BOTH inspections and damage differently. */
     /** @return list<array{string}> */
     public static function outOfServiceStatuses(): array
     {
@@ -61,21 +66,23 @@ class OutOfServiceSubmissionTest extends TestCase
         ];
     }
 
+    /** Every status a daily inspection is refused for (2026-09 adds Dispatched). */
     /** @return list<array{string}> */
-    public static function inServiceStatuses(): array
+    public static function notInspectableStatuses(): array
     {
         return [
-            'operational' => [Vehicle::STATUS_OPERATIONAL],
-            // Out on a mission, but it was inspected before it left and can be
-            // inspected when it returns — deliberately still allowed.
+            'not operational' => [Vehicle::STATUS_NOT_OPERATIONAL],
+            'under preventive maintenance' => [Vehicle::STATUS_UNDER_PM],
+            // Out on a mission — inspections happen before deployment, so a
+            // dispatched vehicle cannot be inspected until it returns.
             'dispatched' => [Vehicle::STATUS_DISPATCHED],
         ];
     }
 
     /* ----------------------- inspections: refused ------------------------ */
 
-    #[DataProvider('outOfServiceStatuses')]
-    public function test_an_inspection_is_refused_for_a_vehicle_off_the_road(string $status): void
+    #[DataProvider('notInspectableStatuses')]
+    public function test_an_inspection_is_refused_for_a_vehicle_not_available_for_one(string $status): void
     {
         $vehicle = $this->vehicle($status);
 
@@ -105,10 +112,29 @@ class OutOfServiceSubmissionTest extends TestCase
         $this->assertStringContainsString('damage report', $message);
     }
 
-    #[DataProvider('inServiceStatuses')]
-    public function test_an_inspection_is_accepted_for_a_vehicle_in_service(string $status): void
+    /**
+     * The Dispatched refusal reads differently: it is not a fault to report, the
+     * vehicle is simply out on a mission and can be inspected when it returns.
+     */
+    public function test_the_dispatched_refusal_explains_it_is_out_on_a_mission(): void
     {
-        $vehicle = $this->vehicle($status);
+        $vehicle = $this->vehicle(Vehicle::STATUS_DISPATCHED, 'CHO-7788');
+
+        Sanctum::actingAs($this->driver);
+
+        $message = $this->postJson('/api/v1/inspections', $this->fullChecklist($vehicle))
+            ->assertStatus(422)
+            ->json('errors.vehicle_id.0');
+
+        $this->assertStringContainsString('CHO-7788', $message);
+        $this->assertStringContainsString('dispatch', $message);
+        // No "report a damage report instead" advice — the vehicle isn't faulty.
+        $this->assertStringNotContainsString('damage report', $message);
+    }
+
+    public function test_an_inspection_is_accepted_for_an_operational_vehicle(): void
+    {
+        $vehicle = $this->vehicle(Vehicle::STATUS_OPERATIONAL);
 
         Sanctum::actingAs($this->driver);
 
@@ -149,6 +175,21 @@ class OutOfServiceSubmissionTest extends TestCase
         $this->postJson('/api/v1/damage-reports', [
             'vehicle_id' => $vehicle->id,
             'nature_of_damage' => 'Second, unrelated fault found while it was in the workshop.',
+        ])->assertCreated();
+
+        $this->assertDatabaseCount('damage_reports', 1);
+    }
+
+    /** A dispatched vehicle can still have a fault reported from the field. */
+    public function test_a_damage_report_is_allowed_for_a_dispatched_vehicle(): void
+    {
+        $vehicle = $this->vehicle(Vehicle::STATUS_DISPATCHED);
+
+        Sanctum::actingAs($this->driver);
+
+        $this->postJson('/api/v1/damage-reports', [
+            'vehicle_id' => $vehicle->id,
+            'nature_of_damage' => 'Warning light came on during the mission.',
         ])->assertCreated();
 
         $this->assertDatabaseCount('damage_reports', 1);

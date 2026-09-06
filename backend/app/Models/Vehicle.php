@@ -132,4 +132,20 @@ class Vehicle extends Model
     {
         return ! in_array($this->status, self::OUT_OF_SERVICE_STATUSES, true);
     }
+
+    /**
+     * Whether a daily BLOWBAGETS inspection may be filed against this vehicle
+     * (2026-09, interviews: inspections happen "before deployment / before
+     * vehicle use").
+     *
+     * Stricter than isInService() on purpose. A Dispatched vehicle IS in service
+     * — it is operational and simply out on a mission — so it must not be folded
+     * into OUT_OF_SERVICE_STATUSES, which every other caller reads as "off the
+     * road". But it is not present to be given a pre-trip check, so it is not
+     * available for a daily inspection either. The only status that is: Operational.
+     */
+    public function isAvailableForDailyInspection(): bool
+    {
+        return $this->isInService() && $this->status !== self::STATUS_DISPATCHED;
+    }
 }
