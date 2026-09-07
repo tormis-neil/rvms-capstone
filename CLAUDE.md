@@ -141,7 +141,13 @@ A few deliberate modeling decisions:
    `active` immediately), or drivers self-register and start `pending` until their agency
    admin approves/rejects them. `users.status` tracks `pending`/`active`/`rejected`. Drivers
    and admins can self-edit their own name/email/password with no approval or notification
-   (FR-04). Agency administrator accounts are provisioned (seeded) only; there is no admin self-registration, and the public registration endpoint is driver-only. An agency may
+   (FR-04). Agency administrator accounts are provisioned within the system, never
+   self-registered: an existing agency admin creates another for their OWN agency from the
+   Profile page (`ProfileController::storeAdmin`), forced into the actor's agency, after
+   confirming their own password, with the agency's OTHER admins notified (`New_Admin`); and
+   `rvms:create-admin` provisions the FIRST administrator of an agency or recovers one when
+   nobody can sign in (2026-09, design decision 6 revised). There is still no admin
+   self-registration, and the public registration endpoint is driver-only. An agency may
    have MORE THAN ONE administrator account (per the interviews — e.g., logistics and
    operations officers); the seeder includes a second BFP admin as the sample, and no code
    may assume a single admin per agency (notifications target ALL of an agency's admins).
@@ -456,7 +462,7 @@ standard and not detailed below.
 | id | BIGINT UNSIGNED | No | auto | PK. |
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies (scoping). |
 | user_id | BIGINT UNSIGNED | No | — | FK → users (recipient). |
-| type | ENUM('PM_Reminder','Vehicle_Status_Update','New_Damage_Report','Inspection_Flagged','License_Expiring','License_Expired','PM_Due_Soon','PM_Due','New_Access_Request','Password_Reset') | No | — | Notification category (FR-21; `New_Access_Request` → admins on driver self-registration, FR-03; `Inspection_Flagged` → admins when a submitted inspection reports one or more items as Has Issue, FR-09 → FR-21 — never on an all-OK submission; `Password_Reset` → the AFFECTED user when someone else sets their password, FR-22 → FR-21 — never for the administrator who performed it, and never for a self-service change under FR-04). |
+| type | ENUM('PM_Reminder','Vehicle_Status_Update','New_Damage_Report','Inspection_Flagged','License_Expiring','License_Expired','PM_Due_Soon','PM_Due','New_Access_Request','Password_Reset','New_Admin') | No | — | Notification category (FR-21; `New_Access_Request` → admins on driver self-registration, FR-03; `Inspection_Flagged` → admins when a submitted inspection reports one or more items as Has Issue, FR-09 → FR-21 — never on an all-OK submission; `Password_Reset` → the AFFECTED user when someone else sets their password, FR-22 → FR-21 — never for the administrator who performed it, and never for a self-service change under FR-04; `New_Admin` → the agency's EXISTING administrators when another administrator is created (design decision 6 revised, 2026-09) — never the actor who created it nor the new account). |
 | title | VARCHAR(255) | No | — | Short headline. |
 | message | TEXT | No | — | Body text. |
 | data | JSON | Yes | NULL | Reference payload (e.g., vehicle plate, link target). |
