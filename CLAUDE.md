@@ -270,6 +270,13 @@ A few deliberate modeling decisions:
       stays a completion-only field. Distinct document from `completion_receipt_path`.
     - **`dispatches.travel_order_path`** — optional travel order attached at dispatch OPEN
       (it authorises the trip). Optional so an emergency response is never blocked.
+    - **`dispatches.second_driver_id`** — optional SECOND driver on a dispatch, for a
+      two-crew mission (interview-backed; usable by any agency). Per-dispatch (who
+      actually went), distinct from the vehicle's standing primary/secondary assignment.
+      Must differ from `driver_id`, and one-mission-at-a-time: `DispatchGuard` now treats a
+      driver as busy whether they appear as the primary OR the second driver, and
+      `assertFree` locks/checks the second driver too. Nullable, so an ordinary one-driver
+      dispatch is unchanged. ERD: a second users→dispatches relationship line; no new entity.
     - **`users.nc_ii_number` / `users.nc_ii_expiry_date`** — the driver's TESDA National
       Certificate II (Driving), monitored like the licence against the agency warning window
       (a flag on the Drivers page). Kept simple: it does NOT add a dashboard counter or a
@@ -318,6 +325,7 @@ users          ──< notifications  (recipient)
 | secondary driver (user) → vehicle(s) | one-to-many, optional (each vehicle has at most one secondary/backup driver; a driver may be the secondary driver of more than one vehicle) (FR-07, 2026-09) | `vehicles.secondary_driver_id` |
 | vehicle → inspections / damage_reports / repair_logs / pm_schedules / dispatches | one-to-many | `vehicle_id` on each |
 | driver (user) → inspections / damage_reports / repair_logs / dispatches | one-to-many | `driver_id` on each |
+| second driver (user) → dispatches | one-to-many, optional (a mission may carry a second driver) (FR-17, 2026-09) | `dispatches.second_driver_id` |
 | admin (user) → reviewed inspections / damage_reports | one-to-many | `reviewed_by` |
 | inspection → inspection_items | one-to-many | `inspection_items.inspection_id` |
 | checklist item (catalog) → inspection_items | one-to-many | `inspection_items.checklist_item_id` |
@@ -481,6 +489,7 @@ standard and not detailed below.
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies (scoping). |
 | vehicle_id | BIGINT UNSIGNED | No | — | FK → vehicles. |
 | driver_id | BIGINT UNSIGNED | No | — | FK → users (dispatched driver). |
+| second_driver_id | BIGINT UNSIGNED | Yes | NULL | FK → users (role=driver). **Optional second driver** for a two-crew mission (FR-17, 2026-09 — interview-backed). Per-dispatch (who actually went on this mission), distinct from the vehicle's standing primary/secondary assignment. Must differ from `driver_id`; one-mission-at-a-time like the primary (a driver named here cannot be out on another active dispatch — DispatchGuard treats primary and second alike). Null for an ordinary one-driver dispatch. |
 | mission_type | ENUM('Fire Response','Medical Response','Rescue Operation','Patrol','Administrative Travel','Others') | No | — | Mission type (FR-15). |
 | mission_other | VARCHAR(255) | Yes | NULL | Free text when mission_type = Others (prototype `missionOther`). |
 | location | VARCHAR(255) | No | — | Dispatch location (FR-15). |
