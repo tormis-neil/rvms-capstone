@@ -329,15 +329,26 @@
                                 <input type="date" name="nc_ii_expiry_date" value="{{ old('nc_ii_expiry_date') }}" class="form-control">
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Assign Vehicle (Optional)</label>
-                            <select class="form-select" name="assigned_vehicle_id">
-                                <option value="">Unassigned</option>
-                                {{-- Only currently-unassigned vehicles — never steals another driver's vehicle --}}
-                                @foreach ($availableVehicles as $vehicle)
-                                <option value="{{ $vehicle->id }}" @selected(old('assigned_vehicle_id') == $vehicle->id)>{{ $vehicle->plate_number }} ({{ $vehicle->type }})</option>
-                                @endforeach
-                            </select>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-7">
+                                <label class="form-label fw-semibold">Assign Vehicle (Optional)</label>
+                                <select class="form-select @error('assigned_vehicle_id') is-invalid @enderror" name="assigned_vehicle_id">
+                                    <option value="">Unassigned</option>
+                                    @foreach ($assignableVehicles as $vehicle)
+                                    <option value="{{ $vehicle->id }}" @selected(old('assigned_vehicle_id') == $vehicle->id)>{{ $vehicle->plate_number }} ({{ $vehicle->type }})</option>
+                                    @endforeach
+                                </select>
+                                @error('assigned_vehicle_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            {{-- Assign this driver into the vehicle's PRIMARY or SECONDARY slot
+                                 (2026-09). The slot/conflict rule is enforced server-side. --}}
+                            <div class="col-md-5">
+                                <label class="form-label fw-semibold">Assign as</label>
+                                <select class="form-select" name="assigned_vehicle_role">
+                                    <option value="primary" @selected(old('assigned_vehicle_role', 'primary') === 'primary')>Primary Driver</option>
+                                    <option value="secondary" @selected(old('assigned_vehicle_role') === 'secondary')>Secondary Driver</option>
+                                </select>
+                            </div>
                         </div>
                 </div>
                 <div class="modal-footer border-0">
@@ -394,18 +405,28 @@
                                 <input type="date" name="nc_ii_expiry_date" class="form-control" id="edNciiExpiry">
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Assign Vehicle</label>
-                            {{-- First option reads "No change" (not "Unassigned") — approved plan
-                                 R2 Day 4 sub-task 13 — so editing other fields never accidentally
-                                 clears an assignment. Selecting a vehicle can only ever pick one
-                                 that is unassigned or already this driver's own. --}}
-                            <select class="form-select" name="assigned_vehicle_id" id="edVehicle">
-                                <option value="">No change</option>
-                                @foreach ($availableVehicles as $vehicle)
-                                <option value="{{ $vehicle->id }}">{{ $vehicle->plate_number }} ({{ $vehicle->type }})</option>
-                                @endforeach
-                            </select>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-7">
+                                <label class="form-label fw-semibold">Assign Vehicle</label>
+                                {{-- First option reads "No change" (not "Unassigned") — approved plan
+                                     R2 Day 4 sub-task 13 — so editing other fields never accidentally
+                                     clears an assignment. Any agency vehicle can be picked; the
+                                     slot/conflict rule is enforced server-side (2026-09). --}}
+                                <select class="form-select @error('assigned_vehicle_id') is-invalid @enderror" name="assigned_vehicle_id" id="edVehicle">
+                                    <option value="">No change</option>
+                                    @foreach ($assignableVehicles as $vehicle)
+                                    <option value="{{ $vehicle->id }}">{{ $vehicle->plate_number }} ({{ $vehicle->type }})</option>
+                                    @endforeach
+                                </select>
+                                @error('assigned_vehicle_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label fw-semibold">Assign as</label>
+                                <select class="form-select" name="assigned_vehicle_role" id="edVehicleRole">
+                                    <option value="primary">Primary Driver</option>
+                                    <option value="secondary">Secondary Driver</option>
+                                </select>
+                            </div>
                         </div>
                 </div>
                 <div class="modal-footer border-0">
@@ -492,7 +513,6 @@
         // Live wiring: modal population from the clicked row's data attributes,
         // mirroring the prototype's own agency.js driver-modal behavior.
         const LIC_TONE = { 'Valid': 'success', 'Expiring Soon': 'warning', 'Expired': 'danger' };
-        const vehicleLabels = @json($vehicleLabels);
 
         function rowData(event) {
             const row = event.relatedTarget && event.relatedTarget.closest('tr');
@@ -529,20 +549,10 @@
             document.getElementById('edNcii').value = d.ncii || '';
             document.getElementById('edNciiExpiry').value = d.nciiExpiry || '';
 
-            // Inject this driver's own current vehicle(s) as extra options (excluded
-            // from the base "available" list) so they're visible/selectable here too.
-            const select = document.getElementById('edVehicle');
-            select.querySelectorAll('option[data-own]').forEach(o => o.remove());
-            const ids = (d.vehicleIds || '').split(',').filter(Boolean);
-            ids.forEach((id, index) => {
-                const opt = document.createElement('option');
-                opt.value = id;
-                opt.dataset.own = 'true';
-                opt.textContent = vehicleLabels[id] || ('Vehicle #' + id);
-                select.appendChild(opt);
-                if (index === 0) opt.selected = true;
-            });
-            if (ids.length === 0) select.value = '';
+            // The dropdown already lists every agency vehicle, so just reset to the
+            // safe defaults each time the modal opens: "No change" + Primary (2026-09).
+            document.getElementById('edVehicle').value = '';
+            document.getElementById('edVehicleRole').value = 'primary';
         });
 
         // Row action added 2026-08: reset password (FR-22).

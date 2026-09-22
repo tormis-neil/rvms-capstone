@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesVehicleAssignment;
 use App\Models\Vehicle;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,6 +14,8 @@ use Illuminate\Validation\Rule;
  */
 class StoreDriverRequest extends FormRequest
 {
+    use ValidatesVehicleAssignment;
+
     public function authorize(): bool
     {
         return true;
@@ -39,13 +43,20 @@ class StoreDriverRequest extends FormRequest
             // the licence (FR-08, FR-10, 2026-09). Nullable, no unique index.
             'nc_ii_number' => ['nullable', 'string', 'max:50'],
             'nc_ii_expiry_date' => ['nullable', 'date'],
+            // Any vehicle of the admin's own agency; the slot/conflict check for
+            // the chosen role happens in withValidator (2026-09).
             'assigned_vehicle_id' => [
                 'nullable',
-                Rule::exists('vehicles', 'id')
-                    ->where('agency_id', $agencyId)
-                    ->whereNull('assigned_driver_id'),
+                Rule::exists('vehicles', 'id')->where('agency_id', $agencyId),
             ],
+            'assigned_vehicle_role' => ['nullable', Rule::in(['primary', 'secondary'])],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        // A new driver holds no slot yet, so pass null.
+        $validator->after(fn (Validator $v) => $this->validateVehicleAssignment($v, null));
     }
 
     public function messages(): array
@@ -54,7 +65,6 @@ class StoreDriverRequest extends FormRequest
             'email.unique' => 'An account with this email address already exists.',
             'license_number.unique' => 'A driver with this license number already exists in your agency.',
             'password.confirmed' => 'The password confirmation does not match.',
-            'assigned_vehicle_id.exists' => 'That vehicle is not available to assign (it may already have a driver).',
         ];
     }
 }
