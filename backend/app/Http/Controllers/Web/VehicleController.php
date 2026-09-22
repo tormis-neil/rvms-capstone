@@ -21,7 +21,7 @@ class VehicleController extends Controller
     public function index(Request $request): View
     {
         $vehicles = Vehicle::query()
-            ->with('assignedDriver')
+            ->with(['assignedDriver', 'secondaryDriver'])
             ->when($request->filled('search'), function ($query) use ($request) {
                 $term = '%'.$request->string('search').'%';
                 $query->where(fn ($q) => $q

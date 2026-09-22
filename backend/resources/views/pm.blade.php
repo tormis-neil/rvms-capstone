@@ -50,6 +50,7 @@
                                             data-plate="{{ $pm->vehicle->plate_number ?? '—' }}"
                                             data-type="{{ $pm->vehicle->type ?? '' }}"
                                             data-target="{{ $pm->service_target }}"
+                                            data-document="{{ $pm->schedule_document_path ? asset('storage/'.$pm->schedule_document_path) : '' }}"
                                             data-pm-type="{{ $pm->pm_type }}"
                                             data-interval-km="{{ $pm->interval_km }}"
                                             data-last-pm-mileage="{{ $pm->last_pm_mileage }}"
@@ -165,7 +166,7 @@
                     <h5 class="modal-title fw-bold">Create PM Schedule</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="{{ route('pm.store') }}">
+                <form method="POST" action="{{ route('pm.store') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body p-4">
                         <div class="mb-3">
@@ -178,7 +179,17 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Specific Part(s)</label>
-                            <input type="text" class="form-control" name="service_target" placeholder="e.g., Oil Change & Filter, Tire Replacement" required>
+                            <input type="text" class="form-control @error('service_target') is-invalid @enderror" name="service_target" placeholder="e.g., Oil Change & Filter, Tire Replacement" required>
+                            @error('service_target')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        {{-- Optional pre-service supporting document (FR-14, 2026-09) — the
+                             pre-inspection checklist / recommendation that justifies scheduling.
+                             Documented addition (not in the prototype). --}}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Supporting Document <span class="text-secondary fw-normal">(Optional)</span></label>
+                            <input type="file" class="form-control @error('schedule_document') is-invalid @enderror" name="schedule_document" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif">
+                            <div class="form-text">Pre-inspection checklist or recommendation. PDF or image, up to 5 MB.</div>
+                            @error('schedule_document')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">PM Type</label>
@@ -317,7 +328,7 @@
                     <h5 class="modal-title fw-bold">Edit PM Schedule</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" id="editPmForm" action="#">
+                <form method="POST" id="editPmForm" action="#" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <div class="modal-body p-4">
@@ -329,6 +340,14 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Specific Part(s)</label>
                             <input type="text" class="form-control" name="service_target" id="epTarget" required>
+                        </div>
+                        {{-- Optional pre-service supporting document (FR-14, 2026-09). A new
+                             upload replaces the current one; leaving it blank keeps it. --}}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Supporting Document <span class="text-secondary fw-normal">(Optional)</span></label>
+                            <div class="small mb-1" id="epDocCurrent"></div>
+                            <input type="file" class="form-control" name="schedule_document" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif">
+                            <div class="form-text">PDF or image, up to 5 MB. Leave blank to keep the current file.</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">PM Type</label>
@@ -452,6 +471,9 @@
             document.getElementById('epVehicleId').value = d.vehicleId;
             document.getElementById('epVehicle').value = d.plate + (d.type ? ' (' + d.type + ')' : '');
             document.getElementById('epTarget').value = d.target || '';
+            document.getElementById('epDocCurrent').innerHTML = d.document
+                ? '<a href="' + d.document + '" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> View current document</a>'
+                : '<span class="text-secondary">No document on file.</span>';
             document.getElementById('epType').value = d.pmType;
             document.getElementById('epIntervalKm').value = d.intervalKm || '';
             document.getElementById('epLastMileage').value = d.lastPmMileage || '';

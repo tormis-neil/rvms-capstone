@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.rvms.data.ServiceLocator
 import com.example.rvms.data.UpdateProfileResult
@@ -56,6 +57,8 @@ fun EditProfileDialog(
     var email by remember { mutableStateOf(initialEmail) }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+    var confirmVisible by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
 
@@ -101,7 +104,13 @@ fun EditProfileDialog(
                     singleLine = true,
                     enabled = !saving,
                     isError = tooShort,
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    // Reveal toggle (NFR-03, 2026-09).
+                    trailingIcon = {
+                        TextButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Text(if (passwordVisible) "Hide" else "Show")
+                        }
+                    },
                     supportingText = if (tooShort) {
                         { Text("At least 8 characters.", color = ErrorRed) }
                     } else {
@@ -118,7 +127,12 @@ fun EditProfileDialog(
                     singleLine = true,
                     enabled = !saving,
                     isError = mismatch,
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (confirmVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        TextButton(onClick = { confirmVisible = !confirmVisible }) {
+                            Text(if (confirmVisible) "Hide" else "Show")
+                        }
+                    },
                     supportingText = if (mismatch) {
                         { Text("Passwords do not match.", color = ErrorRed) }
                     } else {

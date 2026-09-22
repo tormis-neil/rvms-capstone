@@ -74,6 +74,7 @@ class Vehicle extends Model
     protected $fillable = [
         'agency_id',
         'assigned_driver_id',
+        'secondary_driver_id',
         'type',
         'plate_number',
         'make',
@@ -114,6 +115,12 @@ class Vehicle extends Model
     public function assignedDriver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_driver_id');
+    }
+
+    /** Optional secondary/backup driver crewing this vehicle (FR-07, 2026-09). */
+    public function secondaryDriver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'secondary_driver_id');
     }
 
     public function badgeClass(): string

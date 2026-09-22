@@ -42,6 +42,7 @@ class Dispatch extends Model
         'mission_other',
         'location',
         'time_out',
+        'travel_order_path',
         'odometer_out',
         'time_in',
         'odometer_in',

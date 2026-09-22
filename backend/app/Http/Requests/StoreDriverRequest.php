@@ -35,6 +35,10 @@ class StoreDriverRequest extends FormRequest
                 Rule::unique('users', 'license_number')->where('agency_id', $agencyId),
             ],
             'license_expiry_date' => ['nullable', 'date'],
+            // TESDA NC II (Driving) — optional second credential, monitored like
+            // the licence (FR-08, FR-10, 2026-09). Nullable, no unique index.
+            'nc_ii_number' => ['nullable', 'string', 'max:50'],
+            'nc_ii_expiry_date' => ['nullable', 'date'],
             'assigned_vehicle_id' => [
                 'nullable',
                 Rule::exists('vehicles', 'id')

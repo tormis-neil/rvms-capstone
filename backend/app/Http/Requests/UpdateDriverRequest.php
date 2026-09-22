@@ -59,6 +59,9 @@ class UpdateDriverRequest extends FormRequest
                     ->ignore($driverId),
             ],
             'license_expiry_date' => ['nullable', 'date'],
+            // TESDA NC II (Driving) — optional second credential (FR-08, 2026-09).
+            'nc_ii_number' => ['nullable', 'string', 'max:50'],
+            'nc_ii_expiry_date' => ['nullable', 'date'],
             'assigned_vehicle_id' => [
                 'nullable',
                 Rule::exists('vehicles', 'id')->where(function ($query) use ($agencyId, $driverId) {

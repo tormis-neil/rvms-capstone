@@ -56,6 +56,17 @@ class StoreVehicleRequest extends FormRequest
                     ->where('agency_id', $agencyId)
                     ->where('role', User::ROLE_DRIVER),
             ],
+            // Optional secondary/backup driver (FR-07, 2026-09). Same agency-driver
+            // rule as the primary, and it must be a DIFFERENT person — one driver
+            // cannot fill both crew slots. `different` is skipped while the field
+            // is empty (nullable), so a single-driver vehicle is unaffected.
+            'secondary_driver_id' => [
+                'nullable',
+                'different:assigned_driver_id',
+                Rule::exists('users', 'id')
+                    ->where('agency_id', $agencyId)
+                    ->where('role', User::ROLE_DRIVER),
+            ],
         ];
     }
 
@@ -66,6 +77,8 @@ class StoreVehicleRequest extends FormRequest
             'engine_number.unique' => 'A vehicle with this engine number already exists in your agency.',
             'chassis_number.unique' => 'A vehicle with this chassis number already exists in your agency.',
             'assigned_driver_id.exists' => 'The assigned driver must be an authorized driver of your agency.',
+            'secondary_driver_id.exists' => 'The secondary driver must be an authorized driver of your agency.',
+            'secondary_driver_id.different' => 'The secondary driver must be different from the primary driver.',
         ];
     }
 }

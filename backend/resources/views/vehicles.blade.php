@@ -78,6 +78,8 @@
                                     data-makemodel="{{ $vehicle->make }} {{ $vehicle->model }}"
                                     data-driver="{{ $vehicle->assignedDriver->name ?? 'Unassigned' }}"
                                     data-driver-id="{{ $vehicle->assigned_driver_id }}"
+                                    data-secondary-driver="{{ $vehicle->secondaryDriver->name ?? '—' }}"
+                                    data-secondary-driver-id="{{ $vehicle->secondary_driver_id }}"
                                     data-mileage="{{ $vehicle->mileageLabel() }}"
                                     data-status="{{ $vehicle->status }}"
                                     data-badge="{{ $vehicle->badgeClass() }}"
@@ -90,7 +92,12 @@
                                         <div class="fw-semibold">{{ $vehicle->type }}</div>
                                         <div class="small text-secondary">{{ $vehicle->make }} {{ $vehicle->model }}</div>
                                     </td>
-                                    <td>{{ $vehicle->assignedDriver->name ?? 'Unassigned' }}</td>
+                                    <td>
+                                        {{ $vehicle->assignedDriver->name ?? 'Unassigned' }}
+                                        @if ($vehicle->secondaryDriver)
+                                        <div class="small text-secondary">Secondary: {{ $vehicle->secondaryDriver->name }}</div>
+                                        @endif
+                                    </td>
                                     <td>{{ $vehicle->mileageLabel() }}</td>
                                     <td>
                                         <span class="badge status-badge {{ $vehicle->badgeClass() }} px-3 py-2 rounded-pill">{{ $vehicle->status }}</span>
@@ -181,6 +188,18 @@
                                     @endforeach
                                 </select>
                             </div>
+                            {{-- Optional secondary/backup driver (FR-07, 2026-09). Documented
+                                 addition — the prototype had only a single driver select. --}}
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Secondary Driver <span class="text-secondary fw-normal">(Optional)</span></label>
+                                <select class="form-select @error('secondary_driver_id') is-invalid @enderror" name="secondary_driver_id">
+                                    <option value="">None</option>
+                                    @foreach ($drivers as $driver)
+                                    <option value="{{ $driver->id }}" @selected(old('secondary_driver_id') == $driver->id)>{{ $driver->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('secondary_driver_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
                         </div>
                 </div>
                 <div class="modal-footer border-0">
@@ -253,6 +272,16 @@
                                     @endforeach
                                 </select>
                             </div>
+                            {{-- Optional secondary/backup driver (FR-07, 2026-09). --}}
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Secondary Driver <span class="text-secondary fw-normal">(Optional)</span></label>
+                                <select class="form-select" name="secondary_driver_id" id="evSecondaryDriver">
+                                    <option value="">None</option>
+                                    @foreach ($drivers as $driver)
+                                    <option value="{{ $driver->id }}">{{ $driver->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
                 </div>
                 <div class="modal-footer border-0">
@@ -293,6 +322,10 @@
                         <li class="list-group-item d-flex justify-content-between align-items-center py-3">
                             <span class="text-secondary small fw-semibold">Assigned Driver</span>
                             <span class="fw-medium" id="vvDriver">Juan Dela Cruz</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <span class="text-secondary small fw-semibold">Secondary Driver</span>
+                            <span class="fw-medium" id="vvSecondaryDriver">—</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center py-3">
                             <span class="text-secondary small fw-semibold">Current Mileage</span>
@@ -340,6 +373,7 @@
             document.getElementById('vvType').textContent = d.type;
             document.getElementById('vvMakeModel').textContent = d.makemodel;
             document.getElementById('vvDriver').textContent = d.driver;
+            document.getElementById('vvSecondaryDriver').textContent = d.secondaryDriver || '—';
             document.getElementById('vvMileage').textContent = d.mileage;
             document.getElementById('vvEngine').textContent = d.engine;
             document.getElementById('vvChassis').textContent = d.chassis;
@@ -364,6 +398,7 @@
             document.getElementById('evChassis').value = d.chassis;
             document.getElementById('evMileage').value = d.mileage.replace(/[^0-9]/g, '');
             document.getElementById('evDriver').value = d.driverId || '';
+            document.getElementById('evSecondaryDriver').value = d.secondaryDriverId || '';
         });
 
         // The Update Status modal and ALL of its wiring now live in

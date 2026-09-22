@@ -30,6 +30,7 @@ class PmSchedule extends Model
         'agency_id',
         'vehicle_id',
         'service_target',
+        'schedule_document_path',
         'pm_type',
         'interval_km',
         'last_pm_mileage',

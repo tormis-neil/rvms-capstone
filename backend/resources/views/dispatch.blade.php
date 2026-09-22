@@ -57,6 +57,7 @@
                                     data-active="{{ $d->isActive() ? '1' : '' }}"
                                     data-odometer-out="{{ $d->odometer_out }}"
                                     data-return-status="{{ $d->return_status }}"
+                                    data-travel-order="{{ $d->travel_order_path ? asset('storage/'.$d->travel_order_path) : '' }}"
                                     data-remarks="{{ $d->remarks }}">
                                     <td>
                                         <div class="fw-bold">{{ $d->missionLabel() }}</div>
@@ -116,7 +117,7 @@
                     <h5 class="modal-title fw-bold">New Vehicle Dispatch</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="{{ route('dispatch.store') }}">
+                <form method="POST" action="{{ route('dispatch.store') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body p-4">
                         <div class="mb-3">
@@ -191,6 +192,15 @@
                                 <label class="form-label fw-semibold">Odometer Out</label>
                                 <input type="number" min="0" class="form-control" name="odometer_out" placeholder="Optional (km)">
                             </div>
+                        </div>
+                        {{-- Optional travel order attached at open (FR-15, 2026-09). Documented
+                             addition — authorises the trip; optional so an emergency response is
+                             never blocked waiting on paperwork. --}}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Travel Order <span class="text-secondary fw-normal">(Optional)</span></label>
+                            <input type="file" class="form-control @error('travel_order') is-invalid @enderror" name="travel_order" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif">
+                            <div class="form-text">Travel order or authorisation. PDF or image, up to 5 MB.</div>
+                            @error('travel_order')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Remarks</label>
@@ -350,6 +360,10 @@
                         <div class="col-6">
                             <p class="mb-1 text-secondary small">Return Status</p>
                             <h6 class="fw-bold" id="vwReturn">—</h6>
+                        </div>
+                        <div class="col-12">
+                            <p class="mb-1 text-secondary small">Travel Order</p>
+                            <h6 class="fw-bold" id="vwTravelOrder">—</h6>
                         </div>
                     </div>
                 </div>
@@ -623,6 +637,9 @@
             badge.classList.remove('bg-primary', 'bg-secondary');
             badge.classList.add(active ? 'bg-primary' : 'bg-secondary');
             document.getElementById('vwReturn').textContent = d.returnStatus || '—';
+            document.getElementById('vwTravelOrder').innerHTML = d.travelOrder
+                ? '<a href="' + d.travelOrder + '" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> View travel order</a>'
+                : '<span class="text-secondary fw-normal">None attached</span>';
         });
     </script>
 @endsection

@@ -155,7 +155,7 @@
                                      the 3rd "Update License" action button that agency.js paints (not in
                                      the static HTML — confirmed via a live pixel-diff against the prototype). --}}
                                 @forelse ($drivers as $driver)
-                                @php $licenseStatus = $driver->licenseStatus(); @endphp
+                                @php $licenseStatus = $driver->licenseStatus(); $ncIiStatus = $driver->ncIiStatus(); @endphp
                                 <tr data-id="{{ $driver->id }}"
                                     data-name="{{ $driver->name }}"
                                     data-email="{{ $driver->email }}"
@@ -163,6 +163,10 @@
                                     data-expiry="{{ $driver->license_expiry_date?->toDateString() }}"
                                     data-expiry-label="{{ $driver->license_expiry_date ? \Illuminate\Support\Carbon::parse($driver->license_expiry_date)->format('M j, Y') : '—' }}"
                                     data-status="{{ $licenseStatus }}"
+                                    data-ncii="{{ $driver->nc_ii_number }}"
+                                    data-ncii-expiry="{{ $driver->nc_ii_expiry_date?->toDateString() }}"
+                                    data-ncii-expiry-label="{{ $driver->nc_ii_expiry_date ? \Illuminate\Support\Carbon::parse($driver->nc_ii_expiry_date)->format('M j, Y') : '—' }}"
+                                    data-ncii-status="{{ $ncIiStatus }}"
                                     data-vehicle-ids="{{ $driver->vehicles->pluck('id')->implode(',') }}"
                                     data-vehicle="{{ $driver->vehicles->isNotEmpty() ? $driver->vehicles->map(fn ($v) => "{$v->plate_number} ({$v->type})")->implode(', ') : 'Unassigned' }}">
                                     <td>
@@ -178,6 +182,13 @@
                                         <span class="badge bg-{{ ['Valid' => 'success', 'Expiring Soon' => 'warning', 'Expired' => 'danger'][$licenseStatus] }} bg-opacity-10 text-{{ ['Valid' => 'success', 'Expiring Soon' => 'warning', 'Expired' => 'danger'][$licenseStatus] }} px-3 py-2 rounded-pill">{{ $licenseStatus }}</span>
                                         @else
                                         <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">No License</span>
+                                        @endif
+                                        {{-- NC II (TESDA) monitoring flag — shown only when the driver
+                                             carries an NC II that is expiring or expired (FR-10, 2026-09).
+                                             In the same cell as the licence badge to keep the table's
+                                             column count unchanged. --}}
+                                        @if ($ncIiStatus && $ncIiStatus !== 'Valid')
+                                        <span class="badge bg-{{ $ncIiStatus === 'Expired' ? 'danger' : 'warning' }} bg-opacity-10 text-{{ $ncIiStatus === 'Expired' ? 'danger' : 'warning' }} px-3 py-2 rounded-pill d-inline-block mt-1">NC II {{ $ncIiStatus }}</span>
                                         @endif
                                     </td>
                                     <td>{{ $driver->vehicles->isNotEmpty() ? $driver->vehicles->map(fn ($v) => "{$v->plate_number} ({$v->type})")->implode(', ') : 'Unassigned' }}</td>
@@ -233,8 +244,11 @@
                              driver's sign-in should not be possible from an unattended
                              logged-in dashboard. --}}
                         <label class="form-label small fw-semibold">Your Current Password</label>
-                        <input type="password" name="current_password" class="form-control mb-3" required
-                               placeholder="Confirm it is you">
+                        <div class="input-group mb-3">
+                            <input type="password" name="current_password" class="form-control" required
+                                   placeholder="Confirm it is you">
+                            @include('partials.password-toggle-btn')
+                        </div>
                         <label class="form-label small fw-semibold">Their New Password</label>
                         <input type="text" name="password" class="form-control" minlength="8" required
                                placeholder="At least 8 characters">
@@ -273,11 +287,17 @@
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Password</label>
-                                <input type="password" name="password" class="form-control" placeholder="Set a password" required>
+                                <div class="input-group">
+                                    <input type="password" name="password" class="form-control" placeholder="Set a password" required>
+                                    @include('partials.password-toggle-btn')
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Confirm Password</label>
-                                <input type="password" name="password_confirmation" class="form-control" placeholder="Re-enter password" required>
+                                <div class="input-group">
+                                    <input type="password" name="password_confirmation" class="form-control" placeholder="Re-enter password" required>
+                                    @include('partials.password-toggle-btn')
+                                </div>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -287,6 +307,18 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold">License Expiry Date</label>
                             <input type="date" name="license_expiry_date" value="{{ old('license_expiry_date') }}" class="form-control">
+                        </div>
+                        {{-- TESDA NC II (Driving) — optional second credential, monitored like the
+                             licence (FR-08, FR-10, 2026-09). Documented addition (not in the prototype). --}}
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">NC II Number <span class="text-secondary fw-normal">(Optional)</span></label>
+                                <input type="text" name="nc_ii_number" value="{{ old('nc_ii_number') }}" class="form-control" placeholder="TESDA NC II (Driving)">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">NC II Expiry Date <span class="text-secondary fw-normal">(Optional)</span></label>
+                                <input type="date" name="nc_ii_expiry_date" value="{{ old('nc_ii_expiry_date') }}" class="form-control">
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Assign Vehicle (Optional)</label>
@@ -341,6 +373,17 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold">License Expiry Date</label>
                             <input type="date" name="license_expiry_date" class="form-control" id="edExpiry">
+                        </div>
+                        {{-- TESDA NC II (Driving) — optional second credential (FR-08, FR-10, 2026-09). --}}
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">NC II Number <span class="text-secondary fw-normal">(Optional)</span></label>
+                                <input type="text" name="nc_ii_number" class="form-control" id="edNcii">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">NC II Expiry Date <span class="text-secondary fw-normal">(Optional)</span></label>
+                                <input type="date" name="nc_ii_expiry_date" class="form-control" id="edNciiExpiry">
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Assign Vehicle</label>
@@ -414,6 +457,14 @@
                             <span class="fw-medium" id="vdExpiry">Dec 15, 2027</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <span class="text-secondary small fw-semibold">NC II No.</span>
+                            <span class="fw-medium font-monospace" id="vdNcii">—</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <span class="text-secondary small fw-semibold">NC II Expiry</span>
+                            <span class="fw-medium" id="vdNciiExpiry">—</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
                             <span class="text-secondary small fw-semibold">Assigned Vehicle</span>
                             <span class="fw-medium" id="vdVehicle">ABC-1234 (Fire Truck)</span>
                         </li>
@@ -447,6 +498,8 @@
             document.getElementById('vdEmail').textContent = d.email;
             document.getElementById('vdLicense').textContent = d.license || '—';
             document.getElementById('vdExpiry').textContent = d.expiryLabel;
+            document.getElementById('vdNcii').textContent = d.ncii || '—';
+            document.getElementById('vdNciiExpiry').textContent = d.nciiExpiryLabel || '—';
             document.getElementById('vdVehicle').textContent = d.vehicle;
             const badge = document.getElementById('vdStatusBadge');
             const tone = LIC_TONE[d.status] || 'secondary';
@@ -464,6 +517,8 @@
             document.getElementById('edEmail').value = d.email;
             document.getElementById('edLicense').value = d.license || '';
             document.getElementById('edExpiry').value = d.expiry || '';
+            document.getElementById('edNcii').value = d.ncii || '';
+            document.getElementById('edNciiExpiry').value = d.nciiExpiry || '';
 
             // Inject this driver's own current vehicle(s) as extra options (excluded
             // from the base "available" list) so they're visible/selectable here too.
@@ -491,4 +546,6 @@
         });
 
     </script>
+
+    @include('partials.password-reveal-script')
 @endsection
