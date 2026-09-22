@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesVehicleAssignment;
 use App\Models\User;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -16,6 +18,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class UpdateDriverRequest extends FormRequest
 {
+    use ValidatesVehicleAssignment;
+
     /**
      * The ownership check, BEFORE validation (security audit R10.2/R10.3).
      *
@@ -62,16 +66,20 @@ class UpdateDriverRequest extends FormRequest
             // TESDA NC II (Driving) — optional second credential (FR-08, 2026-09).
             'nc_ii_number' => ['nullable', 'string', 'max:50'],
             'nc_ii_expiry_date' => ['nullable', 'date'],
+            // Any vehicle of the admin's own agency; the slot/conflict check for
+            // the chosen role happens in withValidator (2026-09).
             'assigned_vehicle_id' => [
                 'nullable',
-                Rule::exists('vehicles', 'id')->where(function ($query) use ($agencyId, $driverId) {
-                    $query->where('agency_id', $agencyId)
-                        ->where(function ($q) use ($driverId) {
-                            $q->whereNull('assigned_driver_id')->orWhere('assigned_driver_id', $driverId);
-                        });
-                }),
+                Rule::exists('vehicles', 'id')->where('agency_id', $agencyId),
             ],
+            'assigned_vehicle_role' => ['nullable', Rule::in(['primary', 'secondary'])],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $driverId = (int) $this->route('driver')->id;
+        $validator->after(fn (Validator $v) => $this->validateVehicleAssignment($v, $driverId));
     }
 
     public function messages(): array
@@ -79,7 +87,6 @@ class UpdateDriverRequest extends FormRequest
         return [
             'email.unique' => 'An account with this email address already exists.',
             'license_number.unique' => 'A driver with this license number already exists in your agency.',
-            'assigned_vehicle_id.exists' => 'That vehicle is not available to assign (it may already have a different driver).',
         ];
     }
 }

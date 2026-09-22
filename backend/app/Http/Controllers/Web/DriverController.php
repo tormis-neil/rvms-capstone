@@ -61,27 +61,22 @@ class DriverController extends Controller
             }
         }
 
-        // Vehicles selectable in the Add/Edit forms: unassigned ones, plus the
-        // vehicle(s) already assigned to the driver being edited (added client-side
-        // per row) — the select can never "steal" another driver's vehicle.
-        $availableVehicles = Vehicle::query()
-            ->whereNull('assigned_driver_id')
+        // ALL of the agency's vehicles are selectable in the Add/Edit forms now
+        // (2026-09): a driver can be put into a vehicle's PRIMARY or SECONDARY
+        // slot, and the secondary slot legitimately targets vehicles that already
+        // have a primary. The slot/conflict rule is enforced server-side in the
+        // form requests (ValidatesVehicleAssignment), which reports a friendly
+        // error instead of silently hiding an option. Agency-scoped by the
+        // Vehicle model's global scope.
+        $assignableVehicles = Vehicle::query()
             ->orderBy('plate_number')
             ->get(['id', 'plate_number', 'type']);
-
-        // Label lookup for ALL agency vehicles (incl. already-assigned ones), so the
-        // Edit modal's script can show a driver's own current vehicle(s) as options
-        // even though they're excluded from $availableVehicles above.
-        $vehicleLabels = Vehicle::query()
-            ->get(['id', 'plate_number', 'type'])
-            ->mapWithKeys(fn (Vehicle $v) => [(string) $v->id => "{$v->plate_number} ({$v->type})"]);
 
         return view('drivers', [
             'drivers' => $drivers,
             'pendingDrivers' => $pendingDrivers,
             'licenseCounts' => $licenseCounts,
-            'availableVehicles' => $availableVehicles,
-            'vehicleLabels' => $vehicleLabels,
+            'assignableVehicles' => $assignableVehicles,
         ]);
     }
 
@@ -101,7 +96,8 @@ class DriverController extends Controller
         ]);
 
         if ($vehicleId = $request->validated('assigned_vehicle_id')) {
-            Vehicle::whereKey($vehicleId)->update(['assigned_driver_id' => $driver->id]);
+            $column = $request->validated('assigned_vehicle_role') === 'secondary' ? 'secondary_driver_id' : 'assigned_driver_id';
+            Vehicle::whereKey($vehicleId)->update([$column => $driver->id]);
         }
 
         // A licence can be recorded ALREADY inside the warning window, or
@@ -124,7 +120,8 @@ class DriverController extends Controller
         $driver->update($data);
 
         if ($vehicleId = $request->validated('assigned_vehicle_id')) {
-            Vehicle::whereKey($vehicleId)->update(['assigned_driver_id' => $driver->id]);
+            $column = $request->validated('assigned_vehicle_role') === 'secondary' ? 'secondary_driver_id' : 'assigned_driver_id';
+            Vehicle::whereKey($vehicleId)->update([$column => $driver->id]);
         }
 
         app(MaintenanceAlerts::class)->raiseForDriver($driver->fresh());

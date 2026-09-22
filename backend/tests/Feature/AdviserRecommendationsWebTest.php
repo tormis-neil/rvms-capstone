@@ -127,6 +127,50 @@ class AdviserRecommendationsWebTest extends TestCase
             ->assertSee('AMB-01 (Ambulance) — Secondary');
     }
 
+    public function test_a_driver_can_be_assigned_as_a_secondary_driver_from_the_driver_form(): void
+    {
+        $primary = User::factory()->driver()->create(['agency_id' => $this->agency->id]);
+        $vehicle = Vehicle::factory()->create([
+            'agency_id' => $this->agency->id,
+            'assigned_driver_id' => $primary->id, // already has a primary
+        ]);
+
+        // Add a new driver AND assign them as the vehicle's SECONDARY.
+        $this->actingAs($this->admin)
+            ->post('/drivers', [
+                'name' => 'Backup Person',
+                'email' => 'backup@example.com',
+                'password' => 'secret123',
+                'password_confirmation' => 'secret123',
+                'assigned_vehicle_id' => $vehicle->id,
+                'assigned_vehicle_role' => 'secondary',
+            ])->assertRedirect(route('drivers'));
+
+        $backup = User::query()->where('email', 'backup@example.com')->firstOrFail();
+        $this->assertSame($backup->id, $vehicle->fresh()->secondary_driver_id);
+        // The primary slot was untouched.
+        $this->assertSame($primary->id, $vehicle->fresh()->assigned_driver_id);
+    }
+
+    public function test_the_driver_form_refuses_a_taken_secondary_slot(): void
+    {
+        $taken = User::factory()->driver()->create(['agency_id' => $this->agency->id]);
+        $vehicle = Vehicle::factory()->create([
+            'agency_id' => $this->agency->id,
+            'secondary_driver_id' => $taken->id, // secondary already filled
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post('/drivers', [
+                'name' => 'Late Comer',
+                'email' => 'late@example.com',
+                'password' => 'secret123',
+                'password_confirmation' => 'secret123',
+                'assigned_vehicle_id' => $vehicle->id,
+                'assigned_vehicle_role' => 'secondary',
+            ])->assertSessionHasErrors('assigned_vehicle_id');
+    }
+
     public function test_a_vehicle_web_store_persists_the_secondary_driver(): void
     {
         $primary = User::factory()->driver()->create(['agency_id' => $this->agency->id]);
