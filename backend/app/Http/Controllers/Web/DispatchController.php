@@ -28,7 +28,7 @@ class DispatchController extends Controller
         // banner counts the TRUE total with its own query, so it can never be
         // trimmed to whatever happens to be on the current page.
         $dispatches = Dispatch::query()
-            ->with(['vehicle', 'driver'])
+            ->with(['vehicle', 'driver', 'secondDriver'])
             ->latest('time_out')
             ->latest('id')
             ->paginate(10)
@@ -75,7 +75,11 @@ class DispatchController extends Controller
 
             // Re-check with the rows locked: two admins submitting in the same
             // instant can both clear validation before either has inserted.
-            app(DispatchGuard::class)->assertFree((int) $data['vehicle_id'], (int) $data['driver_id']);
+            app(DispatchGuard::class)->assertFree(
+                (int) $data['vehicle_id'],
+                (int) $data['driver_id'],
+                ! empty($data['second_driver_id']) ? (int) $data['second_driver_id'] : null,
+            );
 
             $dispatch = Dispatch::create($data);
 
@@ -116,6 +120,7 @@ class DispatchController extends Controller
                 app(DispatchGuard::class)->assertFree(
                     (int) $data['vehicle_id'],
                     (int) $data['driver_id'],
+                    ! empty($data['second_driver_id']) ? (int) $data['second_driver_id'] : null,
                     $dispatch->id,
                 );
             }

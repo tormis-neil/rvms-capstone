@@ -24,7 +24,7 @@ class DispatchController extends Controller
     public function index(Request $request)
     {
         $dispatches = Dispatch::query()
-            ->with(['vehicle', 'driver'])
+            ->with(['vehicle', 'driver', 'secondDriver'])
             ->when($request->boolean('active'), fn ($q) => $q->active())
             ->when($request->filled('vehicle_id'), fn ($q) => $q->where('vehicle_id', $request->integer('vehicle_id')))
             ->latest('time_out')
@@ -54,7 +54,11 @@ class DispatchController extends Controller
 
             // Re-check with the rows locked: two admins submitting in the same
             // instant can both clear validation before either has inserted.
-            app(DispatchGuard::class)->assertFree((int) $data['vehicle_id'], (int) $data['driver_id']);
+            app(DispatchGuard::class)->assertFree(
+                (int) $data['vehicle_id'],
+                (int) $data['driver_id'],
+                ! empty($data['second_driver_id']) ? (int) $data['second_driver_id'] : null,
+            );
 
             // agency_id is auto-stamped from the authenticated admin (BelongsToAgency).
             $dispatch = Dispatch::create($data);
@@ -68,14 +72,14 @@ class DispatchController extends Controller
             return $dispatch;
         });
 
-        return DispatchResource::make($dispatch->load(['vehicle', 'driver']))
+        return DispatchResource::make($dispatch->load(['vehicle', 'driver', 'secondDriver']))
             ->response()
             ->setStatusCode(201);
     }
 
     public function show(Dispatch $dispatch)
     {
-        return DispatchResource::make($dispatch->load(['vehicle', 'driver']));
+        return DispatchResource::make($dispatch->load(['vehicle', 'driver', 'secondDriver']));
     }
 
     /**
@@ -107,6 +111,7 @@ class DispatchController extends Controller
                 app(DispatchGuard::class)->assertFree(
                     (int) $data['vehicle_id'],
                     (int) $data['driver_id'],
+                    ! empty($data['second_driver_id']) ? (int) $data['second_driver_id'] : null,
                     $dispatch->id,
                 );
             }
@@ -116,7 +121,7 @@ class DispatchController extends Controller
             app(DispatchReassignment::class)->handOver($dispatch, $previousVehicleId);
         });
 
-        return DispatchResource::make($dispatch->fresh()->load(['vehicle', 'driver']));
+        return DispatchResource::make($dispatch->fresh()->load(['vehicle', 'driver', 'secondDriver']));
     }
 
     /**
@@ -154,7 +159,7 @@ class DispatchController extends Controller
             );
         });
 
-        return DispatchResource::make($dispatch->fresh()->load(['vehicle', 'driver']));
+        return DispatchResource::make($dispatch->fresh()->load(['vehicle', 'driver', 'secondDriver']));
     }
 
     /**

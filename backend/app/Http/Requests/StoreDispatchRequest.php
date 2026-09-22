@@ -36,6 +36,13 @@ class StoreDispatchRequest extends FormRequest
                 'required',
                 Rule::exists('users', 'id')->where('agency_id', $agencyId)->where('role', 'driver'),
             ],
+            // Optional second driver for a two-crew mission (FR-17, 2026-09).
+            // Same agency-driver rule as the primary, and a DIFFERENT person.
+            'second_driver_id' => [
+                'nullable',
+                'different:driver_id',
+                Rule::exists('users', 'id')->where('agency_id', $agencyId)->where('role', 'driver'),
+            ],
             'mission_type' => ['required', Rule::in(Dispatch::MISSION_TYPES)],
             'mission_other' => [
                 'nullable', 'string', 'max:255',
@@ -56,6 +63,8 @@ class StoreDispatchRequest extends FormRequest
     {
         return [
             'mission_other.required' => 'Please specify the mission when the type is "Others".',
+            'second_driver_id.different' => 'The second driver must be different from the primary driver.',
+            'second_driver_id.exists' => 'The second driver must be an authorized driver of your agency.',
             ...$this->supportingDocumentMessages('travel_order'),
         ];
     }
@@ -94,6 +103,15 @@ class StoreDispatchRequest extends FormRequest
             if ($driverId = $this->input('driver_id')) {
                 if ($clash = $guard->openForDriver((int) $driverId, $editingId)) {
                     $validator->errors()->add('driver_id', $guard->driverMessage($clash));
+                }
+            }
+
+            // The optional second driver is out with the vehicle too, so the same
+            // one-mission-at-a-time rule applies to them (FR-17, 2026-09).
+            if ($secondDriverId = $this->input('second_driver_id')) {
+                if ($clash = $guard->openForDriver((int) $secondDriverId, $editingId)) {
+                    $name = \App\Models\User::query()->whereKey($secondDriverId)->value('name');
+                    $validator->errors()->add('second_driver_id', $guard->driverMessage($clash, $name));
                 }
             }
         });

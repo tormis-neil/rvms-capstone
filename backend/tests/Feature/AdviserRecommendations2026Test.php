@@ -144,6 +144,71 @@ class AdviserRecommendations2026Test extends TestCase
         $this->assertDatabaseCount('dispatches', 0);
     }
 
+    /* --------------------- F3b — optional second driver --------------------- */
+
+    public function test_a_dispatch_can_record_an_optional_second_driver(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        $second = User::factory()->driver()->create(['agency_id' => $this->agency->id]);
+
+        $this->postJson('/api/v1/dispatches', $this->dispatchPayload([
+            'second_driver_id' => $second->id,
+        ]))->assertCreated();
+
+        $this->assertSame($second->id, \App\Models\Dispatch::query()->firstOrFail()->second_driver_id);
+    }
+
+    public function test_the_second_driver_is_optional(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        $this->postJson('/api/v1/dispatches', $this->dispatchPayload())->assertCreated();
+
+        $this->assertNull(\App\Models\Dispatch::query()->firstOrFail()->second_driver_id);
+    }
+
+    public function test_the_second_driver_must_differ_from_the_primary(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        $payload = $this->dispatchPayload();
+        $payload['second_driver_id'] = $payload['driver_id'];
+
+        $this->postJson('/api/v1/dispatches', $payload)
+            ->assertStatus(422)->assertJsonValidationErrors('second_driver_id');
+    }
+
+    public function test_a_second_driver_from_another_agency_is_rejected(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        $foreign = User::factory()->driver()->create(); // different agency
+
+        $this->postJson('/api/v1/dispatches', $this->dispatchPayload([
+            'second_driver_id' => $foreign->id,
+        ]))->assertStatus(422)->assertJsonValidationErrors('second_driver_id');
+    }
+
+    /**
+     * A crew member is out with the vehicle, so they cannot be on another active
+     * dispatch — whether they are named as its primary or its second driver.
+     */
+    public function test_a_second_driver_already_out_is_refused(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        // First dispatch: this driver is the PRIMARY.
+        $busy = User::factory()->driver()->create(['agency_id' => $this->agency->id]);
+        $this->postJson('/api/v1/dispatches', $this->dispatchPayload(['driver_id' => $busy->id]))
+            ->assertCreated();
+
+        // Second dispatch tries to use that same person as its SECOND driver.
+        $this->postJson('/api/v1/dispatches', $this->dispatchPayload([
+            'second_driver_id' => $busy->id,
+        ]))->assertStatus(422)->assertJsonValidationErrors('second_driver_id');
+    }
+
     /* ============================== F4 — NC II ============================== */
 
     public function test_a_driver_is_created_with_an_nc_ii_number_and_expiry(): void
