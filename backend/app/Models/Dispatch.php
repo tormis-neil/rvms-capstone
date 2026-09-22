@@ -38,6 +38,7 @@ class Dispatch extends Model
         'agency_id',
         'vehicle_id',
         'driver_id',
+        'second_driver_id',
         'mission_type',
         'mission_other',
         'location',
@@ -66,6 +67,12 @@ class Dispatch extends Model
     public function driver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'driver_id');
+    }
+
+    /** Optional second driver crewing this mission (FR-17, 2026-09). */
+    public function secondDriver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'second_driver_id');
     }
 
     public function isActive(): bool

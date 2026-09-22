@@ -44,9 +44,11 @@
                                     data-id="{{ $d->id }}"
                                     data-vehicle-id="{{ $d->vehicle_id }}"
                                     data-driver-id="{{ $d->driver_id }}"
+                                    data-second-driver-id="{{ $d->second_driver_id }}"
                                     data-plate="{{ $d->vehicle->plate_number ?? '—' }}"
                                     data-type="{{ $d->vehicle->type ?? '' }}"
                                     data-driver="{{ $d->driver->name ?? '—' }}"
+                                    data-second-driver="{{ $d->secondDriver->name ?? '—' }}"
                                     data-mission-type="{{ $d->mission_type }}"
                                     data-mission-other="{{ $d->mission_other }}"
                                     data-mission-label="{{ $d->missionLabel() }}"
@@ -65,7 +67,7 @@
                                     </td>
                                     <td>
                                         <div class="fw-semibold">{{ $d->vehicle->plate_number ?? '—' }}</div>
-                                        <div class="small text-secondary">{{ $d->driver->name ?? '—' }}</div>
+                                        <div class="small text-secondary">{{ $d->driver->name ?? '—' }}@if ($d->secondDriver) &amp; {{ $d->secondDriver->name }}@endif</div>
                                     </td>
                                     <td>
                                         <div class="fw-medium">{{ $d->time_out?->isToday() ? 'Today' : $d->time_out?->format('M j, Y') }}</div>
@@ -161,6 +163,19 @@
                                 @endforeach
                             </select>
                             <div class="form-text js-nd-driver-hint"></div>
+                        </div>
+                        {{-- Optional second driver for a two-crew mission (FR-17, 2026-09).
+                             Documented addition — interview-backed; usable by any agency,
+                             left as "None" for the ordinary one-driver dispatch. --}}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Second Driver <span class="text-secondary fw-normal">(Optional)</span></label>
+                            <select class="form-select @error('second_driver_id') is-invalid @enderror" name="second_driver_id">
+                                <option value="">None</option>
+                                @foreach ($drivers as $driver)
+                                <option value="{{ $driver->id }}" @selected(old('second_driver_id') == $driver->id)>{{ $driver->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('second_driver_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         {{-- Filled by the page script when the chosen driver's licence
                              is expiring or expired (FR-08 -> FR-15, 2026-08). --}}
@@ -276,6 +291,9 @@
                 <div class="modal-body p-4">
                     <input type="hidden" name="vehicle_id" id="edVehicleId">
                     <input type="hidden" name="driver_id" id="edDriverId">
+                    {{-- The crew is fixed on edit (like the primary driver): kept via a
+                         hidden input so it survives the save (FR-17, 2026-09). --}}
+                    <input type="hidden" name="second_driver_id" id="edSecondDriverId">
                     <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-4">
                         <div>
                             <div class="fw-bold" id="edVehicle">—</div>
@@ -348,6 +366,10 @@
                         <div class="col-6">
                             <p class="mb-1 text-secondary small">Driver</p>
                             <h6 class="fw-bold" id="vwDriver">—</h6>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1 text-secondary small">Second Driver</p>
+                            <h6 class="fw-bold" id="vwSecondDriver">—</h6>
                         </div>
                         <div class="col-6">
                             <p class="mb-1 text-secondary small">Time Out</p>
@@ -608,6 +630,7 @@
             document.getElementById('editDispatchForm').action = editDispatchTemplate.replace('__ID__', d.id);
             document.getElementById('edVehicleId').value = d.vehicleId;
             document.getElementById('edDriverId').value = d.driverId;
+            document.getElementById('edSecondDriverId').value = d.secondDriverId || '';
             document.getElementById('edVehicle').value = d.plate + (d.type ? ' (' + d.type + ')' : '');
             document.getElementById('edVehicle').textContent = d.plate + (d.type ? ' (' + d.type + ')' : '');
             document.getElementById('edDriver').textContent = d.driver;
@@ -629,6 +652,7 @@
             document.getElementById('vwLocation').textContent = d.location;
             document.getElementById('vwVehicle').textContent = d.plate;
             document.getElementById('vwDriver').textContent = d.driver;
+            document.getElementById('vwSecondDriver').textContent = (d.secondDriver && d.secondDriver !== '—') ? d.secondDriver : 'None';
             document.getElementById('vwTimeOut').textContent = d.timeOutLabel || '—';
             document.getElementById('vwTimeIn').textContent = d.timeInLabel || '—';
             const active = d.active === '1';

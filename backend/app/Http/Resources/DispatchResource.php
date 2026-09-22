@@ -17,6 +17,7 @@ class DispatchResource extends JsonResource
             'agency_id' => $this->agency_id,
             'vehicle_id' => $this->vehicle_id,
             'driver_id' => $this->driver_id,
+            'second_driver_id' => $this->second_driver_id,
             'mission_type' => $this->mission_type,
             'mission_other' => $this->mission_other,
             'location' => $this->location,
@@ -36,6 +37,10 @@ class DispatchResource extends JsonResource
                 'id' => $this->driver->id,
                 'name' => $this->driver->name,
             ]),
+            'second_driver' => $this->whenLoaded('secondDriver', fn () => $this->secondDriver ? [
+                'id' => $this->secondDriver->id,
+                'name' => $this->secondDriver->name,
+            ] : null),
         ];
     }
 }

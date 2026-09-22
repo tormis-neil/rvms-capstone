@@ -289,7 +289,7 @@ from the manuscript):
 | `damage_reports` | 13 | |
 | `repair_logs` | 14 | includes `receipt_path` (added 2026-08 — FR-13) |
 | `pm_schedules` | 22 | two configurable threshold columns; includes `completion_mileage`, `completion_external_shop_name` and `completion_receipt_path` (all added 2026-08 — FR-14); +`schedule_document_path` (2026-09 — FR-14) |
-| `dispatches` | 16 | includes `odometer_out`, `odometer_in`; +`travel_order_path` (2026-09 — FR-15) |
+| `dispatches` | 17 | includes `odometer_out`, `odometer_in`; +`travel_order_path`, +`second_driver_id` (2026-09 — FR-15/FR-17) |
 | `notifications` | 11 | `type` is a **10-value** enum |
 
 ### ⚠️ SUPERSEDED (2026-08-27): `deleted_at` is NOT in the manuscript — the columns no longer exist
