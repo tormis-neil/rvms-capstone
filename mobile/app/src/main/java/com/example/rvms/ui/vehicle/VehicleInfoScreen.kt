@@ -90,7 +90,6 @@ fun VehicleInfoScreen(
     // the foreground, and pullable by hand (FR-07, FR-18, NFR-04).
     RefreshOnResume { load() }
 
-    val driverName = currentUser?.name.orEmpty()
     val agencyName = currentUser?.agency?.name.orEmpty()
     val scrollState = rememberScrollState()
 
@@ -171,7 +170,7 @@ fun VehicleInfoScreen(
             }
 
             vehicles.forEachIndexed { index, vehicle ->
-                VehicleCard(vehicle = vehicle, driverName = driverName, agencyName = agencyName)
+                VehicleCard(vehicle = vehicle, agencyName = agencyName)
                 if (index != vehicles.lastIndex) {
                     Spacer(modifier = Modifier.height(20.dp))
                 }
@@ -184,7 +183,7 @@ fun VehicleInfoScreen(
 }
 
 @Composable
-private fun VehicleCard(vehicle: VehicleDto, driverName: String, agencyName: String) {
+private fun VehicleCard(vehicle: VehicleDto, agencyName: String) {
     val status = VehicleStatus.fromApiLabel(vehicle.status)
     val statusColor = when (status) {
         VehicleStatus.OPERATIONAL -> StatusOperational
@@ -289,7 +288,9 @@ private fun VehicleCard(vehicle: VehicleDto, driverName: String, agencyName: Str
                 vehicle.myRole?.let { role ->
                     DetailRow("Your Role", if (role == "secondary") "Secondary Driver" else "Primary Driver")
                 }
-                DetailRow("Primary Driver", vehicle.assignedDriver?.name ?: driverName)
+                // Show the ACTUAL primary driver from the record — never the
+                // logged-in user, who may be the secondary (2026-09 fix).
+                DetailRow("Primary Driver", vehicle.assignedDriver?.name ?: "—")
                 DetailRow("Secondary Driver", vehicle.secondaryDriver?.name ?: "—")
                 DetailRow("Agency", agencyName)
             }
