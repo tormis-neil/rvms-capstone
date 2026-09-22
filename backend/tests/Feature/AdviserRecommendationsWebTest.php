@@ -98,8 +98,33 @@ class AdviserRecommendationsWebTest extends TestCase
         $this->actingAs($this->admin)
             ->get('/vehicles')
             ->assertOk()
+            // "Assigned Driver" was renamed to "Primary Driver" for consistency
+            // with the secondary-driver addition (2026-09).
+            ->assertSee('Primary Driver')
             ->assertSee('Secondary Driver')
-            ->assertSee('Backup Crew');
+            ->assertSee('Backup Crew')
+            ->assertDontSee('Assigned Driver');
+    }
+
+    public function test_the_drivers_page_tags_primary_and_secondary_vehicle_roles(): void
+    {
+        $lead = User::factory()->driver()->create(['agency_id' => $this->agency->id, 'name' => 'Lead Driver']);
+        $backup = User::factory()->driver()->create(['agency_id' => $this->agency->id, 'name' => 'Backup Driver']);
+
+        Vehicle::factory()->create([
+            'agency_id' => $this->agency->id,
+            'plate_number' => 'AMB-01',
+            'type' => 'Ambulance',
+            'assigned_driver_id' => $lead->id,
+            'secondary_driver_id' => $backup->id,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get('/drivers')
+            ->assertOk()
+            // The lead's row tags the vehicle as Primary; the backup's as Secondary.
+            ->assertSee('AMB-01 (Ambulance) — Primary')
+            ->assertSee('AMB-01 (Ambulance) — Secondary');
     }
 
     public function test_a_vehicle_web_store_persists_the_secondary_driver(): void

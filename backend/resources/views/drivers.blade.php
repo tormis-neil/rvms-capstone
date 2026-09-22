@@ -155,7 +155,16 @@
                                      the 3rd "Update License" action button that agency.js paints (not in
                                      the static HTML — confirmed via a live pixel-diff against the prototype). --}}
                                 @forelse ($drivers as $driver)
-                                @php $licenseStatus = $driver->licenseStatus(); $ncIiStatus = $driver->ncIiStatus(); @endphp
+                                @php
+                                    $licenseStatus = $driver->licenseStatus();
+                                    $ncIiStatus = $driver->ncIiStatus();
+                                    // Vehicles this driver leads (Primary) and backs up (Secondary),
+                                    // each tagged so the admin sees both roles (2026-09).
+                                    $vehicleParts = collect();
+                                    foreach ($driver->vehicles as $v) { $vehicleParts->push("{$v->plate_number} ({$v->type}) — Primary"); }
+                                    foreach ($driver->secondaryVehicles as $v) { $vehicleParts->push("{$v->plate_number} ({$v->type}) — Secondary"); }
+                                    $vehicleLabel = $vehicleParts->isNotEmpty() ? $vehicleParts->implode(', ') : 'Unassigned';
+                                @endphp
                                 <tr data-id="{{ $driver->id }}"
                                     data-name="{{ $driver->name }}"
                                     data-email="{{ $driver->email }}"
@@ -168,7 +177,7 @@
                                     data-ncii-expiry-label="{{ $driver->nc_ii_expiry_date ? \Illuminate\Support\Carbon::parse($driver->nc_ii_expiry_date)->format('M j, Y') : '—' }}"
                                     data-ncii-status="{{ $ncIiStatus }}"
                                     data-vehicle-ids="{{ $driver->vehicles->pluck('id')->implode(',') }}"
-                                    data-vehicle="{{ $driver->vehicles->isNotEmpty() ? $driver->vehicles->map(fn ($v) => "{$v->plate_number} ({$v->type})")->implode(', ') : 'Unassigned' }}">
+                                    data-vehicle="{{ $vehicleLabel }}">
                                     <td>
                                         <div class="fw-bold">{{ $driver->name }}</div>
                                         <div class="small text-secondary">{{ $driver->email }}</div>
@@ -191,7 +200,7 @@
                                         <span class="badge bg-{{ $ncIiStatus === 'Expired' ? 'danger' : 'warning' }} bg-opacity-10 text-{{ $ncIiStatus === 'Expired' ? 'danger' : 'warning' }} px-3 py-2 rounded-pill d-inline-block mt-1">NC II {{ $ncIiStatus }}</span>
                                         @endif
                                     </td>
-                                    <td>{{ $driver->vehicles->isNotEmpty() ? $driver->vehicles->map(fn ($v) => "{$v->plate_number} ({$v->type})")->implode(', ') : 'Unassigned' }}</td>
+                                    <td>{{ $vehicleLabel }}</td>
                                     <td class="text-end">
                                         <div class="d-flex gap-2 justify-content-end">
                                             <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
