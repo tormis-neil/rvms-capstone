@@ -27,10 +27,16 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      # Installs the Android command-line tools and accepts the SDK licenses;
-      # AGP then downloads platform 36 / build-tools as needed during the build.
+      # Installs the Android command-line tools and accepts the SDK licenses.
+      # packages: '' is required — the action's default tries to install the
+      # obsolete 'tools' package, which no longer exists in the SDK repo and
+      # makes sdkmanager exit 1. With it empty, AGP downloads exactly the
+      # platform 36 / build-tools it needs during the build (licenses already
+      # accepted here).
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: ''
 
       - name: Make the Gradle wrapper executable
         run: chmod +x ./gradlew
