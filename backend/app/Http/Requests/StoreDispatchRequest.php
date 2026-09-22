@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesSupportingDocument;
 use App\Models\Dispatch;
 use App\Services\DispatchGuard;
 use Illuminate\Contracts\Validation\Validator;
@@ -15,6 +16,8 @@ use Illuminate\Validation\Rule;
  */
 class StoreDispatchRequest extends FormRequest
 {
+    use ValidatesSupportingDocument;
+
     public function authorize(): bool
     {
         return true;
@@ -40,6 +43,10 @@ class StoreDispatchRequest extends FormRequest
             ],
             'location' => ['required', 'string', 'max:255'],
             'time_out' => ['required', 'date'],
+            // Optional travel order attached at open — authorises the trip
+            // (FR-15, 2026-09). `travel_order` is the upload; `travel_order_path`
+            // is stored. Optional so an emergency response is never blocked.
+            'travel_order' => $this->supportingDocumentRules(),
             'odometer_out' => ['nullable', 'integer', 'min:0'],
             'remarks' => ['nullable', 'string'],
         ];
@@ -49,6 +56,7 @@ class StoreDispatchRequest extends FormRequest
     {
         return [
             'mission_other.required' => 'Please specify the mission when the type is "Others".',
+            ...$this->supportingDocumentMessages('travel_order'),
         ];
     }
 

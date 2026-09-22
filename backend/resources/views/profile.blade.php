@@ -86,12 +86,18 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold">New Password</label>
-                                            <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" placeholder="Leave blank to keep current" autocomplete="new-password">
-                                            @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                            <div class="input-group has-validation">
+                                                <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" placeholder="Leave blank to keep current" autocomplete="new-password">
+                                                @include('partials.password-toggle-btn')
+                                                @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                            </div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold">Confirm Password</label>
-                                            <input type="password" name="password_confirmation" class="form-control" placeholder="Confirm new password" autocomplete="new-password">
+                                            <div class="input-group">
+                                                <input type="password" name="password_confirmation" class="form-control" placeholder="Confirm new password" autocomplete="new-password">
+                                                @include('partials.password-toggle-btn')
+                                            </div>
                                         </div>
                                     </div>
                                 </form>
@@ -171,19 +177,28 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Password</label>
-                                <input type="password" name="admin_password" class="form-control @error('admin_password') is-invalid @enderror" minlength="8" required autocomplete="new-password">
-                                @error('admin_password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                <div class="input-group has-validation">
+                                    <input type="password" name="admin_password" class="form-control @error('admin_password') is-invalid @enderror" minlength="8" required autocomplete="new-password">
+                                    @include('partials.password-toggle-btn')
+                                    @error('admin_password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Confirm Password</label>
-                                <input type="password" name="admin_password_confirmation" class="form-control" minlength="8" required autocomplete="new-password">
+                                <div class="input-group">
+                                    <input type="password" name="admin_password_confirmation" class="form-control" minlength="8" required autocomplete="new-password">
+                                    @include('partials.password-toggle-btn')
+                                </div>
                             </div>
                         </div>
                         {{-- Confirm your own password before creating a peer with equal reach. --}}
                         <div class="mt-3 border-top pt-3">
                             <label class="form-label fw-semibold">Your Current Password</label>
-                            <input type="password" name="current_password" class="form-control @error('current_password') is-invalid @enderror" required autocomplete="current-password">
-                            @error('current_password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <div class="input-group has-validation">
+                                <input type="password" name="current_password" class="form-control @error('current_password') is-invalid @enderror" required autocomplete="current-password">
+                                @include('partials.password-toggle-btn')
+                                @error('current_password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer border-0">
@@ -204,4 +219,6 @@
         });
     </script>
     @endif
+
+    @include('partials.password-reveal-script')
 @endsection

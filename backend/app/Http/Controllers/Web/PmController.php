@@ -89,6 +89,13 @@ class PmController extends Controller
     {
         $data = $request->validated();
 
+        // `schedule_document` is the upload; `schedule_document_path` is stored.
+        // On edit, a fresh upload replaces the old path; no upload keeps it.
+        unset($data['schedule_document']);
+        if ($path = $request->storeSupportingDocument('schedule_document', 'pm-documents')) {
+            $data['schedule_document_path'] = $path;
+        }
+
         if ($data['pm_type'] === PmSchedule::TYPE_MILEAGE) {
             $data['due_mileage'] = (int) $data['last_pm_mileage'] + (int) $data['interval_km'];
             $data['due_date'] = null;

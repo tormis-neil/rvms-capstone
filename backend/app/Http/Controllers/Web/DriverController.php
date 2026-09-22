@@ -94,6 +94,8 @@ class DriverController extends Controller
             'password' => $request->validated('password'),
             'license_number' => $request->validated('license_number'),
             'license_expiry_date' => $request->validated('license_expiry_date'),
+            'nc_ii_number' => $request->validated('nc_ii_number'),
+            'nc_ii_expiry_date' => $request->validated('nc_ii_expiry_date'),
         ]);
 
         if ($vehicleId = $request->validated('assigned_vehicle_id')) {
@@ -115,7 +117,7 @@ class DriverController extends Controller
         // Password is deliberately absent: Edit Driver cannot change a password
         // (2026-08). It goes only through resetPassword() (FR-22), which
         // re-authenticates the admin and notifies the driver.
-        $data = $request->safe()->only(['name', 'email', 'license_number', 'license_expiry_date']);
+        $data = $request->safe()->only(['name', 'email', 'license_number', 'license_expiry_date', 'nc_ii_number', 'nc_ii_expiry_date']);
 
         $driver->update($data);
 

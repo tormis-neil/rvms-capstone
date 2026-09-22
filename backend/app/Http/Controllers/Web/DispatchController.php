@@ -67,6 +67,12 @@ class DispatchController extends Controller
                 $data['mission_other'] = null;
             }
 
+            // Optional travel order attached at open (FR-15, 2026-09).
+            unset($data['travel_order']);
+            if ($path = $request->storeSupportingDocument('travel_order', 'travel-orders')) {
+                $data['travel_order_path'] = $path;
+            }
+
             // Re-check with the rows locked: two admins submitting in the same
             // instant can both clear validation before either has inserted.
             app(DispatchGuard::class)->assertFree((int) $data['vehicle_id'], (int) $data['driver_id']);
@@ -89,6 +95,13 @@ class DispatchController extends Controller
             $data = $request->validated();
             if ($data['mission_type'] !== Dispatch::MISSION_OTHERS) {
                 $data['mission_other'] = null;
+            }
+
+            // A fresh travel-order upload replaces the stored one; no upload
+            // keeps whatever is on file (FR-15, 2026-09).
+            unset($data['travel_order']);
+            if ($path = $request->storeSupportingDocument('travel_order', 'travel-orders')) {
+                $data['travel_order_path'] = $path;
             }
 
             // The vehicle this dispatch names before the edit — captured here

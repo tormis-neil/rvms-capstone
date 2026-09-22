@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,6 +71,8 @@ fun SignUpScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+    var confirmVisible by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var submitted by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
@@ -183,7 +186,13 @@ fun SignUpScreen(
             label = { Text("Password") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            // Reveal toggle (NFR-03, 2026-09).
+            trailingIcon = {
+                TextButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Text(if (passwordVisible) "Hide" else "Show")
+                }
+            },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = NavyBlue,
                 focusedLabelColor = NavyBlue
@@ -199,7 +208,12 @@ fun SignUpScreen(
             label = { Text("Confirm Password") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (confirmVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                TextButton(onClick = { confirmVisible = !confirmVisible }) {
+                    Text(if (confirmVisible) "Hide" else "Show")
+                }
+            },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = NavyBlue,
                 focusedLabelColor = NavyBlue

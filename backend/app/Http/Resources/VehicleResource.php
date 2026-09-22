@@ -28,6 +28,10 @@ class VehicleResource extends JsonResource
                 'id' => $this->assignedDriver->id,
                 'name' => $this->assignedDriver->name,
             ]),
+            'secondary_driver' => $this->whenLoaded('secondaryDriver', fn () => $this->secondaryDriver ? [
+                'id' => $this->secondaryDriver->id,
+                'name' => $this->secondaryDriver->name,
+            ] : null),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

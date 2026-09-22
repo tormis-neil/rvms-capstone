@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesSupportingDocument;
 use App\Models\PmSchedule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -14,6 +15,8 @@ use Illuminate\Validation\Rule;
  */
 class StorePmScheduleRequest extends FormRequest
 {
+    use ValidatesSupportingDocument;
+
     public function authorize(): bool
     {
         return true;
@@ -46,6 +49,11 @@ class StorePmScheduleRequest extends FormRequest
             ],
             'pm_type' => ['required', Rule::in([PmSchedule::TYPE_MILEAGE, PmSchedule::TYPE_TIME])],
 
+            // Optional pre-service document at create — the pre-inspection
+            // checklist / recommendation that justifies scheduling (FR-14, 2026-09).
+            // `schedule_document` is the upload; `schedule_document_path` is stored.
+            'schedule_document' => $this->supportingDocumentRules(),
+
             // Mileage-based
             'interval_km' => [Rule::requiredIf($isMileage), 'nullable', 'integer', 'min:1'],
             'last_pm_mileage' => [Rule::requiredIf($isMileage), 'nullable', 'integer', 'min:0'],
@@ -67,6 +75,7 @@ class StorePmScheduleRequest extends FormRequest
             'due_soon_threshold_km.required' => 'A Due-Soon km threshold is required for a mileage-based schedule.',
             'due_date.required' => 'A due date is required for a time-based schedule.',
             'due_soon_threshold_days.required' => 'A Due-Soon days threshold is required for a time-based schedule.',
+            ...$this->supportingDocumentMessages('schedule_document'),
         ];
     }
 }
