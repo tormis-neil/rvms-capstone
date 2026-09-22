@@ -155,7 +155,8 @@ A few deliberate modeling decisions:
    columns on inspection/damage reviews; no passenger/patient
    fields on dispatches (privacy + outside vehicle-management scope); no agency-info
    editing feature (no FR backs it). A driver MAY be the primary driver of more than one
-   vehicle (Ch4 ERD); each vehicle still has at most one primary driver.
+   vehicle (Ch4 ERD); each vehicle still has at most one primary driver — and, since
+   2026-09, at most one optional SECONDARY driver as well (design decision 11).
    **Amendment (2026-07, implementation-level, project-lead approved):** `vehicles.remarks`
    is an exception to this rule — a single optional note on the vehicle's most recent
    manual status change, overwritten on each update (like `current_mileage`, NOT a change
@@ -248,6 +249,38 @@ A few deliberate modeling decisions:
     - **No manuscript change.** These are integrity constraints on fields FR-05, FR-06, FR-14
       and FR-15 already define — no new columns, no ERD change, no FR wording change. The
       Chapter 4 data dictionary describes what each column holds, not its indexes.
+11. **Second driver per vehicle + two supporting documents + driver NC II (2026-09,
+    CHO/PNP adviser consultation — IN the manuscript).** Four field additions came out of
+    the CHO City Health Officer's system review, with PNP echoing the driver one. All are
+    **optional/nullable**, so every existing single-value flow is unchanged, and each is
+    usable by all four agencies (an agency that does not need one leaves it blank).
+    - **`vehicles.secondary_driver_id`** — an optional second/backup driver crewing a
+      vehicle (CHO shift crews; PNP raised the same). A designated PRIMARY plus one optional
+      SECONDARY, deliberately NOT two co-equal drivers (the primary is the default
+      attribution and the driver's My Vehicle owner) and deliberately NOT a many-to-many
+      pivot (the ask is two, not an arbitrary crew — a pivot would restructure the ERD for a
+      need that does not exist; revisit only if an agency rotates 3+). Same-agency and
+      different-from-primary are enforced. `MyVehicleController` now returns vehicles where
+      the driver is the primary OR the secondary (FR-07/FR-09). This REVERSES the former Ch1
+      limitation that rotating/shift arrangements were not accommodated. ERD: one new
+      relationship line (users → vehicles as secondary_driver_id); no new entity.
+    - **`pm_schedules.schedule_document_path`** — optional pre-service document at schedule
+      CREATE (the pre-inspection checklist). Repair source is deliberately NOT captured at
+      create: at scheduling time no work has happened and there is no source to name; it
+      stays a completion-only field. Distinct document from `completion_receipt_path`.
+    - **`dispatches.travel_order_path`** — optional travel order attached at dispatch OPEN
+      (it authorises the trip). Optional so an emergency response is never blocked.
+    - **`users.nc_ii_number` / `users.nc_ii_expiry_date`** — the driver's TESDA National
+      Certificate II (Driving), monitored like the licence against the agency warning window
+      (a flag on the Drivers page). Kept simple: it does NOT add a dashboard counter or a
+      push-notification type — the "expiring licenses" dashboard card (FR-19/FR-21) still
+      counts licences only.
+    - The two supporting-document uploads share the repair receipt's file-security rules
+      (MIME allow-list, no SVG-as-XSS, 5 MB cap) via `ValidatesSupportingDocument`, on the
+      `public` disk beside the damage photos and receipts.
+    - **Also (UI only, no schema/manuscript change):** a password reveal ("show/hide")
+      toggle on every password field, web (Profile, Drivers) and mobile (Sign In, Sign Up,
+      Edit Profile) — NFR-03 usability, no FR or data-dictionary impact.
 
 ## ERD PLAN
 
@@ -282,6 +315,7 @@ users          ──< notifications  (recipient)
 | agency → vehicles | one-to-many | `vehicles.agency_id` |
 | agency → inspections / damage_reports / repair_logs / pm_schedules / dispatches / notifications | one-to-many | `agency_id` on each (enforces FR-02 scoping) |
 | driver (user) → vehicle(s) | one-to-many (each vehicle has at most one primary driver; a driver may be the primary driver of more than one vehicle, per Ch4 ERD) | `vehicles.assigned_driver_id` |
+| secondary driver (user) → vehicle(s) | one-to-many, optional (each vehicle has at most one secondary/backup driver; a driver may be the secondary driver of more than one vehicle) (FR-07, 2026-09) | `vehicles.secondary_driver_id` |
 | vehicle → inspections / damage_reports / repair_logs / pm_schedules / dispatches | one-to-many | `vehicle_id` on each |
 | driver (user) → inspections / damage_reports / repair_logs / dispatches | one-to-many | `driver_id` on each |
 | admin (user) → reviewed inspections / damage_reports | one-to-many | `reviewed_by` |
@@ -324,6 +358,8 @@ standard and not detailed below.
 | status | ENUM('pending','active','rejected') | No | 'active' | Account state (FR-03). Admin-added drivers and admins are 'active'; self-registered drivers start 'pending' until an admin approves. Only 'active' users can log in. |
 | license_number | VARCHAR(50) | Yes | NULL | Driver license no. (FR-06). Null for admins. |
 | license_expiry_date | DATE | Yes | NULL | Driver license expiry; drives FR-08 monitoring. Null for admins. |
+| nc_ii_number | VARCHAR(50) | Yes | NULL | Driver TESDA National Certificate II (Driving) number (FR-08, 2026-09 — CHO/PNP adviser consultation). Optional; null for admins and for drivers without an NC II. No unique index (unlike the licence number, the NC II is not the record's identifier). |
+| nc_ii_expiry_date | DATE | Yes | NULL | NC II expiry date; monitored like the licence against the agency's `license_expiry_warning_days` window (FR-08, FR-10, 2026-09). Optional. |
 | fcm_token | VARCHAR(255) | Yes | NULL | Firebase device token for push delivery (FR-21). |
 | email_verified_at | TIMESTAMP | Yes | NULL | Framework field. |
 | remember_token | VARCHAR(100) | Yes | NULL | Framework field. |
@@ -335,6 +371,7 @@ standard and not detailed below.
 | id | BIGINT UNSIGNED | No | auto | PK. |
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies (FR-02 scoping). |
 | assigned_driver_id | BIGINT UNSIGNED | Yes | NULL | FK → users (role=driver). Primary assigned driver (FR-05). |
+| secondary_driver_id | BIGINT UNSIGNED | Yes | NULL | FK → users (role=driver). Optional secondary/backup driver crewing the vehicle (FR-07, 2026-09 — CHO/PNP adviser consultation; some vehicles are two-driver, e.g. CHO shift crews). Must differ from the primary; null for a single-driver vehicle. |
 | type | VARCHAR(100) | No | — | Vehicle type (Fire Truck, Ambulance, Patrol Car…). |
 | plate_number | VARCHAR(20) | No | — | Plate number; unique per agency. |
 | make | VARCHAR(100) | No | — | Manufacturer (Isuzu, Toyota…). |
@@ -419,6 +456,7 @@ standard and not detailed below.
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies (scoping). |
 | vehicle_id | BIGINT UNSIGNED | No | — | FK → vehicles. |
 | service_target | VARCHAR(255) | No | — | Specific part(s)/service (e.g., "Oil Change & Filter") (FR-14). |
+| schedule_document_path | VARCHAR(255) | Yes | NULL | Path to the optional pre-service supporting document attached when the schedule is CREATED (FR-14, 2026-09 — CHO adviser consultation) — typically the pre-inspection checklist / recommendation that justifies scheduling. Distinct from `completion_receipt_path`, which is proof of the finished work; both moments may carry a (different) document. Optional. |
 | pm_type | ENUM('Mileage-Based','Time-Based') | No | — | Scheduling basis (FR-14). |
 | interval_km | INT UNSIGNED | Yes | NULL | Mileage interval (mileage-based only). |
 | last_pm_mileage | INT UNSIGNED | Yes | NULL | Odometer at last service (mileage-based). |
@@ -447,6 +485,7 @@ standard and not detailed below.
 | mission_other | VARCHAR(255) | Yes | NULL | Free text when mission_type = Others (prototype `missionOther`). |
 | location | VARCHAR(255) | No | — | Dispatch location (FR-15). |
 | time_out | DATETIME | No | — | Date/time out; opening sets vehicle → Dispatched (FR-15). |
+| travel_order_path | VARCHAR(255) | Yes | NULL | Path to the optional travel order / trip authorisation attached when the dispatch is OPENED (FR-15, 2026-09 — CHO adviser consultation). Optional so an emergency response (Fire/Medical/Rescue) is never blocked waiting on paperwork. |
 | odometer_out | INT UNSIGNED | Yes | NULL | **Optional** odometer reading at time out (FR-15). Digitizes the odometer field on the agencies' existing paper dispatch form (CDRRMO-confirmed); manually keyed from the vehicle's own odometer, NOT device-captured. Nullable — agencies that do not track it leave it blank. |
 | time_in | DATETIME | Yes | NULL | Date/time in on close; NULL = active (FR-16). |
 | odometer_in | INT UNSIGNED | Yes | NULL | **Optional** odometer reading at time in (FR-16). On close, when present and greater than the vehicle's `current_mileage`, it updates `vehicles.current_mileage` (mileage-on-arrival → feeds mileage-based PM, FR-14). Nullable. |
