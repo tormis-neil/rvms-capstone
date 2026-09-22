@@ -32,6 +32,16 @@ class VehicleResource extends JsonResource
                 'id' => $this->secondaryDriver->id,
                 'name' => $this->secondaryDriver->name,
             ] : null),
+            // The viewing driver's role ON THIS vehicle — 'primary' or 'secondary'
+            // (FR-09, 2026-09). Lets the driver's My Vehicle screen label each
+            // vehicle so a two-driver crew is never left guessing which is which.
+            // Present only for a driver viewer; absent for the admin vehicle list.
+            'my_role' => $this->when(
+                (bool) $request->user()?->isDriver(),
+                fn () => $this->assigned_driver_id === $request->user()->id
+                    ? 'primary'
+                    : ($this->secondary_driver_id === $request->user()->id ? 'secondary' : null)
+            ),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

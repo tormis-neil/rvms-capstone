@@ -284,7 +284,13 @@ private fun VehicleCard(vehicle: VehicleDto, driverName: String, agencyName: Str
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                DetailRow("Assigned Driver", driverName)
+                // The viewing driver's role on this vehicle, so a two-driver crew
+                // is never left guessing which one they are (FR-09, 2026-09).
+                vehicle.myRole?.let { role ->
+                    DetailRow("Your Role", if (role == "secondary") "Secondary Driver" else "Primary Driver")
+                }
+                DetailRow("Primary Driver", vehicle.assignedDriver?.name ?: driverName)
+                DetailRow("Secondary Driver", vehicle.secondaryDriver?.name ?: "—")
                 DetailRow("Agency", agencyName)
             }
         }

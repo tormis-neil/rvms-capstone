@@ -281,15 +281,15 @@ from the manuscript):
 | Table | Columns | Notes |
 |---|---|---|
 | `agencies` | 10 | includes `license_expiry_warning_days` (configurable threshold) |
-| `users` | 14 | no `deleted_at` — see the decision below |
-| `vehicles` | 13 | no `deleted_at`; the database also carries 3 repo-only columns that stay OUT (see below) |
+| `users` | 16 | no `deleted_at` — see the decision below; +`nc_ii_number`, `nc_ii_expiry_date` (2026-09 — FR-08/FR-10) |
+| `vehicles` | 14 | no `deleted_at`; +`secondary_driver_id` (2026-09 — FR-07); the database also carries 3 repo-only columns that stay OUT (see below) |
 | `inspection_checklist_items` | 6 | no agency scope; does carry timestamps |
 | `inspections` | 10 | |
 | `inspection_items` | 5 | no timestamps |
 | `damage_reports` | 13 | |
 | `repair_logs` | 14 | includes `receipt_path` (added 2026-08 — FR-13) |
-| `pm_schedules` | 21 | two configurable threshold columns; includes `completion_mileage`, `completion_external_shop_name` and `completion_receipt_path` (all added 2026-08 — FR-14) |
-| `dispatches` | 15 | includes `odometer_out`, `odometer_in` |
+| `pm_schedules` | 22 | two configurable threshold columns; includes `completion_mileage`, `completion_external_shop_name` and `completion_receipt_path` (all added 2026-08 — FR-14); +`schedule_document_path` (2026-09 — FR-14) |
+| `dispatches` | 16 | includes `odometer_out`, `odometer_in`; +`travel_order_path` (2026-09 — FR-15) |
 | `notifications` | 11 | `type` is a **10-value** enum |
 
 ### ⚠️ SUPERSEDED (2026-08-27): `deleted_at` is NOT in the manuscript — the columns no longer exist

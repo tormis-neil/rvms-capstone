@@ -29,6 +29,9 @@ data class VehicleDto(
     val status: String,
     val remarks: String? = null,
     @SerialName("assigned_driver") val assignedDriver: AssignedDriverDto? = null,
+    @SerialName("secondary_driver") val secondaryDriver: AssignedDriverDto? = null,
+    /** This driver's role on the vehicle — "primary" or "secondary" (FR-09, 2026-09). */
+    @SerialName("my_role") val myRole: String? = null,
 )
 
 @Serializable
