@@ -38,7 +38,9 @@ class DriverController extends Controller
             ->when($request->filled('license_status'), fn ($q) => $q->whereIn('id', $this->driverIdsWithLicenseStatus($agencyId, $request->string('license_status'))))
             // 'agency' too: licenseStatus() reads the agency's warning window,
             // so without it every table row costs one extra query (R10.4 N+1).
-            ->with(['vehicles', 'agency'])
+            // 'secondaryVehicles' so the ASSIGNED VEHICLE cell can show the
+            // vehicles this driver backs up as well as the ones they lead (2026-09).
+            ->with(['vehicles', 'secondaryVehicles', 'agency'])
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString();

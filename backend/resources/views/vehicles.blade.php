@@ -58,7 +58,7 @@
                                 <tr>
                                     <th class="py-3 text-secondary fw-semibold small">PLATE NO.</th>
                                     <th class="py-3 text-secondary fw-semibold small">VEHICLE DETAILS</th>
-                                    <th class="py-3 text-secondary fw-semibold small">ASSIGNED DRIVER</th>
+                                    <th class="py-3 text-secondary fw-semibold small">PRIMARY DRIVER</th>
                                     <th class="py-3 text-secondary fw-semibold small">MILEAGE</th>
                                     <th class="py-3 text-secondary fw-semibold small">STATUS</th>
                                     <th class="py-3 text-secondary fw-semibold small text-end">ACTIONS</th>
@@ -179,7 +179,7 @@
                                 <input type="number" name="current_mileage" class="form-control" value="{{ old('current_mileage', 0) }}" min="0" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Assigned Driver</label>
+                                <label class="form-label fw-semibold">Primary Driver</label>
                                 <select class="form-select" name="assigned_driver_id">
                                     <option value="">Unassigned</option>
                                     {{-- Live driver options — the agency's active drivers --}}
@@ -264,7 +264,7 @@
                                 <input type="number" name="current_mileage" class="form-control" id="evMileage" min="0" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Assigned Driver</label>
+                                <label class="form-label fw-semibold">Primary Driver</label>
                                 <select class="form-select" name="assigned_driver_id" id="evDriver">
                                     <option value="">Unassigned</option>
                                     @foreach ($drivers as $driver)
@@ -320,7 +320,7 @@
                             <span class="fw-medium" id="vvMakeModel">Isuzu FTR 850</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center py-3">
-                            <span class="text-secondary small fw-semibold">Assigned Driver</span>
+                            <span class="text-secondary small fw-semibold">Primary Driver</span>
                             <span class="fw-medium" id="vvDriver">Juan Dela Cruz</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center py-3">
