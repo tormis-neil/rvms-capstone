@@ -293,4 +293,29 @@ class AdviserRecommendations2026Test extends TestCase
             ->assertOk()
             ->assertJsonFragment(['plate_number' => 'SEC-0001']);
     }
+
+    public function test_my_vehicle_labels_the_drivers_role_on_each_vehicle(): void
+    {
+        $primary = User::factory()->driver()->create(['agency_id' => $this->agency->id]);
+        $secondary = User::factory()->driver()->create(['agency_id' => $this->agency->id]);
+
+        Vehicle::factory()->create([
+            'agency_id' => $this->agency->id,
+            'assigned_driver_id' => $primary->id,
+            'secondary_driver_id' => $secondary->id,
+            'plate_number' => 'ROLE-01',
+        ]);
+
+        // The primary driver is told they are the primary.
+        Sanctum::actingAs($primary);
+        $this->getJson('/api/v1/my-vehicle')
+            ->assertOk()
+            ->assertJsonPath('data.0.my_role', 'primary');
+
+        // The secondary driver is told they are the secondary — no guessing.
+        Sanctum::actingAs($secondary);
+        $this->getJson('/api/v1/my-vehicle')
+            ->assertOk()
+            ->assertJsonPath('data.0.my_role', 'secondary');
+    }
 }
