@@ -47,7 +47,7 @@ class VehicleController extends Controller
 
         // Prototype's 5 demo types plus any type already present in the
         // agency's fleet (the schema keeps type free-text per FR-05).
-        $types = collect(['Fire Truck', 'Rescue Van', 'Water Tanker', 'Service Vehicle', 'Ambulance'])
+        $types = collect(['Fire Truck', 'Rescue Van', 'Water Tanker', 'Service Vehicle', 'Ambulance', 'Patient Transport Vehicle'])
             ->merge(Vehicle::query()->distinct()->pluck('type'))
             ->unique()
             ->values();
