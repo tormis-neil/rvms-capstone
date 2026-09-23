@@ -61,6 +61,7 @@ class DashboardSummary
             'not_operational' => (int) $byStatus->get(Vehicle::STATUS_NOT_OPERATIONAL, 0),
             'total_drivers' => $this->activeDrivers($agencyId)->count(),
             'expiring_licenses' => $this->expiringLicenseCount($agencyId),
+            'expiring_nc_ii' => $this->expiringNcIiCount($agencyId),
             'pending_damage_reports' => DamageReport::query()
                 ->where('agency_id', $agencyId)
                 ->where('status', DamageReport::STATUS_PENDING)
@@ -180,6 +181,51 @@ class DashboardSummary
     }
 
     /**
+     * NC II certificates inside the agency's warning window (FR-08, 2026-09).
+     *
+     * The exact twin of expiringLicenseCount(): "Expiring Soon" only, so the
+     * metric card matches the Drivers page's NC II "Expiring Soon" summary card.
+     * Already-expired NC IIs surface in the Action Required list below, badged
+     * red — the same treatment the licence gets.
+     */
+    public function expiringNcIiCount(int $agencyId): int
+    {
+        return $this->activeDrivers($agencyId)
+            ->filter(fn (User $driver) => $driver->ncIiStatus() === 'Expiring Soon')
+            ->count();
+    }
+
+    /**
+     * NC II certificates needing attention — expiring AND already expired
+     * (FR-08, 2026-09). Wider than the metric card, exactly like expiringLicenses().
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function expiringNcIi(int $agencyId, int $limit = self::ACTION_LIST_LIMIT): Collection
+    {
+        return $this->activeDrivers($agencyId)
+            ->filter(fn (User $driver) => in_array($driver->ncIiStatus(), ['Expiring Soon', 'Expired'], true))
+            // Soonest first, so the expired ones lead.
+            ->sortBy(fn (User $driver) => $driver->nc_ii_expiry_date)
+            ->take($limit)
+            ->map(fn (User $driver) => [
+                'name' => $driver->name,
+                'status' => $driver->ncIiStatus(),
+                'nc_ii_number' => $driver->nc_ii_number,
+                'detail' => $this->ncIiDetail($driver),
+            ])
+            ->values();
+    }
+
+    /** The true total behind the NC II pill. */
+    public function expiringNcIiAttentionCount(int $agencyId): int
+    {
+        return $this->activeDrivers($agencyId)
+            ->filter(fn (User $driver) => in_array($driver->ncIiStatus(), ['Expiring Soon', 'Expired'], true))
+            ->count();
+    }
+
+    /**
      * Has-Issue counts grouped by checklist item, ranked most frequent first,
      * with the last-reported date (FR-10).
      *
@@ -266,6 +312,25 @@ class DashboardSummary
         }
 
         if ($driver->licenseStatus() === 'Expired') {
+            return 'Expired: '.$date->format('F j, Y').' — renewal required';
+        }
+
+        $days = (int) now()->startOfDay()->diffInDays($date, false);
+
+        return 'Expiry: '.$date->format('F j, Y')
+            .' ('.$days.' '.Str::plural('day', $days).' left)';
+    }
+
+    /** NC II twin of licenseDetail() — same wording, the NC II expiry date. */
+    private function ncIiDetail(User $driver): string
+    {
+        $date = $driver->nc_ii_expiry_date;
+
+        if ($date === null) {
+            return 'No expiry date on file';
+        }
+
+        if ($driver->ncIiStatus() === 'Expired') {
             return 'Expired: '.$date->format('F j, Y').' — renewal required';
         }
 

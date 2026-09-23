@@ -278,10 +278,21 @@ A few deliberate modeling decisions:
       `assertFree` locks/checks the second driver too. Nullable, so an ordinary one-driver
       dispatch is unchanged. ERD: a second users→dispatches relationship line; no new entity.
     - **`users.nc_ii_number` / `users.nc_ii_expiry_date`** — the driver's TESDA National
-      Certificate II (Driving), monitored like the licence against the agency warning window
-      (a flag on the Drivers page). Kept simple: it does NOT add a dashboard counter or a
-      push-notification type — the "expiring licenses" dashboard card (FR-19/FR-21) still
-      counts licences only.
+      Certificate II (Driving), monitored EXACTLY like the licence against the agency warning
+      window (FR-08/FR-10). **NC II parity, revised 2026-09 (CHO clarification):** the NC II is
+      the same class of legally-required, expiring credential that governs whether a driver may
+      operate the vehicle, so treating it as a lesser "flag" gave the admin a false sense of
+      coverage. It now mirrors the licence across all four surfaces: the Dashboard (an EXPIRING
+      NC II overview card + an Expiring NC II action-required list, FR-19/FR-21), Driver
+      Management (its own Valid/Expiring Soon/Expired summary cards + a per-row status badge
+      shown for every driver who carries one, FR-08), the mobile driver Home ("NC II Status"
+      card beside the licence card, from `/me`, FR-08), and the admin alert notification (its
+      own `NC_II_Expiring` / `NC_II_Expired` types so the message names the credential —
+      raised immediately on create/edit and by the daily `rvms:license-alerts` sweep, keyed
+      per driver + expiry date so a renewal starts a fresh cycle). This REVERSES the earlier
+      note that NC II carried no dashboard counter or push type. `ncIiStatus()` on the User
+      model shares the licence's Expired/Expiring Soon/Valid rule, so the two credentials can
+      never be judged differently.
     - The two supporting-document uploads share the repair receipt's file-security rules
       (MIME allow-list, no SVG-as-XSS, 5 MB cap) via `ValidatesSupportingDocument`, on the
       `public` disk beside the damage photos and receipts.
@@ -510,7 +521,7 @@ standard and not detailed below.
 | id | BIGINT UNSIGNED | No | auto | PK. |
 | agency_id | BIGINT UNSIGNED | No | — | FK → agencies (scoping). |
 | user_id | BIGINT UNSIGNED | No | — | FK → users (recipient). |
-| type | ENUM('PM_Reminder','Vehicle_Status_Update','New_Damage_Report','Inspection_Flagged','License_Expiring','License_Expired','PM_Due_Soon','PM_Due','New_Access_Request','Password_Reset','New_Admin') | No | — | Notification category (FR-21; `New_Access_Request` → admins on driver self-registration, FR-03; `Inspection_Flagged` → admins when a submitted inspection reports one or more items as Has Issue, FR-09 → FR-21 — never on an all-OK submission; `Password_Reset` → the AFFECTED user when someone else sets their password, FR-22 → FR-21 — never for the administrator who performed it, and never for a self-service change under FR-04; `New_Admin` → the agency's EXISTING administrators when another administrator is created (design decision 6 revised, 2026-09) — never the actor who created it nor the new account). |
+| type | ENUM('PM_Reminder','Vehicle_Status_Update','New_Damage_Report','Inspection_Flagged','License_Expiring','License_Expired','PM_Due_Soon','PM_Due','New_Access_Request','Password_Reset','New_Admin','NC_II_Expiring','NC_II_Expired') | No | — | Notification category (FR-21; `New_Access_Request` → admins on driver self-registration, FR-03; `Inspection_Flagged` → admins when a submitted inspection reports one or more items as Has Issue, FR-09 → FR-21 — never on an all-OK submission; `Password_Reset` → the AFFECTED user when someone else sets their password, FR-22 → FR-21 — never for the administrator who performed it, and never for a self-service change under FR-04; `New_Admin` → the agency's EXISTING administrators when another administrator is created (design decision 6 revised, 2026-09) — never the actor who created it nor the new account; `NC_II_Expiring` / `NC_II_Expired` → the agency's admins when a driver's TESDA NC II is inside the warning window or already lapsed, FR-08 → FR-21, 2026-09 — the licence's twin, monitored identically). |
 | title | VARCHAR(255) | No | — | Short headline. |
 | message | TEXT | No | — | Body text. |
 | data | JSON | Yes | NULL | Reference payload (e.g., vehicle plate, link target). |

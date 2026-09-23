@@ -151,6 +151,72 @@ class ScheduledAlertTest extends TestCase
         $this->assertDatabaseMissing('notifications', ['user_id' => $otherAdmin->id]);
     }
 
+    /* ------------------------------ NC II alerts ------------------------- */
+
+    public function test_an_expiring_nc_ii_alerts_every_admin(): void
+    {
+        $this->driver->update(['nc_ii_expiry_date' => now()->addDays(10)->toDateString()]);
+
+        $this->artisan('rvms:license-alerts')->assertSuccessful();
+
+        $this->assertDatabaseCount('notifications', 2);
+        foreach ([$this->admin, $this->secondAdmin] as $recipient) {
+            $this->assertDatabaseHas('notifications', [
+                'user_id' => $recipient->id,
+                'type' => Notification::TYPE_NC_II_EXPIRING,
+                'title' => 'NC II Expiring Soon',
+            ]);
+        }
+    }
+
+    public function test_an_expired_nc_ii_uses_its_own_type(): void
+    {
+        $this->driver->update(['nc_ii_expiry_date' => now()->subDays(3)->toDateString()]);
+
+        $this->artisan('rvms:license-alerts')->assertSuccessful();
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $this->admin->id,
+            'type' => Notification::TYPE_NC_II_EXPIRED,
+            'title' => 'NC II Expired',
+        ]);
+    }
+
+    public function test_nc_ii_alerts_do_not_re_alert_daily(): void
+    {
+        $this->driver->update(['nc_ii_expiry_date' => now()->addDays(10)->toDateString()]);
+
+        $this->artisan('rvms:license-alerts')->assertSuccessful();
+        $this->artisan('rvms:license-alerts')->assertSuccessful();
+
+        $this->assertDatabaseCount('notifications', 2); // not 4
+    }
+
+    /** A driver with BOTH credentials expiring gets one alert per credential. */
+    public function test_licence_and_nc_ii_alert_independently(): void
+    {
+        $this->driver->update([
+            'license_expiry_date' => now()->addDays(10)->toDateString(),
+            'nc_ii_expiry_date' => now()->addDays(10)->toDateString(),
+        ]);
+
+        $this->artisan('rvms:license-alerts')->assertSuccessful();
+
+        // Two admins × two credentials.
+        $this->assertDatabaseCount('notifications', 4);
+        $this->assertDatabaseHas('notifications', ['type' => Notification::TYPE_LICENSE_EXPIRING]);
+        $this->assertDatabaseHas('notifications', ['type' => Notification::TYPE_NC_II_EXPIRING]);
+    }
+
+    public function test_a_valid_nc_ii_alerts_nobody(): void
+    {
+        $this->driver->update(['nc_ii_expiry_date' => now()->addMonths(6)->toDateString()]);
+
+        $this->artisan('rvms:license-alerts')->assertSuccessful();
+
+        $this->assertDatabaseCount('notifications', 0);
+    }
+
     /* ------------------------------ PM alerts ---------------------------- */
 
     private int $plateSeq = 0;

@@ -270,6 +270,80 @@ class AdviserRecommendations2026Test extends TestCase
         $this->assertSame('Expiring Soon', $driver->ncIiStatus());
     }
 
+    /* ---- F4 parity: NC II monitored like the licence across every surface ---- */
+
+    public function test_the_driver_resource_exposes_nc_ii_status(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        $driver = User::factory()->driver()->create([
+            'agency_id' => $this->agency->id,
+            'nc_ii_number' => 'NCII-RES-1',
+            'nc_ii_expiry_date' => now()->subDay()->toDateString(),
+        ]);
+
+        $this->getJson("/api/v1/drivers/{$driver->id}")
+            ->assertOk()
+            ->assertJsonPath('data.nc_ii_number', 'NCII-RES-1')
+            ->assertJsonPath('data.nc_ii_status', 'Expired');
+    }
+
+    public function test_me_carries_the_drivers_nc_ii_expiry(): void
+    {
+        $this->agency->update(['license_expiry_warning_days' => 30]);
+        $driver = User::factory()->driver()->create([
+            'agency_id' => $this->agency->id,
+            'nc_ii_expiry_date' => '2027-05-01',
+        ]);
+
+        Sanctum::actingAs($driver);
+
+        $this->getJson('/api/v1/me')
+            ->assertOk()
+            ->assertJsonPath('user.nc_ii_expiry_date', '2027-05-01');
+    }
+
+    public function test_the_dashboard_summary_counts_and_lists_nc_ii_like_the_licence(): void
+    {
+        $this->agency->update(['license_expiry_warning_days' => 30]);
+
+        // One expiring-soon (counts + list) and one already-expired (list only,
+        // exactly the licence card's split).
+        User::factory()->driver()->create([
+            'agency_id' => $this->agency->id,
+            'name' => 'Soon Cert',
+            'nc_ii_expiry_date' => now()->addDays(10)->toDateString(),
+        ]);
+        User::factory()->driver()->create([
+            'agency_id' => $this->agency->id,
+            'name' => 'Lapsed Cert',
+            'nc_ii_expiry_date' => now()->subDays(2)->toDateString(),
+        ]);
+
+        $summary = app(\App\Services\DashboardSummary::class);
+
+        // The metric card counts the warning window only…
+        $this->assertSame(1, $summary->counts($this->agency->id)['expiring_nc_ii']);
+        // …while the Action Required list covers expiring AND expired.
+        $this->assertSame(2, $summary->expiringNcIiAttentionCount($this->agency->id));
+        $this->assertCount(2, $summary->expiringNcIi($this->agency->id));
+    }
+
+    public function test_the_license_monitoring_endpoint_reports_nc_ii_counts(): void
+    {
+        Sanctum::actingAs($this->admin);
+        $this->agency->update(['license_expiry_warning_days' => 30]);
+
+        User::factory()->driver()->create([
+            'agency_id' => $this->agency->id,
+            'nc_ii_expiry_date' => now()->addDays(10)->toDateString(),
+        ]);
+
+        $this->getJson('/api/v1/licenses/monitoring')
+            ->assertOk()
+            ->assertJsonPath('nc_ii.expiring_soon', 1);
+    }
+
     /* ========================= F5 — secondary driver ========================= */
 
     private function vehiclePayload(array $overrides = []): array

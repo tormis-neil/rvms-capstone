@@ -56,3 +56,19 @@ fun licenseMessage(state: LicenseState, expiryIso: String?): String? = when (sta
             "administrator for renewal."
     else -> null
 }
+
+/**
+ * The advisory line under the NC II card (FR-08, 2026-09). The NC II (TESDA
+ * National Certificate II, Driving) is monitored exactly like the licence, so
+ * it reuses the licence's colour/label/badge; only the wording names the
+ * credential. Null when the NC II is fine.
+ */
+fun ncIiMessage(state: LicenseState, expiryIso: String?): String? = when (state) {
+    LicenseState.EXPIRED ->
+        "NC II expired ${formatIsoDate(expiryIso)}. Coordinate with your agency " +
+            "administrator before operating a vehicle."
+    LicenseState.EXPIRING_SOON ->
+        "NC II expires ${formatIsoDate(expiryIso)}. Please coordinate with your agency " +
+            "administrator for renewal."
+    else -> null
+}

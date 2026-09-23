@@ -25,6 +25,9 @@ class DashboardController extends Controller
             'pendingReviewCount' => $summary->pendingReviewCount($agencyId),
             'expiringLicenses' => $summary->expiringLicenses($agencyId),
             'expiringLicenseCount' => $summary->expiringLicenseAttentionCount($agencyId),
+            // NC II monitored exactly like the licence (FR-08, 2026-09).
+            'expiringNcIi' => $summary->expiringNcIi($agencyId),
+            'expiringNcIiCount' => $summary->expiringNcIiAttentionCount($agencyId),
             // Frequently Reported Issues moved here from the Inspections page
             // (2026-09, lead-approved) — see DashboardSummary::frequentIssues().
             'frequentIssues' => $summary->frequentIssues($agencyId),

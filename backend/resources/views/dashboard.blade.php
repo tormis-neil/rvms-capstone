@@ -12,7 +12,10 @@
                     <p class="text-secondary mb-0">Today: {{ now()->format('F j, Y') }}</p>
                 </div>
 
-                <!-- Overview (8 metrics — Plan §8 Dashboard Monitoring) -->
+                {{-- Overview — the 8 metrics of Plan §8, plus EXPIRING NC II
+                     (2026-09): the NC II is monitored exactly like the licence
+                     (FR-08), so it earns the same overview card. A ninth card
+                     wraps within the same 4-per-row grid. --}}
                 <h5 class="fw-bold mb-3">Overview</h5>
                 <div class="row row-cols-1 row-cols-md-4 g-4 mb-5">
                     <div class="col">
@@ -107,6 +110,20 @@
                                 </div>
                                 <div class="bg-warning bg-opacity-10 text-warning rounded p-2">
                                     <i class="bi bi-person-badge fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-under-pm);">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-secondary small fw-semibold mb-1">EXPIRING NC II</p>
+                                    <h2 class="fw-bold mb-0 js-metric-expiring-ncii">{{ $metrics['expiring_nc_ii'] }}</h2>
+                                </div>
+                                <div class="bg-warning bg-opacity-10 text-warning rounded p-2">
+                                    <i class="bi bi-patch-check fs-4"></i>
                                 </div>
                             </div>
                         </div>
@@ -232,6 +249,32 @@
                                 </a>
                                 @empty
                                 <div class="list-group-item py-4 text-center text-secondary small">No licences need attention.</div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Expiring / expired NC II certificates (FR-08, 2026-09) — the
+                         twin of the Expiring Licenses card, so the two credentials
+                         are watched the same way. Soonest first, expired ones lead. --}}
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm rounded-3">
+                            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-patch-check text-warning me-2"></i>Expiring NC II</h6>
+                                <span class="badge bg-warning text-dark rounded-pill js-action-ncii-count">{{ $expiringNcIiCount }} {{ Str::plural('Warning', $expiringNcIiCount) }}</span>
+                            </div>
+                            <div class="list-group list-group-flush js-action-ncii">
+                                @forelse ($expiringNcIi as $ncii)
+                                <a href="{{ route('drivers') }}" class="list-group-item list-group-item-action py-3">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1 fw-bold">{{ $ncii['name'] }}</h6>
+                                        <span class="badge {{ $ncii['status'] === 'Expired' ? 'bg-danger' : 'bg-warning text-dark' }}">{{ $ncii['status'] }}</span>
+                                    </div>
+                                    <p class="mb-1 small">NC II: {{ $ncii['nc_ii_number'] ?: '—' }}</p>
+                                    <small class="text-secondary fw-semibold">{{ $ncii['detail'] }}</small>
+                                </a>
+                                @empty
+                                <div class="list-group-item py-4 text-center text-secondary small">No NC II certificates need attention.</div>
                                 @endforelse
                             </div>
                         </div>

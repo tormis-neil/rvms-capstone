@@ -93,6 +93,9 @@ data class UserDto(
     val status: String,
     @SerialName("license_number") val licenseNumber: String? = null,
     @SerialName("license_expiry_date") val licenseExpiryDate: String? = null,
+    // TESDA NC II (Driving) — monitored like the licence (FR-08, 2026-09).
+    @SerialName("nc_ii_number") val ncIiNumber: String? = null,
+    @SerialName("nc_ii_expiry_date") val ncIiExpiryDate: String? = null,
     val agency: AgencyDto? = null,
 )
 

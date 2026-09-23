@@ -255,4 +255,42 @@ class ImmediateMaintenanceAlertTest extends TestCase
 
         $this->assertDatabaseMissing('notifications', ['user_id' => $otherAdmin->id]);
     }
+
+    /* -------------------- NC II recorded already expiring ---------------- */
+
+    public function test_adding_a_driver_with_an_expiring_nc_ii_alerts_immediately(): void
+    {
+        $this->actingAs($this->admin)->from('/drivers')
+            ->post('/drivers', $this->driverPayload([
+                // Licence far out so only the NC II is news here.
+                'license_expiry_date' => now()->addYear()->toDateString(),
+                'nc_ii_number' => 'NCII-11-2222',
+                'nc_ii_expiry_date' => now()->addDays(10)->toDateString(),
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount('notifications', 2);
+        foreach ([$this->admin, $this->secondAdmin] as $recipient) {
+            $this->assertDatabaseHas('notifications', [
+                'user_id' => $recipient->id,
+                'type' => Notification::TYPE_NC_II_EXPIRING,
+            ]);
+        }
+    }
+
+    /** The daily sweep must not re-alert an NC II the form already raised. */
+    public function test_the_daily_command_does_not_re_alert_nc_ii(): void
+    {
+        $this->actingAs($this->admin)->from('/drivers')
+            ->post('/drivers', $this->driverPayload([
+                'license_expiry_date' => now()->addYear()->toDateString(),
+                'nc_ii_number' => 'NCII-11-2222',
+                'nc_ii_expiry_date' => now()->addDays(10)->toDateString(),
+            ]));
+        $this->assertDatabaseCount('notifications', 2);
+
+        $this->artisan('rvms:license-alerts')->assertSuccessful();
+
+        $this->assertDatabaseCount('notifications', 2); // not 4
+    }
 }
