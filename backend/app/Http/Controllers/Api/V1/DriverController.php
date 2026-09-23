@@ -59,8 +59,9 @@ class DriverController extends Controller
             Vehicle::whereKey($vehicleId)->update(['assigned_driver_id' => $driver->id]);
         }
 
-        // A licence can be recorded ALREADY inside the warning window (FR-08).
+        // A licence or NC II can be recorded ALREADY inside the warning window (FR-08).
         app(MaintenanceAlerts::class)->raiseForDriver($driver);
+        app(MaintenanceAlerts::class)->raiseNcIiForDriver($driver);
 
         return DriverResource::make($driver->load('vehicles'))->response()->setStatusCode(201);
     }
@@ -87,7 +88,9 @@ class DriverController extends Controller
             Vehicle::whereKey($vehicleId)->update(['assigned_driver_id' => $driver->id]);
         }
 
-        app(MaintenanceAlerts::class)->raiseForDriver($driver->fresh());
+        $fresh = $driver->fresh();
+        app(MaintenanceAlerts::class)->raiseForDriver($fresh);
+        app(MaintenanceAlerts::class)->raiseNcIiForDriver($fresh);
 
         return DriverResource::make($driver->fresh()->load('vehicles'));
     }

@@ -24,6 +24,10 @@ class UserResource extends JsonResource
             'status' => $this->status,
             'license_number' => $this->license_number,
             'license_expiry_date' => $this->license_expiry_date?->toDateString(),
+            // TESDA NC II (Driving) — carried on /me so the driver's own app can
+            // show an NC II status card beside the licence one (FR-08, 2026-09).
+            'nc_ii_number' => $this->nc_ii_number,
+            'nc_ii_expiry_date' => $this->nc_ii_expiry_date?->toDateString(),
             'agency' => new AgencyResource($this->whenLoaded('agency')),
         ];
     }

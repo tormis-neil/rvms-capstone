@@ -65,6 +65,7 @@ import com.example.rvms.ui.common.licenseColor
 import com.example.rvms.ui.common.licenseLabel
 import com.example.rvms.ui.common.licenseMessage
 import com.example.rvms.ui.common.licenseState
+import com.example.rvms.ui.common.ncIiMessage
 import com.example.rvms.ui.common.logoForAgencyCode
 import com.example.rvms.ui.common.statusColor
 import kotlinx.coroutines.launch
@@ -364,6 +365,68 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = licenseMessage,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary,
+                        )
+                    }
+                }
+            }
+        }
+
+        // NC II Status (FR-08, 2026-09) — the TESDA National Certificate II
+        // (Driving) is monitored exactly like the licence, so the driver sees it
+        // the same way, on its own card beside the licence. Reuses the licence's
+        // state machine and tones; only the title and advisory name the credential.
+        // Computed from the real /me payload — no NC II on file hides the card.
+        val ncIi = licenseState(currentUser?.ncIiExpiryDate, currentUser?.agency?.licenseExpiryWarningDays)
+        if (ncIi != LicenseState.NONE) {
+            val ncIiColor = licenseColor(ncIi)
+            val ncIiLabel = licenseLabel(ncIi)
+            val ncIiBadge = licenseBadge(ncIi)
+            val ncIiMessage = ncIiMessage(ncIi, currentUser?.ncIiExpiryDate)
+            Spacer(modifier = Modifier.height(12.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Surface),
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column {
+                            Text(
+                                text = "NC II Status",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary,
+                            )
+                            Text(
+                                text = ncIiLabel,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = ncIiColor,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(ncIiColor.copy(alpha = 0.1f))
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                        ) {
+                            Text(
+                                text = ncIiBadge,
+                                color = ncIiColor,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
+                    if (ncIiMessage != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = ncIiMessage,
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary,
                         )

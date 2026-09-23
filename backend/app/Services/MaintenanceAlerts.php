@@ -150,4 +150,70 @@ class MaintenanceAlerts
 
         return true;
     }
+
+    /**
+     * Alert on one driver's TESDA NC II (Driving) if it is Expiring Soon or
+     * Expired and has not already been alerted for THAT expiry date (FR-08 →
+     * FR-21, 2026-09).
+     *
+     * A near-exact twin of raiseForDriver(): the NC II is the same class of
+     * legally-required, expiring credential as the licence, so it is monitored
+     * by the same rule and idempotency. Kept as its own method (rather than
+     * folded into raiseForDriver) so a driver with both credentials expiring
+     * gets one alert per credential, keyed independently.
+     *
+     * @return bool whether an alert was raised
+     */
+    public function raiseNcIiForDriver(User $driver): bool
+    {
+        if ($driver->role !== User::ROLE_DRIVER || $driver->status !== User::STATUS_ACTIVE) {
+            return false;
+        }
+
+        if ($driver->nc_ii_expiry_date === null) {
+            return false;
+        }
+
+        $state = $driver->ncIiStatus();
+
+        if (! in_array($state, ['Expiring Soon', 'Expired'], true)) {
+            return false;
+        }
+
+        $type = $state === 'Expired'
+            ? Notification::TYPE_NC_II_EXPIRED
+            : Notification::TYPE_NC_II_EXPIRING;
+
+        // Keyed on the driver AND the current NC II expiry date, so a renewal
+        // starts a fresh cycle instead of being silenced by the old cert's alert.
+        $alreadyRaised = Notification::query()
+            ->withoutGlobalScopes()
+            ->where('type', $type)
+            ->where('data->driver_id', $driver->id)
+            ->where('data->expires_on', $driver->nc_ii_expiry_date->toDateString())
+            ->exists();
+
+        if ($alreadyRaised) {
+            return false;
+        }
+
+        $message = $state === 'Expired'
+            ? sprintf('%s — NC II expired on %s.', $driver->name, $driver->nc_ii_expiry_date->format('M j, Y'))
+            : sprintf('%s — NC II expires %s.', $driver->name, $driver->nc_ii_expiry_date->format('M j, Y'));
+
+        $this->dispatcher->sendToMany(
+            $this->dispatcher->adminsOf($driver->agency_id),
+            $type,
+            $state === 'Expired' ? 'NC II Expired' : 'NC II Expiring Soon',
+            $message,
+            [
+                'driver_id' => $driver->id,
+                'driver' => $driver->name,
+                'expires_on' => $driver->nc_ii_expiry_date->toDateString(),
+                'credential' => 'NC II',
+            ],
+        );
+
+        return true;
+    }
 }

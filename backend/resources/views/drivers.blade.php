@@ -69,11 +69,58 @@
                      is ever set up with a different one. --}}
                 <p class="text-secondary small mb-4">
                     <i class="bi bi-info-circle me-1"></i>
-                    A licence is flagged <strong>Expiring Soon</strong>
+                    A licence <em>or NC II certificate</em> is flagged <strong>Expiring Soon</strong>
                     {{ auth()->user()->agency->license_expiry_warning_days }} days before it expires,
                     and <strong>Expired</strong> the day after its expiry date.
                     Every administrator of {{ auth()->user()->agency->code }} is alerted daily while either applies.
                 </p>
+
+                {{-- NC II Status Summary (FR-08, FR-10, 2026-09). The TESDA NC II
+                     (Driving) is monitored exactly like the licence, so it gets the
+                     same three-card summary against the same agency warning window.
+                     A driver without an NC II on file counts toward none of the three. --}}
+                <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-patch-check me-2"></i>NC II Certificates</h6>
+                <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
+                    <div class="col">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-operational);">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-secondary small fw-semibold mb-1">VALID NC II</p>
+                                    <h2 class="fw-bold mb-0 js-ncii-valid">{{ $ncIiCounts['Valid'] }}</h2>
+                                </div>
+                                <div class="bg-success bg-opacity-10 text-success rounded p-2">
+                                    <i class="bi bi-patch-check fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-under-pm);">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-secondary small fw-semibold mb-1">EXPIRING SOON</p>
+                                    <h2 class="fw-bold mb-0 js-ncii-soon">{{ $ncIiCounts['Expiring Soon'] }}</h2>
+                                </div>
+                                <div class="bg-warning bg-opacity-10 text-warning rounded p-2">
+                                    <i class="bi bi-hourglass-split fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-not-operational);">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-secondary small fw-semibold mb-1">EXPIRED</p>
+                                    <h2 class="fw-bold mb-0 js-ncii-expired">{{ $ncIiCounts['Expired'] }}</h2>
+                                </div>
+                                <div class="bg-danger bg-opacity-10 text-danger rounded p-2">
+                                    <i class="bi bi-x-octagon fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 {{-- Access Requests — documented addition (FR-03): pending self-registrations are
                      NOT in the prototype (approval was added to scope later). Built with the
@@ -192,12 +239,14 @@
                                         @else
                                         <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">No License</span>
                                         @endif
-                                        {{-- NC II (TESDA) monitoring flag — shown only when the driver
-                                             carries an NC II that is expiring or expired (FR-10, 2026-09).
-                                             In the same cell as the licence badge to keep the table's
-                                             column count unchanged. --}}
-                                        @if ($ncIiStatus && $ncIiStatus !== 'Valid')
-                                        <span class="badge bg-{{ $ncIiStatus === 'Expired' ? 'danger' : 'warning' }} bg-opacity-10 text-{{ $ncIiStatus === 'Expired' ? 'danger' : 'warning' }} px-3 py-2 rounded-pill d-inline-block mt-1">NC II {{ $ncIiStatus }}</span>
+                                        {{-- NC II (TESDA) monitoring badge — shown for EVERY driver who
+                                             carries an NC II (FR-08, FR-10, 2026-09), the same treatment
+                                             the licence badge above gets, so an admin reads both credentials
+                                             at a glance. Absent only when no NC II is on file. In the same
+                                             cell as the licence badge to keep the table's column count
+                                             unchanged. --}}
+                                        @if ($ncIiStatus)
+                                        <span class="badge bg-{{ ['Valid' => 'success', 'Expiring Soon' => 'warning', 'Expired' => 'danger'][$ncIiStatus] }} bg-opacity-10 text-{{ ['Valid' => 'success', 'Expiring Soon' => 'warning', 'Expired' => 'danger'][$ncIiStatus] }} px-3 py-2 rounded-pill d-inline-block mt-1">NC II {{ $ncIiStatus }}</span>
                                         @endif
                                     </td>
                                     <td>{{ $vehicleLabel }}</td>

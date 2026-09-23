@@ -126,6 +126,9 @@ class WebNotificationPageTest extends TestCase
             Notification::TYPE_NEW_ACCESS_REQUEST => route('drivers'),
             Notification::TYPE_LICENSE_EXPIRING => route('drivers'),
             Notification::TYPE_LICENSE_EXPIRED => route('drivers'),
+            // NC II monitored like the licence (FR-08, 2026-09) — same destination.
+            Notification::TYPE_NC_II_EXPIRING => route('drivers'),
+            Notification::TYPE_NC_II_EXPIRED => route('drivers'),
             Notification::TYPE_PM_DUE_SOON => route('pm'),
             Notification::TYPE_PM_DUE => route('pm'),
             Notification::TYPE_PM_REMINDER => route('pm'),

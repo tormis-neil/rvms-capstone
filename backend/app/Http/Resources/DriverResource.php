@@ -21,6 +21,10 @@ class DriverResource extends JsonResource
             'license_number' => $this->license_number,
             'license_expiry_date' => $this->license_expiry_date?->toDateString(),
             'license_status' => $this->licenseStatus(),
+            // TESDA NC II (Driving) — monitored exactly like the licence (FR-08, 2026-09).
+            'nc_ii_number' => $this->nc_ii_number,
+            'nc_ii_expiry_date' => $this->nc_ii_expiry_date?->toDateString(),
+            'nc_ii_status' => $this->ncIiStatus(),
             'vehicles' => $this->whenLoaded('vehicles', fn () => $this->vehicles->map(fn ($v) => [
                 'id' => $v->id,
                 'plate_number' => $v->plate_number,

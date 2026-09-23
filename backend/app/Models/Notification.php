@@ -41,6 +41,16 @@ class Notification extends Model
 
     public const TYPE_LICENSE_EXPIRED = 'License_Expired';
 
+    /**
+     * TESDA NC II (Driving) approaching or past expiry (FR-08 → FR-21, 2026-09).
+     * The NC II is monitored exactly like the licence, so it carries its own
+     * pair of alert types rather than reusing the licence's — the message and
+     * routing can then name the credential unambiguously.
+     */
+    public const TYPE_NC_II_EXPIRING = 'NC_II_Expiring';
+
+    public const TYPE_NC_II_EXPIRED = 'NC_II_Expired';
+
     public const TYPE_PM_DUE_SOON = 'PM_Due_Soon';
 
     public const TYPE_PM_DUE = 'PM_Due';
@@ -71,6 +81,8 @@ class Notification extends Model
         self::TYPE_NEW_ACCESS_REQUEST,
         self::TYPE_PASSWORD_RESET,
         self::TYPE_NEW_ADMIN,
+        self::TYPE_NC_II_EXPIRING,
+        self::TYPE_NC_II_EXPIRED,
     ];
 
     /**
@@ -85,6 +97,10 @@ class Notification extends Model
         self::TYPE_INSPECTION_FLAGGED => ['icon' => 'bi-clipboard-check', 'tone' => 'warning', 'route' => 'inspections'],
         self::TYPE_LICENSE_EXPIRING => ['icon' => 'bi-person-badge', 'tone' => 'warning', 'route' => 'drivers'],
         self::TYPE_LICENSE_EXPIRED => ['icon' => 'bi-person-badge', 'tone' => 'danger', 'route' => 'drivers'],
+        // NC II mirrors the licence's tones; a different glyph (a certificate
+        // patch) so the two credentials are told apart at a glance on the bell.
+        self::TYPE_NC_II_EXPIRING => ['icon' => 'bi-patch-check', 'tone' => 'warning', 'route' => 'drivers'],
+        self::TYPE_NC_II_EXPIRED => ['icon' => 'bi-patch-check', 'tone' => 'danger', 'route' => 'drivers'],
         self::TYPE_PM_DUE_SOON => ['icon' => 'bi-wrench-adjustable', 'tone' => 'warning', 'route' => 'pm'],
         self::TYPE_PM_DUE => ['icon' => 'bi-wrench-adjustable', 'tone' => 'danger', 'route' => 'pm'],
         self::TYPE_PM_REMINDER => ['icon' => 'bi-wrench-adjustable', 'tone' => 'warning', 'route' => 'pm'],

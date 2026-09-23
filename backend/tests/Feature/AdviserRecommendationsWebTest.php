@@ -63,6 +63,43 @@ class AdviserRecommendationsWebTest extends TestCase
             ->assertSee('NC II Expired');
     }
 
+    /* ---- NC II parity: full monitoring feature set (2026-09) ---- */
+
+    public function test_the_drivers_page_carries_an_nc_ii_summary_and_valid_badge(): void
+    {
+        // A driver with a valid NC II must count in the summary AND show a badge,
+        // the same treatment the licence gets (parity, not just an alarm flag).
+        User::factory()->driver()->create([
+            'agency_id' => $this->agency->id,
+            'nc_ii_number' => 'NCII-OK-1',
+            'nc_ii_expiry_date' => now()->addYear()->toDateString(),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get('/drivers')
+            ->assertOk()
+            ->assertSee('VALID NC II')      // summary card
+            ->assertSee('NC II Certificates')
+            ->assertSee('NC II Valid');     // per-row badge shown even when valid
+    }
+
+    public function test_the_dashboard_shows_the_expiring_nc_ii_card_and_action_list(): void
+    {
+        User::factory()->driver()->create([
+            'agency_id' => $this->agency->id,
+            'name' => 'Soon Lapsing Cert',
+            'nc_ii_number' => 'NCII-SOON-1',
+            'nc_ii_expiry_date' => now()->addDays(10)->toDateString(),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSee('EXPIRING NC II')   // overview metric card
+            ->assertSee('Expiring NC II')   // action-required list heading
+            ->assertSee('Soon Lapsing Cert');
+    }
+
     public function test_a_driver_web_store_persists_nc_ii(): void
     {
         $this->actingAs($this->admin)

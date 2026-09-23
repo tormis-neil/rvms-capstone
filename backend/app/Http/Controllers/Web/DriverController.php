@@ -55,9 +55,15 @@ class DriverController extends Controller
 
         $allDrivers = User::query()->drivers()->with('agency')->where('agency_id', $agencyId)->where('status', User::STATUS_ACTIVE)->get();
         $licenseCounts = ['Valid' => 0, 'Expiring Soon' => 0, 'Expired' => 0];
+        // NC II monitored exactly like the licence (FR-08, 2026-09) — its own
+        // Valid / Expiring Soon / Expired summary, counted the same way.
+        $ncIiCounts = ['Valid' => 0, 'Expiring Soon' => 0, 'Expired' => 0];
         foreach ($allDrivers as $driver) {
             if ($status = $driver->licenseStatus()) {
                 $licenseCounts[$status]++;
+            }
+            if ($ncStatus = $driver->ncIiStatus()) {
+                $ncIiCounts[$ncStatus]++;
             }
         }
 
@@ -76,6 +82,7 @@ class DriverController extends Controller
             'drivers' => $drivers,
             'pendingDrivers' => $pendingDrivers,
             'licenseCounts' => $licenseCounts,
+            'ncIiCounts' => $ncIiCounts,
             'assignableVehicles' => $assignableVehicles,
         ]);
     }
@@ -100,10 +107,11 @@ class DriverController extends Controller
             Vehicle::whereKey($vehicleId)->update([$column => $driver->id]);
         }
 
-        // A licence can be recorded ALREADY inside the warning window, or
-        // already expired. Alert now rather than waiting for tomorrow's sweep;
-        // rvms:license-alerts shares this method, so neither path double-alerts.
+        // A licence or NC II can be recorded ALREADY inside the warning window,
+        // or already expired. Alert now rather than waiting for tomorrow's sweep;
+        // rvms:license-alerts shares these methods, so neither path double-alerts.
         app(MaintenanceAlerts::class)->raiseForDriver($driver);
+        app(MaintenanceAlerts::class)->raiseNcIiForDriver($driver);
 
         return redirect()->route('drivers')->with('status', 'Driver registered successfully.');
     }
@@ -124,7 +132,9 @@ class DriverController extends Controller
             Vehicle::whereKey($vehicleId)->update([$column => $driver->id]);
         }
 
-        app(MaintenanceAlerts::class)->raiseForDriver($driver->fresh());
+        $fresh = $driver->fresh();
+        app(MaintenanceAlerts::class)->raiseForDriver($fresh);
+        app(MaintenanceAlerts::class)->raiseNcIiForDriver($fresh);
 
         return redirect()->route('drivers')->with('status', 'Driver details updated.');
     }

@@ -185,7 +185,8 @@ class DashboardSummaryTest extends TestCase
             ->assertOk()
             ->assertJsonStructure(['data' => [
                 'total_vehicles', 'operational', 'dispatched', 'under_pm',
-                'not_operational', 'total_drivers', 'expiring_licenses', 'pending_damage_reports',
+                'not_operational', 'total_drivers', 'expiring_licenses', 'expiring_nc_ii',
+                'pending_damage_reports',
             ]])
             ->assertJsonPath('data.total_vehicles', 1)
             ->assertJsonPath('data.operational', 1);

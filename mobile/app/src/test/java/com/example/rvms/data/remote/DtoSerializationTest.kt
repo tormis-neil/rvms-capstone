@@ -33,6 +33,8 @@ class DtoSerializationTest {
                 "status": "active",
                 "license_number": "N01-11-111111",
                 "license_expiry_date": "2027-05-01",
+                "nc_ii_number": "NCII-DR-0001",
+                "nc_ii_expiry_date": "2027-08-15",
                 "agency": {
                   "id": 1,
                   "code": "BFP",
@@ -55,6 +57,9 @@ class DtoSerializationTest {
         assertEquals("ramon.villanueva@rvms.local", decoded.user.email)
         assertEquals("N01-11-111111", decoded.user.licenseNumber)
         assertEquals("2027-05-01", decoded.user.licenseExpiryDate)
+        // NC II carried on /me so the Home screen can show its status card (2026-09).
+        assertEquals("NCII-DR-0001", decoded.user.ncIiNumber)
+        assertEquals("2027-08-15", decoded.user.ncIiExpiryDate)
         assertEquals("BFP", decoded.user.agency?.code)
         assertEquals(30, decoded.user.agency?.licenseExpiryWarningDays)
     }

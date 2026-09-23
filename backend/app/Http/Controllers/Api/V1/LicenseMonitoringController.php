@@ -9,7 +9,8 @@ use Illuminate\Http\Request;
 /**
  * GET /api/v1/licenses/monitoring (FR-08) — consolidated Valid / Expiring
  * Soon / Expired counts for the admin's agency, against the agency's
- * configurable license_expiry_warning_days threshold.
+ * configurable license_expiry_warning_days threshold. Reports the TESDA NC II
+ * (Driving) the same way (2026-09), since it is monitored identically.
  */
 class LicenseMonitoringController extends Controller
 {
@@ -19,20 +20,33 @@ class LicenseMonitoringController extends Controller
             ->drivers()
             ->where('agency_id', $request->user()->agency_id)
             ->where('status', User::STATUS_ACTIVE)
-            ->whereNotNull('license_expiry_date')
+            ->where(fn ($q) => $q
+                ->whereNotNull('license_expiry_date')
+                ->orWhereNotNull('nc_ii_expiry_date'))
             ->with('agency')
             ->get();
 
-        $counts = ['Valid' => 0, 'Expiring Soon' => 0, 'Expired' => 0];
+        $license = ['Valid' => 0, 'Expiring Soon' => 0, 'Expired' => 0];
+        $ncIi = ['Valid' => 0, 'Expiring Soon' => 0, 'Expired' => 0];
 
         foreach ($drivers as $driver) {
-            $counts[$driver->licenseStatus()]++;
+            if ($status = $driver->licenseStatus()) {
+                $license[$status]++;
+            }
+            if ($ncStatus = $driver->ncIiStatus()) {
+                $ncIi[$ncStatus]++;
+            }
         }
 
         return response()->json([
-            'valid' => $counts['Valid'],
-            'expiring_soon' => $counts['Expiring Soon'],
-            'expired' => $counts['Expired'],
+            'valid' => $license['Valid'],
+            'expiring_soon' => $license['Expiring Soon'],
+            'expired' => $license['Expired'],
+            'nc_ii' => [
+                'valid' => $ncIi['Valid'],
+                'expiring_soon' => $ncIi['Expiring Soon'],
+                'expired' => $ncIi['Expired'],
+            ],
         ]);
     }
 }
