@@ -8,15 +8,14 @@
      .html hrefs become named routes. --}}
 @section('content')
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h3 class="fw-bold mb-0" style="color: var(--primary);">Fleet Overview</h3>
+                    <div>
+                        <h3 class="fw-bold mb-1" style="color: var(--primary);">Dashboard</h3>
+                        <p class="text-secondary small mb-0">Agency vehicle status, maintenance, and driver compliance summary.</p>
+                    </div>
                     <p class="text-secondary mb-0">Today: {{ now()->format('F j, Y') }}</p>
                 </div>
 
-                {{-- Overview — the 8 metrics of Plan §8, plus EXPIRING NC II
-                     (2026-09): the NC II is monitored exactly like the licence
-                     (FR-08), so it earns the same overview card. A ninth card
-                     wraps within the same 4-per-row grid. --}}
-                <h5 class="fw-bold mb-3">Overview</h5>
+                {{-- Metric Overview Cards with Functional Semantic Color Coding --}}
                 <div class="row row-cols-1 row-cols-md-4 g-4 mb-5">
                     <div class="col">
                         <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--primary);">
@@ -33,26 +32,26 @@
                     </div>
 
                     <div class="col">
-                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-operational);">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid #16A34A;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-secondary small fw-semibold mb-1">OPERATIONAL</p>
                                     <h2 class="fw-bold mb-0 js-metric-operational">{{ $metrics['operational'] }}</h2>
                                 </div>
-                                <div class="bg-success bg-opacity-10 text-success rounded p-2">
+                                <div class="rounded p-2" style="background-color: rgba(22, 163, 74, 0.1); color: #16A34A;">
                                     <i class="bi bi-check-circle-fill fs-4"></i>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="col">
-                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-dispatched);">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid #0284C7;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-secondary small fw-semibold mb-1">DISPATCHED</p>
                                     <h2 class="fw-bold mb-0 js-metric-dispatched">{{ $metrics['dispatched'] }}</h2>
                                 </div>
-                                <div class="bg-primary bg-opacity-10 text-primary rounded p-2">
+                                <div class="rounded p-2" style="background-color: rgba(2, 132, 199, 0.1); color: #0284C7;">
                                     <i class="bi bi-cursor-fill fs-4"></i>
                                 </div>
                             </div>
@@ -60,13 +59,13 @@
                     </div>
 
                     <div class="col">
-                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-under-pm);">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid #D97706;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-secondary small fw-semibold mb-1">UNDER PREVENTIVE MAINTENANCE</p>
                                     <h2 class="fw-bold mb-0 js-metric-underpm">{{ $metrics['under_pm'] }}</h2>
                                 </div>
-                                <div class="bg-warning bg-opacity-10 text-warning rounded p-2">
+                                <div class="rounded p-2" style="background-color: rgba(217, 119, 6, 0.1); color: #D97706;">
                                     <i class="bi bi-tools fs-4"></i>
                                 </div>
                             </div>
@@ -74,13 +73,13 @@
                     </div>
 
                     <div class="col">
-                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-not-operational);">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid #DC2626;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-secondary small fw-semibold mb-1">NOT OPERATIONAL</p>
                                     <h2 class="fw-bold mb-0 js-metric-notop">{{ $metrics['not_operational'] }}</h2>
                                 </div>
-                                <div class="bg-danger bg-opacity-10 text-danger rounded p-2">
+                                <div class="rounded p-2" style="background-color: rgba(220, 38, 38, 0.1); color: #DC2626;">
                                     <i class="bi bi-x-circle-fill fs-4"></i>
                                 </div>
                             </div>
@@ -102,13 +101,13 @@
                     </div>
 
                     <div class="col">
-                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-under-pm);">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid #0D9488;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-secondary small fw-semibold mb-1">EXPIRING LICENSES</p>
                                     <h2 class="fw-bold mb-0 js-metric-expiring">{{ $metrics['expiring_licenses'] }}</h2>
                                 </div>
-                                <div class="bg-warning bg-opacity-10 text-warning rounded p-2">
+                                <div class="rounded p-2" style="background-color: rgba(13, 148, 136, 0.1); color: #0D9488;">
                                     <i class="bi bi-person-badge fs-4"></i>
                                 </div>
                             </div>
@@ -116,13 +115,13 @@
                     </div>
 
                     <div class="col">
-                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-under-pm);">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid #7C3AED;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-secondary small fw-semibold mb-1">EXPIRING NC II</p>
                                     <h2 class="fw-bold mb-0 js-metric-expiring-ncii">{{ $metrics['expiring_nc_ii'] }}</h2>
                                 </div>
-                                <div class="bg-warning bg-opacity-10 text-warning rounded p-2">
+                                <div class="rounded p-2" style="background-color: rgba(124, 58, 237, 0.1); color: #7C3AED;">
                                     <i class="bi bi-patch-check fs-4"></i>
                                 </div>
                             </div>
@@ -130,13 +129,13 @@
                     </div>
 
                     <div class="col">
-                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-not-operational);">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid #EA580C;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-secondary small fw-semibold mb-1">PENDING DAMAGE REPORTS</p>
                                     <h2 class="fw-bold mb-0 js-metric-damage">{{ $metrics['pending_damage_reports'] }}</h2>
                                 </div>
-                                <div class="bg-danger bg-opacity-10 text-danger rounded p-2">
+                                <div class="rounded p-2" style="background-color: rgba(234, 88, 12, 0.1); color: #EA580C;">
                                     <i class="bi bi-exclamation-triangle-fill fs-4"></i>
                                 </div>
                             </div>

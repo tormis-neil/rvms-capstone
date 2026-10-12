@@ -1,13 +1,11 @@
 # CLAUDE.md
 
 > ⚠️ **ALWAYS READ `skills/rvms-source-of-truth.md` IN FULL BEFORE STARTING ANY TASK.**
-> It is the single source of truth for scope, requirements (FR-01–FR-21, NFR-01–NFR-05),
-> workflows, and enumerations. Never invent features, tables, columns, or statuses that
-> it does not justify. The prototype lives in `web/` (static Bootstrap dashboard) and
-> `mobile/` (Jetpack Compose driver app); `skills/rvms-prototype-plan.md` details workflows.
-> Figure, ERD and data-dictionary work deferred out of the 2026-08 audit is parked in
-> `skills/rvms-deferred-manuscript-work.md` — read it before touching any diagram or the
-> Chapter 4 data dictionary, so the same findings are not investigated twice.
+> It is the single textual source of truth for scope, requirements (FR-01–FR-26, NFR-01–NFR-05),
+> workflows, and enumerations matching the capstone manuscript (`rvms-capstone (2).pdf`).
+> Never invent features, tables, columns, or statuses that it does not justify. The prototype
+> lives in `web/` (static Bootstrap dashboard) and `mobile/` (Jetpack Compose driver app);
+> `skills/rvms-prototype-plan.md` details workflows.
 
 ---
 
@@ -28,6 +26,39 @@ Calbayog City agencies. Capstone, Northwest Samar State University.
 
 ---
 
+## Requirements Crosswalk (Manuscript 26 FRs vs. System Modules)
+
+The updated manuscript (`rvms-capstone (2).pdf` Table 3) decomposes the system into **26 functional requirements** ("The system shall..." statements). The table below maps each 26-FR code to its implementation module, endpoints, and legacy doc codes:
+
+| 26-FR Code (Manuscript) | Requirement Name | Platform / Role | Implementation / Codebase Mapping | Legacy Doc Code |
+|---|---|---|---|---|
+| **FR-01** | User Login | Both (Mobile & Web) | `POST /api/v1/login`, Sanctum auth tokens, web login session guard | FR-01 |
+| **FR-02** | User Roles and Agency Access | Both | `role:` middleware (`admin`, `driver`), `AgencyScope` global scope, `BelongsToAgency` trait | FR-02 |
+| **FR-03** | Driver Registration and Approval | Driver (Mobile) / Admin (Web) | `POST /api/v1/register`, `pending` status, admin approval/rejection via Drivers page | FR-03 |
+| **FR-04** | Create Administrator Account | Admin (Web) | `ProfileController::storeAdmin` (password confirmed, existing admins notified via `New_Admin`) | FR-04 / DD-06 |
+| **FR-05** | Profile Management | Both | `PATCH /api/v1/me/profile`, self-edit own name, email, password without approval | FR-04 |
+| **FR-06** | Password Recovery | Admin (Web) | Admin sets new password for driver of own agency (in-system, no email/SMS, driver notified) | FR-04 / FR-22 |
+| **FR-07** | Vehicle Record Management | Admin (Web) | `vehicles` table, permanent retention (no delete), primary + optional secondary driver | FR-05 |
+| **FR-08** | Driver Record Management | Admin (Web) | `users` table (`role=driver`), license & NC II expiry, permanent retention (no delete) | FR-06 |
+| **FR-09** | View Assigned Vehicle | Driver (Mobile) | `GET /api/v1/my-vehicle`, primary & secondary assignment reflection | FR-07 |
+| **FR-10** | License Expiry Monitoring | Admin (Web) | Warning window (`agencies.license_expiry_warning_days`), dashboard cards & alert list | FR-08 |
+| **FR-11** | Digital BLOWBAGETS Inspection | Driver (Mobile) | 12 standard items + 2 BFP items (`Hydraulic System`, `Fire Pump`), Has Issue remarks | FR-09 |
+| **FR-12** | Inspection Monitoring | Admin (Web) | Inspection history per vehicle/driver, admin review (`review_status`) | FR-10 |
+| **FR-13** | Damage Reporting | Driver (Mobile) | Nature of damage, suspected parts, optional photo, initial `Pending` | FR-11 |
+| **FR-14** | Damage Report Management | Admin (Web) | Review report (`Reviewed`), assess and update operational status | FR-12 |
+| **FR-15** | Repair Logging | Admin (Web) | Scope, parts, cost, source (Internal, GSO, External + document required), status update | FR-13 |
+| **FR-16** | Preventive Maintenance Scheduling | Admin (Web) | Mileage-based or time-based, configurable Due Soon threshold, optional pre-service document | FR-14 |
+| **FR-17** | Preventive Maintenance Completion | Admin (Web) | Date serviced, odometer at service, repair source, shop name, receipt, parts, remarks | FR-14 |
+| **FR-18** | Dispatch Logging | Admin (Web) | Open dispatch (sets status to `Dispatched`), primary & optional second driver, travel order | FR-15 |
+| **FR-19** | Dispatch Closing | Admin (Web) | Close dispatch (sets return status), date/time in, `odometer_in` updates `current_mileage` | FR-16 |
+| **FR-20** | Vehicle Availability Monitoring | Admin (Web) | Fleet availability monitoring by status across agency | FR-17 |
+| **FR-21** | Vehicle Status Management | Both | Exactly 4 statuses (`Operational`, `Dispatched`, `Not Operational`, `Under Preventive Maintenance`) | FR-18 |
+| **FR-22** | Dashboard Summary | Admin (Web) | Status counts, total vehicles, drivers, expiring licenses, pending damage reports, top issues | FR-19 |
+| **FR-23** | Report Generation | Admin (Web) | Filtered, printable reports with summary statistics (inspections, damage, repairs, PM, dispatch, status) | FR-20 |
+| **FR-24** | Driver Notifications | Driver (Mobile) | In-app + FCM push alerts for PM reminders and vehicle status updates | FR-21 |
+| **FR-25** | Administrator Notifications | Admin (Web) | In-app alerts: damage reports, access requests, flagged inspections, license/NC II expiry, PM due, new admin | FR-21 |
+| **FR-26** | Notification Management | Admin (Web) | Mark read, clear read notifications (affects own list only; unread retained) | FR-21 |
+
 ## Key Development Commands
 
 ```bash
@@ -46,7 +77,7 @@ php artisan queue:work               # OPTIONAL — pushes go via ->afterRespons
 
 ---
 
-## Scheduled work — REQUIRED at deployment/turnover (FR-08, FR-14, FR-21)
+## Scheduled work — REQUIRED at deployment/turnover (FR-10, FR-16, FR-24–FR-26; legacy FR-08, FR-14, FR-21)
 
 Most notifications are **event-driven**: a driver files a damage report or a flagged
 inspection, an admin changes a status, someone self-registers. The web request itself is

@@ -16,42 +16,43 @@
                 {{-- Success/error feedback — documented addition (the prototype has no alert state) --}}
                 @include('partials.alerts')
 
-                <!-- License Status Summary -->
+                <!-- LTO Driver's License Status Summary -->
+                <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-person-vcard me-2"></i>LTO Driver's Licenses</h6>
                 <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
                     <div class="col">
-                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-operational);">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid #16A34A;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-secondary small fw-semibold mb-1">VALID LICENSES</p>
                                     <h2 class="fw-bold mb-0 js-lic-valid">{{ $licenseCounts['Valid'] }}</h2>
                                 </div>
-                                <div class="bg-success bg-opacity-10 text-success rounded p-2">
+                                <div class="rounded p-2" style="background-color: rgba(22, 163, 74, 0.1); color: #16A34A;">
                                     <i class="bi bi-patch-check fs-4"></i>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="col">
-                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-under-pm);">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid #D97706;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-secondary small fw-semibold mb-1">EXPIRING SOON</p>
                                     <h2 class="fw-bold mb-0 js-lic-soon">{{ $licenseCounts['Expiring Soon'] }}</h2>
                                 </div>
-                                <div class="bg-warning bg-opacity-10 text-warning rounded p-2">
+                                <div class="rounded p-2" style="background-color: rgba(217, 119, 6, 0.1); color: #D97706;">
                                     <i class="bi bi-hourglass-split fs-4"></i>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="col">
-                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-not-operational);">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid #DC2626;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-secondary small fw-semibold mb-1">EXPIRED</p>
                                     <h2 class="fw-bold mb-0 js-lic-expired">{{ $licenseCounts['Expired'] }}</h2>
                                 </div>
-                                <div class="bg-danger bg-opacity-10 text-danger rounded p-2">
+                                <div class="rounded p-2" style="background-color: rgba(220, 38, 38, 0.1); color: #DC2626;">
                                     <i class="bi bi-x-octagon fs-4"></i>
                                 </div>
                             </div>
@@ -59,14 +60,7 @@
                     </div>
                 </div>
 
-                {{-- What the three cards above actually mean (FR-08, 2026-08).
-                     A statement, not a control. The warning window is stored per agency
-                     in `agencies.license_expiry_warning_days`, seeded at 30 for all four agencies;
-                     an on-screen setting was tried and removed (lead-reported) because nobody
-                     needed to change it, while the RULE being invisible was a real gap — an
-                     administrator seeing "Expiring Soon" had no way to know what it meant. The
-                     number is read from the column, so this sentence stays true if a deployment
-                     is ever set up with a different one. --}}
+                {{-- What the cards above mean (FR-08) --}}
                 <p class="text-secondary small mb-4">
                     <i class="bi bi-info-circle me-1"></i>
                     A licence <em>or NC II certificate</em> is flagged <strong>Expiring Soon</strong>
@@ -75,46 +69,43 @@
                     Every administrator of {{ auth()->user()->agency->code }} is alerted daily while either applies.
                 </p>
 
-                {{-- NC II Status Summary (FR-08, FR-10, 2026-09). The TESDA NC II
-                     (Driving) is monitored exactly like the licence, so it gets the
-                     same three-card summary against the same agency warning window.
-                     A driver without an NC II on file counts toward none of the three. --}}
-                <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-patch-check me-2"></i>NC II Certificates</h6>
+                {{-- TESDA NC II Status Summary (FR-08, FR-10) with distinct Violet/Indigo theme --}}
+                <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-patch-check me-2" style="color: #7C3AED;"></i>TESDA NC II Certificates</h6>
                 <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
                     <div class="col">
-                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-operational);">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid #7C3AED;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-secondary small fw-semibold mb-1">VALID NC II</p>
                                     <h2 class="fw-bold mb-0 js-ncii-valid">{{ $ncIiCounts['Valid'] }}</h2>
                                 </div>
-                                <div class="bg-success bg-opacity-10 text-success rounded p-2">
+                                <div class="rounded p-2" style="background-color: rgba(124, 58, 237, 0.1); color: #7C3AED;">
                                     <i class="bi bi-patch-check fs-4"></i>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="col">
-                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-under-pm);">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid #D97706;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-secondary small fw-semibold mb-1">EXPIRING SOON</p>
                                     <h2 class="fw-bold mb-0 js-ncii-soon">{{ $ncIiCounts['Expiring Soon'] }}</h2>
                                 </div>
-                                <div class="bg-warning bg-opacity-10 text-warning rounded p-2">
+                                <div class="rounded p-2" style="background-color: rgba(217, 119, 6, 0.1); color: #D97706;">
                                     <i class="bi bi-hourglass-split fs-4"></i>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="col">
-                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--status-not-operational);">
+                        <div class="card card-stat h-100 p-3" style="border-left: 4px solid #DC2626;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-secondary small fw-semibold mb-1">EXPIRED</p>
                                     <h2 class="fw-bold mb-0 js-ncii-expired">{{ $ncIiCounts['Expired'] }}</h2>
                                 </div>
-                                <div class="bg-danger bg-opacity-10 text-danger rounded p-2">
+                                <div class="rounded p-2" style="background-color: rgba(220, 38, 38, 0.1); color: #DC2626;">
                                     <i class="bi bi-x-octagon fs-4"></i>
                                 </div>
                             </div>
@@ -190,23 +181,17 @@
                             <thead class="table-light">
                                 <tr>
                                     <th class="py-3 text-secondary fw-semibold small">DRIVER NAME</th>
-                                    <th class="py-3 text-secondary fw-semibold small">LICENSE NO.</th>
-                                    <th class="py-3 text-secondary fw-semibold small">EXPIRY DATE</th>
-                                    <th class="py-3 text-secondary fw-semibold small">LICENSE STATUS</th>
+                                    <th class="py-3 text-secondary fw-semibold small">LTO DRIVER LICENSE</th>
+                                    <th class="py-3 text-secondary fw-semibold small">NC II LICENSE</th>
                                     <th class="py-3 text-secondary fw-semibold small">ASSIGNED VEHICLE</th>
                                     <th class="py-3 text-secondary fw-semibold small text-end">ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody id="rows-drivers">
-                                {{-- Live rows — matches the prototype's own renderDrivers() markup, incl.
-                                     the 3rd "Update License" action button that agency.js paints (not in
-                                     the static HTML — confirmed via a live pixel-diff against the prototype). --}}
                                 @forelse ($drivers as $driver)
                                 @php
                                     $licenseStatus = $driver->licenseStatus();
                                     $ncIiStatus = $driver->ncIiStatus();
-                                    // Vehicles this driver leads (Primary) and backs up (Secondary),
-                                    // each tagged so the admin sees both roles (2026-09).
                                     $vehicleParts = collect();
                                     foreach ($driver->vehicles as $v) { $vehicleParts->push("{$v->plate_number} ({$v->type}) — Primary"); }
                                     foreach ($driver->secondaryVehicles as $v) { $vehicleParts->push("{$v->plate_number} ({$v->type}) — Secondary"); }
@@ -229,33 +214,46 @@
                                         <div class="fw-bold">{{ $driver->name }}</div>
                                         <div class="small text-secondary">{{ $driver->email }}</div>
                                     </td>
-                                    <td class="font-monospace text-secondary">{{ $driver->license_number ?? '—' }}</td>
-                                    <td class="{{ $licenseStatus === 'Expiring Soon' ? 'text-warning fw-bold' : ($licenseStatus === 'Expired' ? 'text-danger fw-bold' : '') }}">
-                                        {{ $driver->license_expiry_date ? \Illuminate\Support\Carbon::parse($driver->license_expiry_date)->format('M j, Y') : '—' }}
+                                    <td>
+                                        <div class="font-monospace fw-semibold text-dark">{{ $driver->license_number ?? '—' }}</div>
+                                        <div class="small text-secondary">
+                                            Exp: {{ $driver->license_expiry_date ? \Illuminate\Support\Carbon::parse($driver->license_expiry_date)->format('M j, Y') : '—' }}
+                                        </div>
                                     </td>
                                     <td>
-                                        @if ($licenseStatus)
-                                        <span class="badge bg-{{ ['Valid' => 'success', 'Expiring Soon' => 'warning', 'Expired' => 'danger'][$licenseStatus] }} bg-opacity-10 text-{{ ['Valid' => 'success', 'Expiring Soon' => 'warning', 'Expired' => 'danger'][$licenseStatus] }} px-3 py-2 rounded-pill">{{ $licenseStatus }}</span>
+                                        @if ($driver->nc_ii_number)
+                                            <div class="font-monospace fw-semibold text-dark">{{ $driver->nc_ii_number }}</div>
+                                            <div class="small text-secondary">
+                                                Exp: {{ $driver->nc_ii_expiry_date ? \Illuminate\Support\Carbon::parse($driver->nc_ii_expiry_date)->format('M j, Y') : '—' }}
+                                            </div>
                                         @else
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">No License</span>
-                                        @endif
-                                        {{-- NC II (TESDA) monitoring badge — shown for EVERY driver who
-                                             carries an NC II (FR-08, FR-10, 2026-09), the same treatment
-                                             the licence badge above gets, so an admin reads both credentials
-                                             at a glance. Absent only when no NC II is on file. In the same
-                                             cell as the licence badge to keep the table's column count
-                                             unchanged. --}}
-                                        @if ($ncIiStatus)
-                                        <span class="badge bg-{{ ['Valid' => 'success', 'Expiring Soon' => 'warning', 'Expired' => 'danger'][$ncIiStatus] }} bg-opacity-10 text-{{ ['Valid' => 'success', 'Expiring Soon' => 'warning', 'Expired' => 'danger'][$ncIiStatus] }} px-3 py-2 rounded-pill d-inline-block mt-1">NC II {{ $ncIiStatus }}</span>
+                                            <span class="text-secondary small">None on file</span>
                                         @endif
                                     </td>
-                                    <td>{{ $vehicleLabel }}</td>
+                                    <td>
+                                        @if ($driver->vehicles->isNotEmpty() || $driver->secondaryVehicles->isNotEmpty())
+                                            @foreach ($driver->vehicles as $v)
+                                                <div class="d-flex align-items-center gap-1 mb-1">
+                                                    <span class="font-monospace fw-semibold text-dark">{{ $v->plate_number }}</span>
+                                                    <span class="text-secondary small">({{ $v->type }})</span>
+                                                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2 py-0 small" style="font-size: 0.72rem;">Primary</span>
+                                                </div>
+                                            @endforeach
+                                            @foreach ($driver->secondaryVehicles as $v)
+                                                <div class="d-flex align-items-center gap-1">
+                                                    <span class="font-monospace fw-semibold text-dark">{{ $v->plate_number }}</span>
+                                                    <span class="text-secondary small">({{ $v->type }})</span>
+                                                    <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2 py-0 small" style="font-size: 0.72rem;">Secondary</span>
+                                                </div>
+                                            @endforeach
+                                        @else
+                                            <span class="text-secondary small">Unassigned</span>
+                                        @endif
+                                    </td>
                                     <td class="text-end">
                                         <div class="d-flex gap-2 justify-content-end">
                                             <button class="btn btn-sm btn-light border" title="View Details" data-bs-toggle="modal" data-bs-target="#viewDriverModal"><i class="bi bi-eye"></i></button>
                                             <button class="btn btn-sm btn-light border" title="Edit" data-bs-toggle="modal" data-bs-target="#editDriverModal"><i class="bi bi-pencil"></i></button>
-                                            {{-- Reset Password (FR-22, 2026-08): the action behind the
-                                                 login screen's "contact your administrator". --}}
                                             <button type="button" class="btn btn-sm btn-light border js-reset"
                                                     title="Reset Password"
                                                     data-name="{{ $driver->name }}"
@@ -265,7 +263,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="6" class="text-center text-secondary py-4">No drivers found.</td>
+                                    <td colspan="5" class="text-center text-secondary py-4">No drivers found.</td>
                                 </tr>
                                 @endforelse
                             </tbody>
