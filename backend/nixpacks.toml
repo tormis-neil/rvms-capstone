@@ -84,6 +84,11 @@
 # server is the wrong place to keep a clock; its Custom Start Command in Railway
 # is `bash deploy/start.sh scheduler`.
 
+providers = ["php"]
+
+[phases.build]
+cmds = []
+
 [variables]
 PHP_CLI_SERVER_WORKERS = "4"
 
