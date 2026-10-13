@@ -732,7 +732,7 @@ class SeedUatChoCommand extends Command
                 // For driver Robert Canaman (SHA 1248 set to Under PM on Oct 13)
                 [
                     'user_id' => $driverCanaman->id,
-                    'type' => Notification::TYPE_VEHICLE_STATUS_CHANGED,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
                     'title' => 'Vehicle Status Updated',
                     'message' => 'SHA 1248 (Ambulance) status changed to Under Preventive Maintenance.',
                     'data' => ['vehicle_id' => $v1248->id, 'plate_number' => 'SHA 1248', 'new_status' => 'Under Preventive Maintenance'],
@@ -741,7 +741,7 @@ class SeedUatChoCommand extends Command
                 // For driver Rowel Gamao (SHA 2625 set to Not Operational on Oct 13)
                 [
                     'user_id' => $driverGamao->id,
-                    'type' => Notification::TYPE_VEHICLE_STATUS_CHANGED,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
                     'title' => 'Vehicle Status Updated',
                     'message' => 'SHA 2625 (Service Vehicle) status changed to Not Operational.',
                     'data' => ['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'new_status' => 'Not Operational'],
@@ -750,7 +750,7 @@ class SeedUatChoCommand extends Command
                 // For secondary driver Idelfonso Balloca (SHA 2625 status notification parity)
                 [
                     'user_id' => $driverBalloca->id,
-                    'type' => Notification::TYPE_VEHICLE_STATUS_CHANGED,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
                     'title' => 'Vehicle Status Updated',
                     'message' => 'SHA 2625 (Service Vehicle) status changed to Not Operational.',
                     'data' => ['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'new_status' => 'Not Operational'],
@@ -768,7 +768,7 @@ class SeedUatChoCommand extends Command
                 // For CHO Admin (Damage Report submitted on Oct 12)
                 [
                     'user_id' => $admin->id,
-                    'type' => Notification::TYPE_DAMAGE_REPORT_SUBMITTED,
+                    'type' => Notification::TYPE_NEW_DAMAGE_REPORT,
                     'title' => 'Damage Report Submitted',
                     'message' => 'Rowel Gamao reported clutch wear on SHA 2625.',
                     'data' => ['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'driver' => 'Rowel Gamao'],
