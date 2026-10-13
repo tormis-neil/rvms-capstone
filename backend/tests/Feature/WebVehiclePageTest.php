@@ -126,4 +126,48 @@ class WebVehiclePageTest extends TestCase
     {
         $this->get('/vehicles')->assertRedirect(route('login'));
     }
+
+    public function test_admin_can_register_vehicle_with_other_custom_type(): void
+    {
+        $this->actingAs($this->admin)
+            ->post('/vehicles', [
+                'plate_number' => 'PNP-9901',
+                'type' => 'Other',
+                'custom_type' => 'Patrol Motorcycle',
+                'make' => 'Yamaha',
+                'model' => 'WR250',
+                'current_mileage' => 500,
+            ])
+            ->assertRedirect(route('vehicles'))
+            ->assertSessionHas('status', 'Vehicle registered successfully.');
+
+        $this->assertDatabaseHas('vehicles', [
+            'agency_id' => $this->agency->id,
+            'plate_number' => 'PNP-9901',
+            'type' => 'Patrol Motorcycle',
+        ]);
+    }
+
+    public function test_admin_can_update_vehicle_with_other_custom_type(): void
+    {
+        $vehicle = Vehicle::factory()->create([
+            'agency_id' => $this->agency->id,
+            'plate_number' => 'PNP-9902',
+            'type' => 'Service Vehicle',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->put("/vehicles/{$vehicle->id}", [
+                'plate_number' => 'PNP-9902',
+                'type' => 'Other',
+                'custom_type' => 'Mobile Command Unit',
+                'make' => 'Isuzu',
+                'model' => 'NPR',
+                'current_mileage' => 1200,
+            ])
+            ->assertRedirect(route('vehicles'))
+            ->assertSessionHas('status', 'Vehicle details updated.');
+
+        $this->assertSame('Mobile Command Unit', $vehicle->fresh()->type);
+    }
 }

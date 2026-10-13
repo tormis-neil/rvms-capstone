@@ -17,6 +17,15 @@ class StoreVehicleRequest extends FormRequest
         return true; // role gating happens in the route middleware
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('type') === 'Other') {
+            $this->merge([
+                'type' => $this->filled('custom_type') ? trim((string) $this->input('custom_type')) : null,
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         $agencyId = $this->user()->agency_id;
@@ -73,6 +82,7 @@ class StoreVehicleRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'type.required' => 'Please select or specify a vehicle type.',
             'plate_number.unique' => 'A vehicle with this plate number already exists in your agency.',
             'engine_number.unique' => 'A vehicle with this engine number already exists in your agency.',
             'chassis_number.unique' => 'A vehicle with this chassis number already exists in your agency.',

@@ -145,12 +145,17 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Vehicle Type</label>
-                                <select class="form-select" name="type">
-                                    {{-- Prototype's 5 demo types + any type already in the agency's fleet --}}
+                                <select class="form-select @error('type') is-invalid @enderror" name="type" id="addVehicleType">
+                                    {{-- Common presets + existing types in fleet --}}
                                     @foreach ($types as $type)
-                                    <option @selected(old('type') === $type)>{{ $type }}</option>
+                                    <option value="{{ $type }}" @selected(old('type') === $type)>{{ $type }}</option>
                                     @endforeach
+                                    <option value="Other" @selected(old('type') === 'Other')>Other (Specify)</option>
                                 </select>
+                                <div id="addVehicleTypeOtherGroup" class="mt-2 {{ old('type') === 'Other' ? '' : 'd-none' }}">
+                                    <input type="text" name="custom_type" id="addVehicleTypeOther" class="form-control" placeholder="Specify vehicle type (e.g. Patrol Car, Ladder Truck)" value="{{ old('custom_type') }}">
+                                </div>
+                                @error('type')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
@@ -233,9 +238,13 @@
                                 <label class="form-label fw-semibold">Vehicle Type</label>
                                 <select class="form-select" name="type" id="evType">
                                     @foreach ($types as $type)
-                                    <option>{{ $type }}</option>
+                                    <option value="{{ $type }}">{{ $type }}</option>
                                     @endforeach
+                                    <option value="Other">Other (Specify)</option>
                                 </select>
+                                <div id="evTypeOtherGroup" class="mt-2 d-none">
+                                    <input type="text" name="custom_type" id="evTypeOther" class="form-control" placeholder="Specify vehicle type (e.g. Patrol Car, Ladder Truck)">
+                                </div>
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
@@ -386,12 +395,45 @@
         // Live wiring: per-row form action URLs (vehicles.update / vehicles.status)
         const editActionTemplate = @json(route('vehicles.update', ['vehicle' => '__ID__']));
 
+        function setupOtherTypeToggle(selectId, groupId, inputId) {
+            const select = document.getElementById(selectId);
+            const group = document.getElementById(groupId);
+            const input = document.getElementById(inputId);
+            if (!select || !group) return;
+
+            select.addEventListener('change', () => {
+                if (select.value === 'Other') {
+                    group.classList.remove('d-none');
+                    if (input) input.focus();
+                } else {
+                    group.classList.add('d-none');
+                    if (input) input.value = '';
+                }
+            });
+        }
+
+        setupOtherTypeToggle('addVehicleType', 'addVehicleTypeOtherGroup', 'addVehicleTypeOther');
+        setupOtherTypeToggle('evType', 'evTypeOtherGroup', 'evTypeOther');
+
         document.getElementById('editVehicleModal').addEventListener('show.bs.modal', event => {
             const d = rowData(event);
             if (!d) return;
             document.getElementById('editVehicleForm').action = editActionTemplate.replace('__ID__', d.id);
             document.getElementById('evPlate').value = d.plate;
-            document.getElementById('evType').value = d.type;
+
+            const evTypeSelect = document.getElementById('evType');
+            const evTypeOtherGroup = document.getElementById('evTypeOtherGroup');
+            const evTypeOtherInput = document.getElementById('evTypeOther');
+            evTypeSelect.value = d.type;
+            if (evTypeSelect.value !== d.type) {
+                evTypeSelect.value = 'Other';
+                evTypeOtherGroup.classList.remove('d-none');
+                evTypeOtherInput.value = d.type;
+            } else {
+                evTypeOtherGroup.classList.add('d-none');
+                evTypeOtherInput.value = '';
+            }
+
             document.getElementById('evMake').value = d.make;
             document.getElementById('evModel').value = d.model;
             document.getElementById('evEngine').value = d.engine;

@@ -385,7 +385,7 @@ User opens app or browser
 ```
 Agency Admin → Vehicle Management
     → Add Vehicle
-        → Fields: Vehicle Type, Plate No., Make, Model,
+        → Fields: Vehicle Type (preset or "Other" custom specify), Plate No., Make, Model,
                   Engine No., Chassis No., Current Mileage,
                   Agency, Assigned Driver
         → Save
@@ -714,7 +714,7 @@ This objective addresses the problem confirmed across all four agencies: vehicle
 
 ### Vehicle Management — Admin Web Dashboard
 
-Provides a centralized repository for all rescue vehicle records. Agency Administrators can add, update, and view vehicle information including Vehicle Type, Plate Number, Make, Model, Engine Number, Chassis Number, Current Mileage, Assigned Agency, and Assigned Driver. Vehicle status is also managed from this module.
+Provides a centralized repository for all rescue vehicle records. Agency Administrators can add, update, and view vehicle information including Vehicle Type (selectable from standard presets or custom-specified via "Other"), Plate Number, Make, Model, Engine Number, Chassis Number, Current Mileage, Assigned Agency, and Assigned Driver. Vehicle status is also managed from this module.
 
 ---
 
