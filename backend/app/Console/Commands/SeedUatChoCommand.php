@@ -507,143 +507,167 @@ class SeedUatChoCommand extends Command
             }
 
             // -------------------------------------------------------------
-            // 5. DISPATCHES (Progressive Odometer Curves)
+            // 5. DISPATCHES (Progressive Odometer Curves & Patient Transports)
             // -------------------------------------------------------------
             $this->info('Seeding Dispatches...');
 
             $dispatchesData = [
-                // SHA 1247 (starts 39,810 km -> 39,980 km)
+                // SHA 1247 (starts 39,490 km -> 39,980 km)
                 [
                     'vehicle' => $v1247,
                     'driver' => $driverSerrato,
                     'second_driver' => null,
-                    'type' => 'Medical Response',
+                    'type' => Dispatch::MISSION_OTHERS,
+                    'other' => 'Patient Transport',
                     'location' => 'Calbayog District Hospital, Brgy. Dagum',
                     'date' => '2026-09-15',
                     'time_out' => '10:15:00',
                     'time_in' => '11:45:00',
-                    'odo_out' => 39810,
-                    'odo_in' => 39832,
-                    'remarks' => 'Emergency transfer of hypertension patient from CHO compound to District Hospital ER.',
+                    'odo_out' => 39490,
+                    'odo_in' => 39514,
+                    'remarks' => 'Emergency patient transport of hypertension patient from CHO compound to District Hospital ER.',
                 ],
                 [
                     'vehicle' => $v1247,
                     'driver' => $driverSerrato,
                     'second_driver' => null,
-                    'type' => 'Medical Response',
+                    'type' => Dispatch::MISSION_OTHERS,
+                    'other' => 'Patient Transport',
                     'location' => 'Brgy. San Policarpo Health Center to Calbayog District Hospital',
                     'date' => '2026-09-21',
                     'time_out' => '13:00:00',
                     'time_in' => '14:45:00',
-                    'odo_out' => 39832,
-                    'odo_in' => 39858,
-                    'remarks' => 'Maternal emergency patient transfer to District Hospital OB ward. Transported safely.',
+                    'odo_out' => 39514,
+                    'odo_in' => 39542,
+                    'remarks' => 'Maternal emergency patient transport to District Hospital OB ward. Transported safely.',
                 ],
                 [
                     'vehicle' => $v1247,
                     'driver' => $driverSerrato,
                     'second_driver' => null,
-                    'type' => 'Medical Response',
-                    'location' => 'Brgy. Matobato to St. Camillus Hospital',
+                    'type' => Dispatch::MISSION_OTHERS,
+                    'other' => 'Patient Transport',
+                    'location' => 'Calbayog District Hospital to Samar Provincial Hospital (Catbalogan City)',
                     'date' => '2026-09-25',
-                    'time_out' => '10:30:00',
-                    'time_in' => '12:00:00',
-                    'odo_out' => 39858,
-                    'odo_in' => 39886,
-                    'remarks' => 'Vehicular trauma patient transfer from highway scene to St. Camillus Hospital ER.',
+                    'time_out' => '09:30:00',
+                    'time_in' => '15:15:00',
+                    'odo_out' => 39542,
+                    'odo_in' => 39686,
+                    'remarks' => 'Inter-facility patient transport of critical trauma casualty to Samar Provincial Hospital in Catbalogan City. Escorted by duty nurse.',
                 ],
                 [
                     'vehicle' => $v1247,
                     'driver' => $driverSerrato,
                     'second_driver' => null,
                     'type' => 'Medical Response',
+                    'other' => null,
                     'location' => 'Nijaga Park, Calbayog Commercial District',
                     'date' => '2026-10-01',
                     'time_out' => '09:45:00',
                     'time_in' => '13:30:00',
-                    'odo_out' => 39886,
-                    'odo_in' => 39912,
+                    'odo_out' => 39686,
+                    'odo_in' => 39712,
                     'remarks' => 'Medical standby team during public civic parade and senior citizens health screening.',
                 ],
                 [
                     'vehicle' => $v1247,
                     'driver' => $driverSerrato,
                     'second_driver' => null,
-                    'type' => 'Medical Response',
+                    'type' => Dispatch::MISSION_OTHERS,
+                    'other' => 'Patient Transport',
                     'location' => 'Calbayog District Hospital to Carayman Junction',
                     'date' => '2026-10-08',
                     'time_out' => '11:15:00',
                     'time_in' => '13:00:00',
-                    'odo_out' => 39912,
-                    'odo_in' => 39948,
-                    'remarks' => 'Inter-facility patient transfer rendezvous with Samar Provincial Hospital ambulance.',
+                    'odo_out' => 39712,
+                    'odo_in' => 39748,
+                    'remarks' => 'Inter-facility patient transport rendezvous with provincial ambulance team.',
                 ],
                 [
                     'vehicle' => $v1247,
                     'driver' => $driverSerrato,
                     'second_driver' => null,
-                    'type' => 'Medical Response',
-                    'location' => 'Brgy. Obrero Health Center to CHO Compound',
+                    'type' => Dispatch::MISSION_OTHERS,
+                    'other' => 'Patient Transport',
+                    'location' => 'CHO Compound to Eastern Visayas Medical Center (EVMC, Tacloban City)',
+                    'date' => '2026-10-12',
+                    'time_out' => '09:00:00',
+                    'time_in' => '16:30:00',
+                    'odo_out' => 39748,
+                    'odo_in' => 39956,
+                    'remarks' => 'Regional inter-facility patient transport of pediatric patient requiring tertiary ICU admission at EVMC Tacloban.',
+                ],
+                [
+                    'vehicle' => $v1247,
+                    'driver' => $driverSerrato,
+                    'second_driver' => null,
+                    'type' => Dispatch::MISSION_OTHERS,
+                    'other' => 'Patient Transport',
+                    'location' => 'Brgy. Obrero Health Center to CHO Clinic',
                     'date' => '2026-10-14',
                     'time_out' => '10:00:00',
                     'time_in' => '11:45:00',
-                    'odo_out' => 39948,
+                    'odo_out' => 39956,
                     'odo_in' => 39980,
                     'remarks' => 'Emergency transfer of pediatric patient with severe dehydration to CHO clinic.',
                 ],
 
-                // SHA 1248 (starts 47,150 km -> 47,250 km)
+                // SHA 1248 (starts 47,020 km -> 47,250 km)
                 [
                     'vehicle' => $v1248,
                     'driver' => $driverCanaman,
                     'second_driver' => null,
-                    'type' => 'Medical Response',
+                    'type' => Dispatch::MISSION_OTHERS,
+                    'other' => 'Patient Transport',
                     'location' => 'Brgy. Rawis to Calbayog District Hospital',
                     'date' => '2026-09-16',
                     'time_out' => '10:00:00',
                     'time_in' => '11:30:00',
-                    'odo_out' => 47150,
-                    'odo_in' => 47174,
-                    'remarks' => 'Transported respiratory distress patient from coastal barangay to District Hospital.',
+                    'odo_out' => 47020,
+                    'odo_in' => 47046,
+                    'remarks' => 'Patient transport of respiratory distress casualty from coastal barangay to District Hospital.',
                 ],
                 [
                     'vehicle' => $v1248,
                     'driver' => $driverCanaman,
                     'second_driver' => null,
-                    'type' => 'Medical Response',
-                    'location' => 'CHO Compound to St. Camillus Hospital',
+                    'type' => Dispatch::MISSION_OTHERS,
+                    'other' => 'Patient Transport',
+                    'location' => 'CHO Compound to St. Camillus Hospital (Brgy. Trinidad)',
                     'date' => '2026-09-22',
                     'time_out' => '13:30:00',
                     'time_in' => '15:00:00',
-                    'odo_out' => 47174,
-                    'odo_in' => 47202,
-                    'remarks' => 'Scheduled dialysis patient transfer. Mission completed without incident.',
+                    'odo_out' => 47046,
+                    'odo_in' => 47074,
+                    'remarks' => 'Scheduled patient transport for outpatient hemodialysis session.',
                 ],
                 [
                     'vehicle' => $v1248,
                     'driver' => $driverCanaman,
                     'second_driver' => null,
-                    'type' => 'Medical Response',
-                    'location' => 'Calbayog Port Area to Calbayog District Hospital',
+                    'type' => Dispatch::MISSION_OTHERS,
+                    'other' => 'Patient Transport',
+                    'location' => 'Calbayog District Hospital to Samar Provincial Hospital (Catbalogan City)',
                     'date' => '2026-10-05',
-                    'time_out' => '11:00:00',
-                    'time_in' => '12:30:00',
-                    'odo_out' => 47202,
-                    'odo_in' => 47226,
-                    'remarks' => 'Medical response assistance for passenger injured at seaport terminal.',
+                    'time_out' => '09:30:00',
+                    'time_in' => '15:30:00',
+                    'odo_out' => 47074,
+                    'odo_in' => 47218,
+                    'remarks' => 'Regional inter-facility patient transport of surgical emergency case to Catbalogan City.',
                 ],
                 [
                     'vehicle' => $v1248,
                     'driver' => $driverCanaman,
                     'second_driver' => null,
-                    'type' => 'Medical Response',
+                    'type' => Dispatch::MISSION_OTHERS,
+                    'other' => 'Patient Transport',
                     'location' => 'Brgy. Dagum to St. Camillus Hospital',
                     'date' => '2026-10-09',
                     'time_out' => '14:00:00',
                     'time_in' => '15:45:00',
-                    'odo_out' => 47226,
+                    'odo_out' => 47218,
                     'odo_in' => 47250,
-                    'remarks' => 'Cardiac emergency patient transfer. Patient safely admitted to ICU.',
+                    'remarks' => 'Cardiac emergency patient transport. Patient safely admitted to hospital.',
                 ],
 
                 // SHA 2625 (starts 58,280 km -> 58,400 km, Primary: Rowel Gamao, Secondary: Idelfonso Balloca)
@@ -652,6 +676,7 @@ class SeedUatChoCommand extends Command
                     'driver' => $driverGamao,
                     'second_driver' => $driverBalloca,
                     'type' => 'Administrative Travel',
+                    'other' => null,
                     'location' => 'Brgy. San Policarpo Health Station',
                     'date' => '2026-09-17',
                     'time_out' => '09:30:00',
@@ -665,6 +690,7 @@ class SeedUatChoCommand extends Command
                     'driver' => $driverGamao,
                     'second_driver' => $driverBalloca,
                     'type' => 'Administrative Travel',
+                    'other' => null,
                     'location' => 'Brgy. Dagum & Brgy. Matobato Health Centers',
                     'date' => '2026-09-24',
                     'time_out' => '13:00:00',
@@ -678,6 +704,7 @@ class SeedUatChoCommand extends Command
                     'driver' => $driverGamao,
                     'second_driver' => $driverBalloca,
                     'type' => 'Administrative Travel',
+                    'other' => null,
                     'location' => 'City Hall Motorpool & GSO Supply Office',
                     'date' => '2026-10-02',
                     'time_out' => '10:00:00',
@@ -691,6 +718,7 @@ class SeedUatChoCommand extends Command
                     'driver' => $driverGamao,
                     'second_driver' => $driverBalloca,
                     'type' => 'Administrative Travel',
+                    'other' => null,
                     'location' => 'Brgy. Obrero Rural Health Unit',
                     'date' => '2026-10-07',
                     'time_out' => '09:30:00',
@@ -708,7 +736,7 @@ class SeedUatChoCommand extends Command
                     'driver_id' => $disp['driver']->id,
                     'second_driver_id' => $disp['second_driver'] ? $disp['second_driver']->id : null,
                     'mission_type' => $disp['type'],
-                    'mission_other' => null,
+                    'mission_other' => $disp['other'],
                     'location' => $disp['location'],
                     'time_out' => Carbon::parse("{$disp['date']} {$disp['time_out']}"),
                     'travel_order_path' => null,
@@ -723,13 +751,120 @@ class SeedUatChoCommand extends Command
             }
 
             // -------------------------------------------------------------
-            // 6. IN-APP & MOBILE NOTIFICATIONS (Both Admin and Drivers)
+            // 6. IN-APP & MOBILE NOTIFICATIONS (Matching Historical Timeline)
             // -------------------------------------------------------------
-            $this->info('Seeding Notifications for Drivers and Admin...');
+            $this->info('Seeding Historical Notifications for Drivers and Admin...');
 
-            // Status change notifications for drivers
             $notifs = [
-                // For driver Robert Canaman (SHA 1248 set to Under PM on Oct 13)
+                // Sep 18, 2026 — Driver Reynaldo Serrato: PM Completed on SHA 1247
+                [
+                    'user_id' => $driverSerrato->id,
+                    'type' => Notification::TYPE_PM_REMINDER,
+                    'title' => 'Preventive Maintenance Completed',
+                    'message' => 'SHA 1247: 35,000 km PMS has been completed at GSO Motorpool. Unit cleared for service.',
+                    'data' => ['vehicle_id' => $v1247->id, 'plate_number' => 'SHA 1247', 'service_target' => '35,000 km PMS'],
+                    'created_at' => '2026-09-18 16:00:00',
+                ],
+                // Sep 23, 2026 — Admin: New Damage Report submitted on SHA 1248
+                [
+                    'user_id' => $admin->id,
+                    'type' => Notification::TYPE_NEW_DAMAGE_REPORT,
+                    'title' => 'New Damage Report Submitted',
+                    'message' => 'Robert Canaman reported AC cooling failure on SHA 1248.',
+                    'data' => ['vehicle_id' => $v1248->id, 'plate_number' => 'SHA 1248', 'driver' => 'Robert Canaman'],
+                    'created_at' => '2026-09-23 10:30:00',
+                ],
+                // Sep 24, 2026 — Driver Robert Canaman: SHA 1248 status changed to Under PM
+                [
+                    'user_id' => $driverCanaman->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 1248 (Ambulance) status changed to Under Preventive Maintenance for AC inspection.',
+                    'data' => ['vehicle_id' => $v1248->id, 'plate_number' => 'SHA 1248', 'new_status' => 'Under Preventive Maintenance'],
+                    'created_at' => '2026-09-24 09:15:00',
+                ],
+                // Sep 25, 2026 — Admin: Flagged inspection on SHA 1247 (Tires)
+                [
+                    'user_id' => $admin->id,
+                    'type' => Notification::TYPE_INSPECTION_FLAGGED,
+                    'title' => 'Inspection Reported an Issue',
+                    'message' => 'SHA 1247 — 1 item flagged: Tires (low front left tire pressure).',
+                    'data' => ['vehicle_id' => $v1247->id, 'plate_number' => 'SHA 1247', 'driver' => 'Reynaldo Serrato'],
+                    'created_at' => '2026-09-25 09:10:00',
+                ],
+                // Sep 28, 2026 — Driver Robert Canaman: SHA 1248 restored to Operational after repair
+                [
+                    'user_id' => $driverCanaman->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 1248 (Ambulance) status restored to Operational after AC freon recharge.',
+                    'data' => ['vehicle_id' => $v1248->id, 'plate_number' => 'SHA 1248', 'new_status' => 'Operational'],
+                    'created_at' => '2026-09-28 14:00:00',
+                ],
+                // Sep 29, 2026 — Admin: Flagged inspection on SHA 1248 (Brakes sound)
+                [
+                    'user_id' => $admin->id,
+                    'type' => Notification::TYPE_INSPECTION_FLAGGED,
+                    'title' => 'Inspection Reported an Issue',
+                    'message' => 'SHA 1248 — 1 item flagged: Brakes (pedal clicking noise reported).',
+                    'data' => ['vehicle_id' => $v1248->id, 'plate_number' => 'SHA 1248', 'driver' => 'Robert Canaman'],
+                    'created_at' => '2026-09-29 09:35:00',
+                ],
+                // Oct 01, 2026 — Driver Reynaldo Serrato: PM Reminder Upcoming for SHA 1247
+                [
+                    'user_id' => $driverSerrato->id,
+                    'type' => Notification::TYPE_PM_REMINDER,
+                    'title' => 'Upcoming Preventive Maintenance',
+                    'message' => 'SHA 1247: 40,000 km PMS is scheduled for late November 2026.',
+                    'data' => ['vehicle_id' => $v1247->id, 'plate_number' => 'SHA 1247', 'service_target' => '40,000 km PMS'],
+                    'created_at' => '2026-10-01 09:00:00',
+                ],
+                // Oct 05, 2026 — Driver Robert Canaman: PM Reminder Due Soon for SHA 1248
+                [
+                    'user_id' => $driverCanaman->id,
+                    'type' => Notification::TYPE_PM_REMINDER,
+                    'title' => 'Preventive Maintenance Approaching',
+                    'message' => 'SHA 1248: 47,000 km Brake System Overhaul is approaching due mileage.',
+                    'data' => ['vehicle_id' => $v1248->id, 'plate_number' => 'SHA 1248', 'service_target' => '47,000 km Brake Overhaul'],
+                    'created_at' => '2026-10-05 08:30:00',
+                ],
+                // Oct 08, 2026 — Admin: Flagged inspection on SHA 1247 (Water coolant topup)
+                [
+                    'user_id' => $admin->id,
+                    'type' => Notification::TYPE_INSPECTION_FLAGGED,
+                    'title' => 'Inspection Reported an Issue',
+                    'message' => 'SHA 1247 — 1 item flagged: Water (radiator reserve tank topped up).',
+                    'data' => ['vehicle_id' => $v1247->id, 'plate_number' => 'SHA 1247', 'driver' => 'Reynaldo Serrato'],
+                    'created_at' => '2026-10-08 09:15:00',
+                ],
+                // Oct 09, 2026 — Admin: Flagged inspection on SHA 1248 (Brakes soft pedal)
+                [
+                    'user_id' => $admin->id,
+                    'type' => Notification::TYPE_INSPECTION_FLAGGED,
+                    'title' => 'Inspection Reported an Issue',
+                    'message' => 'SHA 1248 — 1 item flagged: Brakes (soft pedal reported prior to scheduled PMS).',
+                    'data' => ['vehicle_id' => $v1248->id, 'plate_number' => 'SHA 1248', 'driver' => 'Robert Canaman'],
+                    'created_at' => '2026-10-09 09:40:00',
+                ],
+                // Oct 12, 2026 — Admin: Damage Report submitted on SHA 2625 (Clutch)
+                [
+                    'user_id' => $admin->id,
+                    'type' => Notification::TYPE_NEW_DAMAGE_REPORT,
+                    'title' => 'New Damage Report Submitted',
+                    'message' => 'Rowel Gamao reported clutch slippage and hard gear shifting on SHA 2625.',
+                    'data' => ['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'driver' => 'Rowel Gamao'],
+                    'created_at' => '2026-10-12 11:15:00',
+                ],
+                // Oct 13, 2026 — Admin: PM Due Soon for SHA 1248
+                [
+                    'user_id' => $admin->id,
+                    'type' => Notification::TYPE_PM_DUE_SOON,
+                    'title' => 'Preventive Maintenance Due Soon',
+                    'message' => 'SHA 1248 reached 47,000 km Due Soon threshold for Brake System Overhaul.',
+                    'data' => ['vehicle_id' => $v1248->id, 'plate_number' => 'SHA 1248', 'service_target' => '47,000 km Brake Overhaul'],
+                    'created_at' => '2026-10-13 08:30:00',
+                ],
+                // Oct 13, 2026 — Driver Robert Canaman: SHA 1248 set to Under PM
                 [
                     'user_id' => $driverCanaman->id,
                     'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
@@ -738,7 +873,7 @@ class SeedUatChoCommand extends Command
                     'data' => ['vehicle_id' => $v1248->id, 'plate_number' => 'SHA 1248', 'new_status' => 'Under Preventive Maintenance'],
                     'created_at' => '2026-10-13 01:02:55',
                 ],
-                // For driver Rowel Gamao (SHA 2625 set to Not Operational on Oct 13)
+                // Oct 13, 2026 — Driver Rowel Gamao: SHA 2625 set to Not Operational
                 [
                     'user_id' => $driverGamao->id,
                     'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
@@ -747,7 +882,7 @@ class SeedUatChoCommand extends Command
                     'data' => ['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'new_status' => 'Not Operational'],
                     'created_at' => '2026-10-13 01:02:07',
                 ],
-                // For secondary driver Idelfonso Balloca (SHA 2625 status notification parity)
+                // Oct 13, 2026 — Secondary Driver Idelfonso Balloca: SHA 2625 set to Not Operational
                 [
                     'user_id' => $driverBalloca->id,
                     'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
@@ -755,33 +890,6 @@ class SeedUatChoCommand extends Command
                     'message' => 'SHA 2625 (Service Vehicle) status changed to Not Operational.',
                     'data' => ['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'new_status' => 'Not Operational'],
                     'created_at' => '2026-10-13 01:02:07',
-                ],
-                // For driver Robert Canaman (PM Due Soon Alert)
-                [
-                    'user_id' => $driverCanaman->id,
-                    'type' => Notification::TYPE_PM_REMINDER,
-                    'title' => 'Preventive Maintenance Due Soon',
-                    'message' => 'SHA 1248: 47,000 km Brake System Overhaul is Due Soon.',
-                    'data' => ['vehicle_id' => $v1248->id, 'plate_number' => 'SHA 1248', 'service_target' => '47,000 km Brake System Overhaul'],
-                    'created_at' => '2026-10-13 08:30:00',
-                ],
-                // For CHO Admin (Damage Report submitted on Oct 12)
-                [
-                    'user_id' => $admin->id,
-                    'type' => Notification::TYPE_NEW_DAMAGE_REPORT,
-                    'title' => 'Damage Report Submitted',
-                    'message' => 'Rowel Gamao reported clutch wear on SHA 2625.',
-                    'data' => ['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'driver' => 'Rowel Gamao'],
-                    'created_at' => '2026-10-12 11:15:00',
-                ],
-                // For CHO Admin (PM Due Soon on SHA 1248)
-                [
-                    'user_id' => $admin->id,
-                    'type' => Notification::TYPE_PM_DUE_SOON,
-                    'title' => 'Preventive Maintenance Due Soon',
-                    'message' => 'SHA 1248 is due soon for 47,000 km Brake System Overhaul.',
-                    'data' => ['vehicle_id' => $v1248->id, 'plate_number' => 'SHA 1248'],
-                    'created_at' => '2026-10-13 08:30:00',
                 ],
             ];
 
