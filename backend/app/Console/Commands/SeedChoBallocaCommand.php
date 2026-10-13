@@ -133,7 +133,7 @@ class SeedChoBallocaCommand extends Command
             // -------------------------------------------------------------
             $this->info('2. Seeding 1 PM schedule for SHA 2625 (Due Soon status)...');
 
-            DB::table('pm_schedules')->insert([
+            $pmId = DB::table('pm_schedules')->insertGetId([
                 'agency_id' => $agency->id,
                 'vehicle_id' => $v2625->id,
                 'service_target' => '60,000 km Major Preventive Maintenance Service (PMS)',
@@ -333,18 +333,30 @@ class SeedChoBallocaCommand extends Command
                 [
                     'user_id' => $balloca->id,
                     'type' => Notification::TYPE_PM_REMINDER,
-                    'title' => 'Preventive Maintenance Approaching',
-                    'message' => 'SHA 2625: 60,000 km Major PMS is approaching due mileage (58,400 km).',
-                    'data' => json_encode(['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'service_target' => '60,000 km Major PMS']),
+                    'title' => 'Preventive Maintenance',
+                    'message' => 'SHA 2625 — 60,000 km Major Preventive Maintenance Service (PMS) is due soon.',
+                    'data' => json_encode([
+                        'pm_schedule_id' => $pmId,
+                        'vehicle_id' => $v2625->id,
+                        'plate' => 'SHA 2625',
+                        'service_target' => '60,000 km Major PMS',
+                        'state' => PmSchedule::STATUS_DUE_SOON,
+                    ]),
                     'created_at' => '2026-10-05 08:30:00',
                 ],
                 // Oct 05, 2026 — Admin: PM Due Soon Alert on SHA 2625
                 [
                     'user_id' => $admin->id,
                     'type' => Notification::TYPE_PM_DUE_SOON,
-                    'title' => 'Preventive Maintenance Due Soon',
-                    'message' => 'SHA 2625 reached 58,400 km Due Soon threshold for 60,000 km Major PMS.',
-                    'data' => json_encode(['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'service_target' => '60,000 km Major PMS']),
+                    'title' => 'PM Due Soon',
+                    'message' => 'SHA 2625 — 60,000 km Major Preventive Maintenance Service (PMS) is due soon.',
+                    'data' => json_encode([
+                        'pm_schedule_id' => $pmId,
+                        'vehicle_id' => $v2625->id,
+                        'plate' => 'SHA 2625',
+                        'service_target' => '60,000 km Major PMS',
+                        'state' => PmSchedule::STATUS_DUE_SOON,
+                    ]),
                     'created_at' => '2026-10-05 08:30:00',
                 ],
                 // Oct 12, 2026 — Admin: New Damage Report Submitted by Balloca

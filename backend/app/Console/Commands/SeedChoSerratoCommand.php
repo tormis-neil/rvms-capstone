@@ -173,7 +173,7 @@ class SeedChoSerratoCommand extends Command
             // -------------------------------------------------------------
             $this->info('2. Seeding 1 Time-Based PM schedule for SHA 1247 (Due Soon status)...');
 
-            DB::table('pm_schedules')->insert([
+            $pmId = DB::table('pm_schedules')->insertGetId([
                 'agency_id' => $agency->id,
                 'vehicle_id' => $v1247->id,
                 'service_target' => 'Semi-Annual Ambulance PMS (Brake Pads, Suction Pump Filter, AC Cabin Filter & Alternator Belt)',
@@ -399,22 +399,34 @@ class SeedChoSerratoCommand extends Command
                     'data' => json_encode(['vehicle_id' => $v1247->id, 'plate_number' => 'SHA 1247', 'driver' => 'Reynaldo Serrato']),
                     'created_at' => '2026-10-08 10:30:00',
                 ],
-                // Oct 10, 2026 08:30 AM — Driver Serrato: PM Reminder Due Soon
+                // Oct 10, 2026 08:30 AM — Driver Serrato: PM Reminder Due Soon (linked to $pmId to prevent live duplicate)
                 [
                     'user_id' => $serrato->id,
                     'type' => Notification::TYPE_PM_REMINDER,
-                    'title' => 'Preventive Maintenance Approaching',
-                    'message' => 'SHA 1247: Semi-Annual Ambulance PMS is scheduled for Oct 31, 2026.',
-                    'data' => json_encode(['vehicle_id' => $v1247->id, 'plate_number' => 'SHA 1247', 'service_target' => 'Semi-Annual Ambulance PMS']),
+                    'title' => 'Preventive Maintenance',
+                    'message' => 'SHA 1247 — Semi-Annual Ambulance PMS (Brake Pads, Suction Pump Filter, AC Cabin Filter & Alternator Belt) is due soon.',
+                    'data' => json_encode([
+                        'pm_schedule_id' => $pmId,
+                        'vehicle_id' => $v1247->id,
+                        'plate' => 'SHA 1247',
+                        'service_target' => 'Semi-Annual Ambulance PMS (Brake Pads, Suction Pump Filter, AC Cabin Filter & Alternator Belt)',
+                        'state' => PmSchedule::STATUS_DUE_SOON,
+                    ]),
                     'created_at' => '2026-10-10 08:30:00',
                 ],
-                // Oct 10, 2026 08:30 AM — Admin: PM Due Soon Alert on SHA 1247
+                // Oct 10, 2026 08:30 AM — Admin: PM Due Soon Alert on SHA 1247 (linked to $pmId for idempotency guard)
                 [
                     'user_id' => $admin->id,
                     'type' => Notification::TYPE_PM_DUE_SOON,
-                    'title' => 'Preventive Maintenance Due Soon',
-                    'message' => 'SHA 1247 is within 21 days Due Soon threshold for Semi-Annual Ambulance PMS (due Oct 31, 2026).',
-                    'data' => json_encode(['vehicle_id' => $v1247->id, 'plate_number' => 'SHA 1247', 'service_target' => 'Semi-Annual Ambulance PMS']),
+                    'title' => 'PM Due Soon',
+                    'message' => 'SHA 1247 — Semi-Annual Ambulance PMS (Brake Pads, Suction Pump Filter, AC Cabin Filter & Alternator Belt) is due soon.',
+                    'data' => json_encode([
+                        'pm_schedule_id' => $pmId,
+                        'vehicle_id' => $v1247->id,
+                        'plate' => 'SHA 1247',
+                        'service_target' => 'Semi-Annual Ambulance PMS (Brake Pads, Suction Pump Filter, AC Cabin Filter & Alternator Belt)',
+                        'state' => PmSchedule::STATUS_DUE_SOON,
+                    ]),
                     'created_at' => '2026-10-10 08:30:00',
                 ],
                 // Oct 12, 2026 09:25 AM — Admin: Flagged inspection on SHA 1247 (Tires)
