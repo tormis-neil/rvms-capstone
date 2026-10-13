@@ -13,14 +13,17 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Seed authentic, realistic historical UAT data for Idelfonso Balloca & SHA 2625 (CHO).
+ * Seed authentic, realistic historical UAT data specifically for Idelfonso Balloca & SHA 2625 (CHO).
  *
- * Uses direct DB::table inserts so MySQL strictly preserves past created_at timestamps
- * dating from June 2026 up to October 16, 2026 (weekdays only, 9am - 5pm).
+ * Rules:
+ * - Direct DB::table inserts to strictly preserve past created_at timestamps.
+ * - Dates: June 2026 (repairs) through Oct 14, 2026 (weekdays only, 9am - 5pm).
+ * - Language: Simple English + authentic Calbayognon Waray-waray.
+ * - Preserves all users and vehicle inventory, wipes only operational logs on --fresh.
  */
 class SeedChoBallocaCommand extends Command
 {
-    protected $signature = 'rvms:seed-cho-balloca {--fresh : Wipe previously seeded records for SHA 2625 and Balloca before seeding}';
+    protected $signature = 'rvms:seed-cho-balloca {--fresh : Wipe previous CHO operational logs before seeding}';
 
     protected $description = 'Seed authentic historical UAT records specifically for Idelfonso Balloca & SHA 2625';
 
@@ -59,35 +62,30 @@ class SeedChoBallocaCommand extends Command
         }
 
         if ($this->option('fresh')) {
-            $this->info('Cleaning up existing records for vehicle SHA 2625 and driver Balloca...');
-            
-            // Delete inspection items for SHA 2625 inspections
-            $inspIds = DB::table('inspections')->where('vehicle_id', $v2625->id)->pluck('id');
-            DB::table('inspection_items')->whereIn('inspection_id', $inspIds)->delete();
-            DB::table('inspections')->where('vehicle_id', $v2625->id)->delete();
+            $this->info('Cleaning up all CHO operational history (inspections, damages, repairs, PMs, dispatches, notifications)...');
+            $this->info('Preserving all user accounts and vehicle records.');
 
-            // Delete damage reports for SHA 2625
-            DB::table('damage_reports')->where('vehicle_id', $v2625->id)->delete();
+            // Delete all inspection items and inspections for CHO
+            $choInspIds = DB::table('inspections')->where('agency_id', $agency->id)->pluck('id');
+            DB::table('inspection_items')->whereIn('inspection_id', $choInspIds)->delete();
+            DB::table('inspections')->where('agency_id', $agency->id)->delete();
 
-            // Delete repair logs for SHA 2625
-            DB::table('repair_logs')->where('vehicle_id', $v2625->id)->delete();
+            // Delete all damage reports for CHO
+            DB::table('damage_reports')->where('agency_id', $agency->id)->delete();
 
-            // Delete PM schedules for SHA 2625
-            DB::table('pm_schedules')->where('vehicle_id', $v2625->id)->delete();
+            // Delete all repair logs for CHO
+            DB::table('repair_logs')->where('agency_id', $agency->id)->delete();
 
-            // Delete dispatches for SHA 2625
-            DB::table('dispatches')->where('vehicle_id', $v2625->id)->delete();
+            // Delete all PM schedules for CHO
+            DB::table('pm_schedules')->where('agency_id', $agency->id)->delete();
 
-            // Delete notifications related to SHA 2625 or addressed to Balloca
-            DB::table('notifications')
-                ->where('user_id', $balloca->id)
-                ->orWhere(function ($q) use ($v2625) {
-                    $q->whereJsonContains('data->vehicle_id', $v2625->id)
-                      ->orWhereJsonContains('data->plate_number', 'SHA 2625');
-                })
-                ->delete();
+            // Delete all dispatches for CHO
+            DB::table('dispatches')->where('agency_id', $agency->id)->delete();
 
-            $this->info('Previous records for SHA 2625 cleared.');
+            // Delete all notifications for CHO
+            DB::table('notifications')->where('agency_id', $agency->id)->delete();
+
+            $this->info('All previous CHO operational logs cleared. Ready to seed only Balloca data.');
         }
 
         DB::transaction(function () use ($agency, $admin, $v2625, $balloca, $gamao, $checklists) {
