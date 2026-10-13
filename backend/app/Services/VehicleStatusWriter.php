@@ -106,35 +106,35 @@ class VehicleStatusWriter
     }
 
     /**
-     * The assigned driver is told their vehicle's status moved (FR-21), since
-     * it decides whether they can take it out.
+     * Assigned drivers (primary and optional secondary, FR-07/FR-21) are told their
+     * vehicle's status moved, since it decides whether they can take it out.
      */
     private function notifyAssignedDriver(Vehicle $vehicle, ?string $previous, string $status, string $source): void
     {
-        $driver = $vehicle->assignedDriver;
+        $drivers = collect([$vehicle->assignedDriver, $vehicle->secondaryDriver])
+            ->filter(fn (?User $driver) => $driver !== null && $driver->status === User::STATUS_ACTIVE)
+            ->unique('id');
 
-        if ($driver === null || $driver->status !== User::STATUS_ACTIVE) {
-            return;
+        foreach ($drivers as $driver) {
+            app(NotificationDispatcher::class)->send(
+                $driver,
+                Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                'Vehicle Status Updated',
+                sprintf('%s is now %s.', $vehicle->plate_number, $status),
+                [
+                    'plate' => $vehicle->plate_number,
+                    'vehicle_id' => $vehicle->id,
+                    // NOT 'from'/'to': FCM reserves 'from' as a data key and
+                    // rejects the whole message with a 400, so this was the one
+                    // alert in FR-21 that stored its row and then silently failed
+                    // to reach the handset. FcmMessage now refuses reserved keys
+                    // outright rather than letting Google discover them.
+                    'from_status' => $previous,
+                    'to_status' => $status,
+                    'source' => $source,
+                ],
+            );
         }
-
-        app(NotificationDispatcher::class)->send(
-            $driver,
-            Notification::TYPE_VEHICLE_STATUS_UPDATE,
-            'Vehicle Status Updated',
-            sprintf('%s is now %s.', $vehicle->plate_number, $status),
-            [
-                'plate' => $vehicle->plate_number,
-                'vehicle_id' => $vehicle->id,
-                // NOT 'from'/'to': FCM reserves 'from' as a data key and
-                // rejects the whole message with a 400, so this was the one
-                // alert in FR-21 that stored its row and then silently failed
-                // to reach the handset. FcmMessage now refuses reserved keys
-                // outright rather than letting Google discover them.
-                'from_status' => $previous,
-                'to_status' => $status,
-                'source' => $source,
-            ],
-        );
     }
 
     /** The open dispatch holding this vehicle, if any. */

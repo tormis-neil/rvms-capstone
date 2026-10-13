@@ -206,6 +206,34 @@ class NotificationTriggerTest extends TestCase
         ]);
     }
 
+    public function test_a_status_change_notifies_both_primary_and_secondary_drivers(): void
+    {
+        $secondary = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'role' => User::ROLE_DRIVER,
+            'status' => User::STATUS_ACTIVE,
+        ]);
+        $this->vehicle->update(['secondary_driver_id' => $secondary->id]);
+
+        app(VehicleStatusWriter::class)->write(
+            $this->vehicle,
+            Vehicle::STATUS_UNDER_PM,
+            VehicleStatusWriter::SOURCE_PM,
+        );
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $this->driver->id,
+            'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+            'message' => 'BFP-0001 is now Under Preventive Maintenance.',
+        ]);
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $secondary->id,
+            'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+            'message' => 'BFP-0001 is now Under Preventive Maintenance.',
+        ]);
+    }
+
     /** Every module writes through the same gate, so all of them notify. */
     public function test_a_dispatch_status_write_also_notifies(): void
     {
