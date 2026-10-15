@@ -299,3 +299,16 @@ body {
     .no-print { display: none !important; }
 }
 
+/* Dashboard executive grid support */
+@media (min-width: 992px) {
+    .row-cols-lg-5 > * {
+        flex: 0 0 auto;
+        width: 20%;
+    }
+}
+.tracking-wide {
+    letter-spacing: 0.04em;
+}
+
+
+

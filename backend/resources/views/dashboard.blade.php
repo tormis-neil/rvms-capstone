@@ -15,8 +15,11 @@
                     <p class="text-secondary mb-0">Today: {{ now()->format('F j, Y') }}</p>
                 </div>
 
-                {{-- Metric Overview Cards with Functional Semantic Color Coding --}}
-                <div class="row row-cols-1 row-cols-md-4 g-4 mb-5">
+                <!-- Fleet Status Overview (5 columns) -->
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold text-secondary text-uppercase small mb-0 tracking-wide"><i class="bi bi-truck me-2"></i>Fleet Status Overview</h6>
+                </div>
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-3 mb-4">
                     <div class="col">
                         <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--primary);">
                             <div class="d-flex justify-content-between align-items-start">
@@ -44,6 +47,7 @@
                             </div>
                         </div>
                     </div>
+
                     <div class="col">
                         <div class="card card-stat h-100 p-3" style="border-left: 4px solid #0284C7;">
                             <div class="d-flex justify-content-between align-items-start">
@@ -85,7 +89,13 @@
                             </div>
                         </div>
                     </div>
+                </div>
 
+                <!-- Driver Compliance & Reports (4 columns) -->
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold text-secondary text-uppercase small mb-0 tracking-wide"><i class="bi bi-shield-check me-2"></i>Driver Compliance & Reports</h6>
+                </div>
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3 mb-5">
                     <div class="col">
                         <div class="card card-stat h-100 p-3" style="border-left: 4px solid var(--primary);">
                             <div class="d-flex justify-content-between align-items-start">
@@ -144,7 +154,9 @@
                 </div>
 
                 <!-- Quick Actions -->
-                <h5 class="fw-bold mb-3">Quick Actions</h5>
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-lightning-charge me-2 text-warning"></i>Quick Actions</h5>
+                </div>
                 <div class="row row-cols-2 row-cols-md-3 row-cols-lg-6 g-3 mb-5">
                     <div class="col">
                         <a href="{{ route('vehicles') }}" class="card card-stat h-100 p-3 text-center text-decoration-none">
@@ -196,11 +208,13 @@
                     </div>
                 </div>
 
-                <!-- Action Required Alerts -->
-                <h5 class="fw-bold mb-3">Action Required</h5>
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <div class="card border-0 shadow-sm rounded-3">
+                <!-- Action Required Alerts (3 balanced columns on desktop) -->
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-bell me-2 text-danger"></i>Action Required</h5>
+                </div>
+                <div class="row g-4 mb-5">
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card border-0 shadow-sm rounded-3 h-100">
                             <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0 fw-bold"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Pending Inspections & Damage</h6>
                                 <span class="badge bg-danger rounded-pill js-action-pending-count">{{ $pendingReviewCount }} New</span>
@@ -226,8 +240,8 @@
                         </div>
                     </div>
                     
-                    <div class="col-md-6">
-                        <div class="card border-0 shadow-sm rounded-3">
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card border-0 shadow-sm rounded-3 h-100">
                             <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0 fw-bold"><i class="bi bi-person-badge text-warning me-2"></i>Expiring Licenses</h6>
                                 <span class="badge bg-warning text-dark rounded-pill js-action-licenses-count">{{ $expiringLicenseCount }} {{ Str::plural('Warning', $expiringLicenseCount) }}</span>
@@ -256,8 +270,8 @@
                     {{-- Expiring / expired NC II certificates (FR-08, 2026-09) — the
                          twin of the Expiring Licenses card, so the two credentials
                          are watched the same way. Soonest first, expired ones lead. --}}
-                    <div class="col-md-6">
-                        <div class="card border-0 shadow-sm rounded-3">
+                    <div class="col-lg-4 col-md-12">
+                        <div class="card border-0 shadow-sm rounded-3 h-100">
                             <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0 fw-bold"><i class="bi bi-patch-check text-warning me-2"></i>Expiring NC II</h6>
                                 <span class="badge bg-warning text-dark rounded-pill js-action-ncii-count">{{ $expiringNcIiCount }} {{ Str::plural('Warning', $expiringNcIiCount) }}</span>
