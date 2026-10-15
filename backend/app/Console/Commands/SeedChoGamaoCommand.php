@@ -87,7 +87,14 @@ class SeedChoGamaoCommand extends Command
             ->where('user_id', $gamao->id)
             ->delete();
 
-        DB::transaction(function () use ($agency, $admin, $v2625, $gamao, $checklists) {
+        $pm = DB::table('pm_schedules')
+            ->where('agency_id', $agency->id)
+            ->where('vehicle_id', $v2625->id)
+            ->where('service_target', 'like', '%60,000 km%')
+            ->first();
+        $pmId = $pm?->id;
+
+        DB::transaction(function () use ($agency, $admin, $v2625, $gamao, $checklists, $pmId) {
             // -------------------------------------------------------------
             // 1. DAILY BLOWBAGETS INSPECTIONS (Submitted by Rowel Gamao)
             // Alternating shift dates with Balloca: Sep 15, Sep 21, Sep 28, Oct 05, Oct 09
@@ -213,9 +220,15 @@ class SeedChoGamaoCommand extends Command
                 [
                     'user_id' => $gamao->id,
                     'type' => Notification::TYPE_PM_REMINDER,
-                    'title' => 'Preventive Maintenance Approaching',
-                    'message' => 'SHA 2625: 60,000 km Major PMS is approaching due mileage (58,400 km).',
-                    'data' => json_encode(['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'service_target' => '60,000 km Major PMS']),
+                    'title' => 'Preventive Maintenance',
+                    'message' => 'SHA 2625 — 60,000 km Major Preventive Maintenance Service (PMS) is due soon.',
+                    'data' => json_encode([
+                        'pm_schedule_id' => $pmId,
+                        'vehicle_id' => $v2625->id,
+                        'plate' => 'SHA 2625',
+                        'service_target' => '60,000 km Major Preventive Maintenance Service (PMS)',
+                        'state' => 'Due Soon',
+                    ]),
                     'created_at' => '2026-10-05 08:30:00',
                 ],
                 // Oct 09, 2026 09:25 AM — Admin: Flagged inspection on SHA 2625 (Directional Signals)

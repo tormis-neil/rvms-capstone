@@ -814,7 +814,7 @@ class SeedUatChoCommand extends Command
                 [
                     'user_id' => $driverSerrato->id,
                     'type' => Notification::TYPE_PM_REMINDER,
-                    'title' => 'Upcoming Preventive Maintenance',
+                    'title' => 'Preventive Maintenance',
                     'message' => 'SHA 1247: 40,000 km PMS is scheduled for late November 2026.',
                     'data' => ['vehicle_id' => $v1247->id, 'plate_number' => 'SHA 1247', 'service_target' => '40,000 km PMS'],
                     'created_at' => '2026-10-01 09:00:00',
@@ -823,7 +823,7 @@ class SeedUatChoCommand extends Command
                 [
                     'user_id' => $driverCanaman->id,
                     'type' => Notification::TYPE_PM_REMINDER,
-                    'title' => 'Preventive Maintenance Approaching',
+                    'title' => 'Preventive Maintenance',
                     'message' => 'SHA 1248: 47,000 km Brake System Overhaul is approaching due mileage.',
                     'data' => ['vehicle_id' => $v1248->id, 'plate_number' => 'SHA 1248', 'service_target' => '47,000 km Brake Overhaul'],
                     'created_at' => '2026-10-05 08:30:00',

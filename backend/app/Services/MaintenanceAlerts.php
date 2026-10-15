@@ -81,13 +81,23 @@ class MaintenanceAlerts
         // The driver gets the reminder FR-21 names for them.
         $driver = $schedule->vehicle?->assignedDriver;
         if ($driver && $driver->status === User::STATUS_ACTIVE) {
-            $this->dispatcher->send(
-                $driver,
-                Notification::TYPE_PM_REMINDER,
-                'Preventive Maintenance',
-                $message,
-                $payload,
-            );
+            $driverAlreadyRaised = Notification::query()
+                ->withoutGlobalScopes()
+                ->where('user_id', $driver->id)
+                ->where('type', Notification::TYPE_PM_REMINDER)
+                ->where('data->pm_schedule_id', $schedule->id)
+                ->where('data->state', $schedule->status)
+                ->exists();
+
+            if (! $driverAlreadyRaised) {
+                $this->dispatcher->send(
+                    $driver,
+                    Notification::TYPE_PM_REMINDER,
+                    'Preventive Maintenance',
+                    $message,
+                    $payload,
+                );
+            }
         }
 
         return true;
