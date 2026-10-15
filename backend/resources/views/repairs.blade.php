@@ -58,17 +58,17 @@
                 <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0 repairs-table">
-                            <thead class="table-light">
+                            <thead class="table-light text-nowrap">
                                 <tr>
-                                    <th class="py-3 text-secondary fw-semibold small">DATE</th>
-                                    <th class="py-3 text-secondary fw-semibold small">VEHICLE & DRIVER</th>
-                                    <th class="py-3 text-secondary fw-semibold small w-25">SCOPE OF WORK</th>
-                                    <th class="py-3 text-secondary fw-semibold small">PARTS REPLACED</th>
-                                    <th class="py-3 text-secondary fw-semibold small">COST</th>
-                                    <th class="py-3 text-secondary fw-semibold small">REPAIR SOURCE</th>
-                                    <th class="py-3 text-secondary fw-semibold small">REMARKS</th>
-                                    <th class="py-3 text-secondary fw-semibold small">VEHICLE STATUS</th>
-                                    <th class="py-3 text-secondary fw-semibold small text-end">ACTIONS</th>
+                                    <th class="py-3 text-secondary fw-semibold small" style="width: 110px; min-width: 105px;">DATE</th>
+                                    <th class="py-3 text-secondary fw-semibold small" style="width: 160px; min-width: 145px;">VEHICLE & DRIVER</th>
+                                    <th class="py-3 text-secondary fw-semibold small" style="min-width: 270px; width: 30%;">SCOPE OF WORK</th>
+                                    <th class="py-3 text-secondary fw-semibold small" style="min-width: 160px; width: 17%;">PARTS REPLACED</th>
+                                    <th class="py-3 text-secondary fw-semibold small text-end" style="width: 105px; min-width: 95px;">COST</th>
+                                    <th class="py-3 text-secondary fw-semibold small" style="width: 140px; min-width: 130px;">REPAIR SOURCE</th>
+                                    <th class="py-3 text-secondary fw-semibold small" style="min-width: 160px; width: 17%;">REMARKS</th>
+                                    <th class="py-3 text-secondary fw-semibold small text-center" style="width: 140px; min-width: 130px;">VEHICLE STATUS</th>
+                                    <th class="py-3 text-secondary fw-semibold small text-end" style="width: 95px; min-width: 90px;">ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody id="rows-repairs">
@@ -89,33 +89,35 @@
                                     data-remarks="{{ $repair->remarks }}"
                                     data-vehicle-status="{{ $repair->vehicle->status ?? '' }}"
                                     data-status-origin="{{ $repair->vehicle?->statusOriginLabel() }}">
-                                    <td class="fw-medium">{{ $repair->dateLabel() }}</td>
-                                    <td>
+                                    <td class="fw-medium text-nowrap">{{ $repair->dateLabel() }}</td>
+                                    <td class="text-nowrap">
                                         <div class="fw-bold">{{ $repair->vehicle->plate_number ?? '—' }}</div>
                                         <div class="small text-secondary">{{ $repair->driver->name ?? 'Unassigned' }}</div>
                                     </td>
-                                    <td>{{ $repair->scope_of_work }}</td>
-                                    <td>
+                                    <td style="line-height: 1.45;">{{ $repair->scope_of_work }}</td>
+                                    <td style="line-height: 1.45;">
                                         @if ($repair->parts_replaced)
                                         {{ $repair->parts_replaced }}
                                         @else
                                         <em class="text-secondary small">None</em>
                                         @endif
                                     </td>
-                                    <td>{{ $repair->costLabel() }}</td>
-                                    <td>
+                                    <td class="text-end text-nowrap fw-semibold">{{ $repair->costLabel() }}</td>
+                                    <td class="text-nowrap">
                                         <span class="badge bg-light text-dark border">{{ $repair->sourceLabel() }}</span>
                                         {{-- The supporting document, where one is on file:
                                              a receipt from an external shop, or a job order
                                              from the GSO Motorpool (FR-13, 2026-08). --}}
                                         @if ($repair->receipt_path)
-                                        <a href="{{ asset('storage/'.$repair->receipt_path) }}" target="_blank" rel="noopener"
-                                           class="d-inline-flex align-items-center gap-1 small text-decoration-none mt-1">
-                                            <i class="bi bi-paperclip"></i>Document
-                                        </a>
+                                        <div>
+                                            <a href="{{ asset('storage/'.$repair->receipt_path) }}" target="_blank" rel="noopener"
+                                               class="d-inline-flex align-items-center gap-1 small text-decoration-none mt-1">
+                                                <i class="bi bi-paperclip"></i>Document
+                                            </a>
+                                        </div>
                                         @endif
                                     </td>
-                                    <td class="small text-secondary">
+                                    <td class="small text-secondary" style="line-height: 1.45;">
                                         @if ($repair->remarks)
                                         {{ $repair->remarks }}
                                         @else
@@ -129,14 +131,14 @@
                                          one column left and misplaces the buttons when the table is
                                          scrolled horizontally. The prototype's own header row is the
                                          authority, so the cell is split here. --}}
-                                    <td>
+                                    <td class="text-center text-nowrap">
                                         @if ($repair->vehicle)
                                         <span class="badge {{ $repair->vehicle->badgeClass() }} px-3 py-2 rounded-pill">{{ $repair->vehicle->status }}</span>
                                         @else
                                         <em class="text-secondary small">—</em>
                                         @endif
                                     </td>
-                                    <td class="text-end">
+                                    <td class="text-end text-nowrap">
                                         <div class="d-flex gap-2 justify-content-end">
                                             @if ($repair->vehicle)
                                             <button class="btn btn-sm btn-light border js-edit" title="Edit Repair Log" data-bs-toggle="modal" data-bs-target="#editRepairModal"><i class="bi bi-pencil"></i></button>
