@@ -208,13 +208,15 @@
                     </div>
                 </div>
 
-                <!-- Action Required Alerts (3 balanced columns on desktop) -->
+                <!-- Action Required Alerts -->
                 <div class="d-flex align-items-center gap-2 mb-3">
                     <h5 class="fw-bold mb-0"><i class="bi bi-bell me-2 text-danger"></i>Action Required</h5>
                 </div>
-                <div class="row g-4 mb-5">
-                    <div class="col-lg-4 col-md-6">
-                        <div class="card border-0 shadow-sm rounded-3 h-100">
+
+                <!-- Primary Operational Action: Pending Inspections & Damage (Wide & Prominent) -->
+                <div class="row g-4 mb-4">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm rounded-3">
                             <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0 fw-bold"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Pending Inspections & Damage</h6>
                                 <span class="badge bg-danger rounded-pill js-action-pending-count">{{ $pendingReviewCount }} New</span>
@@ -225,13 +227,15 @@
                                      list shows the most recent few — the rows link into the module
                                      page, which is where the full list lives. --}}
                                 @forelse ($pendingReviews as $item)
-                                <a href="{{ route('inspections') }}" class="list-group-item list-group-item-action py-3">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-1 fw-bold">{{ $item['vehicle'] }}</h6>
+                                <a href="{{ route('inspections') }}" class="list-group-item list-group-item-action py-3 px-4">
+                                    <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                                        <h6 class="mb-0 fw-bold text-dark">{{ $item['vehicle'] }}</h6>
                                         <small class="text-secondary">{{ $item['when'] }}</small>
                                     </div>
-                                    <p class="mb-1 small">{{ $item['detail'] }}</p>
-                                    <small class="text-danger fw-semibold">Action: Needs Review</small>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <p class="mb-0 text-secondary small">{{ $item['detail'] }}</p>
+                                        <small class="text-danger fw-semibold">Action: Needs Review</small>
+                                    </div>
                                 </a>
                                 @empty
                                 <div class="list-group-item py-4 text-center text-secondary small">Nothing is waiting for review.</div>
@@ -239,8 +243,11 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="col-lg-4 col-md-6">
+                </div>
+
+                <!-- Credential Compliance Alerts: Expiring Licenses & Expiring NC II (Side-by-Side) -->
+                <div class="row g-4 mb-5">
+                    <div class="col-md-6">
                         <div class="card border-0 shadow-sm rounded-3 h-100">
                             <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0 fw-bold"><i class="bi bi-person-badge text-warning me-2"></i>Expiring Licenses</h6>
@@ -266,11 +273,11 @@
                             </div>
                         </div>
                     </div>
-
+                    
                     {{-- Expiring / expired NC II certificates (FR-08, 2026-09) — the
                          twin of the Expiring Licenses card, so the two credentials
                          are watched the same way. Soonest first, expired ones lead. --}}
-                    <div class="col-lg-4 col-md-12">
+                    <div class="col-md-6">
                         <div class="card border-0 shadow-sm rounded-3 h-100">
                             <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0 fw-bold"><i class="bi bi-patch-check text-warning me-2"></i>Expiring NC II</h6>
