@@ -86,6 +86,31 @@ class SeedChoBallocaCommand extends Command
             DB::table('notifications')->where('agency_id', $agency->id)->delete();
 
             $this->info('All previous CHO operational logs cleared. Ready to seed only Balloca data.');
+        } else {
+            // Clean up previous Balloca-specific records to ensure idempotency
+            $this->info('Cleaning up any existing Balloca-authored operational logs to ensure idempotency...');
+            $ballocaInspIds = DB::table('inspections')
+                ->where('agency_id', $agency->id)
+                ->where('driver_id', $balloca->id)
+                ->pluck('id');
+            DB::table('inspection_items')->whereIn('inspection_id', $ballocaInspIds)->delete();
+            DB::table('inspections')->whereIn('id', $ballocaInspIds)->delete();
+
+            DB::table('damage_reports')
+                ->where('agency_id', $agency->id)
+                ->where('driver_id', $balloca->id)
+                ->delete();
+
+            DB::table('notifications')
+                ->where('agency_id', $agency->id)
+                ->where('user_id', $balloca->id)
+                ->delete();
+
+            DB::table('notifications')
+                ->where('agency_id', $agency->id)
+                ->where('user_id', $admin->id)
+                ->where('data', 'like', '%Idelfonso Balloca%')
+                ->delete();
         }
 
         DB::transaction(function () use ($agency, $admin, $v2625, $balloca, $gamao, $checklists) {
@@ -339,8 +364,8 @@ class SeedChoBallocaCommand extends Command
                         'pm_schedule_id' => $pmId,
                         'vehicle_id' => $v2625->id,
                         'plate' => 'SHA 2625',
-                        'service_target' => '60,000 km Major PMS',
-                        'state' => PmSchedule::STATUS_DUE_SOON,
+                        'service_target' => '60,000 km Major Preventive Maintenance Service (PMS)',
+                        'state' => 'Due Soon',
                     ]),
                     'created_at' => '2026-10-05 08:30:00',
                 ],
@@ -354,8 +379,8 @@ class SeedChoBallocaCommand extends Command
                         'pm_schedule_id' => $pmId,
                         'vehicle_id' => $v2625->id,
                         'plate' => 'SHA 2625',
-                        'service_target' => '60,000 km Major PMS',
-                        'state' => PmSchedule::STATUS_DUE_SOON,
+                        'service_target' => '60,000 km Major Preventive Maintenance Service (PMS)',
+                        'state' => 'Due Soon',
                     ]),
                     'created_at' => '2026-10-05 08:30:00',
                 ],

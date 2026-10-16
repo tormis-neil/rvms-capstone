@@ -78,9 +78,14 @@ class MaintenanceAlerts
             $payload,
         );
 
-        // The driver gets the reminder FR-21 names for them.
-        $driver = $schedule->vehicle?->assignedDriver;
-        if ($driver && $driver->status === User::STATUS_ACTIVE) {
+        // The drivers get the reminder FR-21 names for them.
+        // Both primary assigned driver and secondary driver crew this vehicle.
+        $drivers = collect([
+            $schedule->vehicle?->assignedDriver,
+            $schedule->vehicle?->secondaryDriver,
+        ])->filter(fn ($d) => $d && $d->status === User::STATUS_ACTIVE && $d->role === User::ROLE_DRIVER)->unique('id');
+
+        foreach ($drivers as $driver) {
             $driverAlreadyRaised = Notification::query()
                 ->withoutGlobalScopes()
                 ->where('user_id', $driver->id)
