@@ -93,9 +93,9 @@
         }
 
         .brand-hero-title {
-            font-size: 2.1rem;
+            font-size: 2.6rem;
             font-weight: 800;
-            line-height: 1.2;
+            line-height: 1.15;
             letter-spacing: -0.5px;
             color: #FFFFFF;
             margin: 0;
@@ -464,7 +464,7 @@
             <div class="auth-form-header">
                 <div class="mobile-brand-logo text-center">
                     <img src="{{ asset('assets/img/rvms-logo.svg') }}" alt="RVMS" width="60" height="60" class="mb-2">
-                    <h5 class="fw-bold text-dark">Rescue Vehicle Management System</h5>
+                    <h4 class="fw-bold text-dark mb-1" style="font-size: 1.45rem;">Rescue Vehicle Management System</h4>
                 </div>
                 <h2 class="form-title">Administrator Sign In</h2>
                 <p class="form-subtitle">Sign in to your agency administrator account.</p>

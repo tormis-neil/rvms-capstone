@@ -84,7 +84,9 @@ fun SignInScreen(
         // System Name
         Text(
             text = "Rescue Vehicle\nManagement System",
-            style = MaterialTheme.typography.headlineSmall,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            lineHeight = 30.sp,
             color = NavyBlue,
             textAlign = TextAlign.Center,
         )

@@ -10,7 +10,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div>
                         <h3 class="fw-bold mb-1" style="color: var(--primary);">Dashboard</h3>
-                        <p class="text-secondary small mb-0">Agency vehicle status, maintenance, and driver compliance summary.</p>
+                        <p class="text-secondary mb-0 fs-6">Agency vehicle status, maintenance, and driver compliance summary.</p>
                     </div>
                     <p class="text-secondary mb-0">Today: {{ now()->format('F j, Y') }}</p>
                 </div>

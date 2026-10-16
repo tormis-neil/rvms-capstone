@@ -131,12 +131,25 @@ fun SignUpScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Create Account",
-            style = MaterialTheme.typography.headlineMedium,
+            text = "Rescue Vehicle\nManagement System",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            lineHeight = 28.sp,
             color = NavyBlue,
+            textAlign = TextAlign.Center,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Create Driver Account",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = TextSecondary,
+            textAlign = TextAlign.Center,
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
 
         Text(
             text = "Register by selecting your agency and setting a password. " +

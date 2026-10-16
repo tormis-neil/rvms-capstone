@@ -63,11 +63,11 @@ fun SplashScreen(
             // Full system name
             Text(
                 text = "Rescue Vehicle\nManagement System",
-                color = White.copy(alpha = 0.85f),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Normal,
+                color = White,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                lineHeight = 20.sp,
+                lineHeight = 28.sp,
             )
         }
     }
