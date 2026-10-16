@@ -243,7 +243,7 @@
     <div class="modal fade" id="markCompletedModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-success text-white">
+                <div class="modal-header bg-navy text-white">
                     <h5 class="modal-title fw-bold">Mark Maintenance Completed</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>

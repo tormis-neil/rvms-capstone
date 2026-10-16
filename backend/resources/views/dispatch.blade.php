@@ -235,7 +235,7 @@
     <div class="modal fade" id="closeDispatchModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
+                <div class="modal-header bg-navy text-white">
                     <h5 class="modal-title fw-bold">Close Dispatch</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -345,7 +345,7 @@
     <div class="modal fade" id="viewDispatchModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-light">
+                <div class="modal-header bg-light border-bottom">
                     <h5 class="modal-title fw-bold">Dispatch Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>

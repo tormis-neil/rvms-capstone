@@ -187,7 +187,7 @@
     <div class="modal fade" id="viewChecklistModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header bg-light">
+                <div class="modal-header bg-light border-bottom">
                     <h5 class="modal-title fw-bold">BLOWBAGETS Checklist</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -326,7 +326,7 @@
     <div class="modal fade" id="viewDamageModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-light">
+                <div class="modal-header bg-light border-bottom">
                     <h5 class="modal-title fw-bold">Damage Report Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
