@@ -9,6 +9,7 @@ use App\Models\PmSchedule;
 use App\Models\RepairLog;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\VehicleStatusWriter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
