@@ -9,6 +9,7 @@ use App\Models\PmSchedule;
 use App\Models\RepairLog;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\VehicleStatusWriter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -263,7 +264,7 @@ class SeedChoBallocaCommand extends Command
                 'agency_id' => $agency->id,
                 'vehicle_id' => $v2625->id,
                 'driver_id' => $balloca->id,
-                'nature_of_damage' => 'Medyo nag-iislayd an clutch pag tungas ha bukid san Brgy. Obrero kanina samtang naghahatud ug medical supplies. Makuri na isulod an primera ngan segunda kambio.',
+                'nature_of_damage' => 'Medyo nag-iislayd an clutch pag tungas sa bukid san Brgy. Obrero kanina samtang naghahatud ug medical supplies. Makuri na isulod an primera ngan segunda kambio.',
                 'suspected_parts' => 'Clutch pressure plate / clutch disc wear or release bearing',
                 'photo_path' => null,
                 'date_reported' => '2026-10-12',
@@ -345,6 +346,66 @@ class SeedChoBallocaCommand extends Command
             $this->info('6. Seeding Chronological Notifications for Balloca, Gamao, and Admin...');
 
             $notifs = [
+                // Sep 17, 2026 — Driver Balloca: Dispatched (Trip 1)
+                [
+                    'user_id' => $balloca->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-09-17 09:30:00',
+                ],
+                // Sep 17, 2026 — Driver Balloca: Returned from Trip 1
+                [
+                    'user_id' => $balloca->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-09-17 12:00:00',
+                ],
+                // Sep 24, 2026 — Driver Balloca: Dispatched (Trip 2)
+                [
+                    'user_id' => $balloca->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-09-24 13:00:00',
+                ],
+                // Sep 24, 2026 — Driver Balloca: Returned from Trip 2
+                [
+                    'user_id' => $balloca->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-09-24 16:00:00',
+                ],
                 // Oct 02, 2026 — Admin: Flagged inspection on SHA 2625 (Lights)
                 [
                     'user_id' => $admin->id,
@@ -353,6 +414,36 @@ class SeedChoBallocaCommand extends Command
                     'message' => 'SHA 2625 — 1 item flagged: Lights (tail light socket connection secured).',
                     'data' => json_encode(['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'driver' => 'Idelfonso Balloca']),
                     'created_at' => '2026-10-02 09:20:00',
+                ],
+                // Oct 02, 2026 — Driver Balloca: Dispatched (Trip 3)
+                [
+                    'user_id' => $balloca->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-10-02 10:00:00',
+                ],
+                // Oct 02, 2026 — Driver Balloca: Returned from Trip 3
+                [
+                    'user_id' => $balloca->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-10-02 11:45:00',
                 ],
                 // Oct 05, 2026 — Driver Balloca: PM Reminder Due Soon
                 [
@@ -384,6 +475,36 @@ class SeedChoBallocaCommand extends Command
                     ]),
                     'created_at' => '2026-10-05 08:30:00',
                 ],
+                // Oct 07, 2026 — Driver Balloca: Dispatched (Trip 4)
+                [
+                    'user_id' => $balloca->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-10-07 09:30:00',
+                ],
+                // Oct 07, 2026 — Driver Balloca: Returned from Trip 4
+                [
+                    'user_id' => $balloca->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-10-07 12:30:00',
+                ],
                 // Oct 12, 2026 — Admin: New Damage Report Submitted by Balloca
                 [
                     'user_id' => $admin->id,
@@ -398,8 +519,14 @@ class SeedChoBallocaCommand extends Command
                     'user_id' => $balloca->id,
                     'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
                     'title' => 'Vehicle Status Updated',
-                    'message' => 'SHA 2625 (Service Vehicle) status changed to Not Operational awaiting clutch repair.',
-                    'data' => json_encode(['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'new_status' => 'Not Operational']),
+                    'message' => 'SHA 2625 is now Not Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_NOT_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DAMAGE,
+                    ]),
                     'created_at' => '2026-10-13 09:00:00',
                 ],
                 // Oct 13, 2026 — Driver Gamao (Primary): Status update parity to Not Operational
@@ -407,8 +534,14 @@ class SeedChoBallocaCommand extends Command
                     'user_id' => $gamao->id,
                     'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
                     'title' => 'Vehicle Status Updated',
-                    'message' => 'SHA 2625 (Service Vehicle) status changed to Not Operational awaiting clutch repair.',
-                    'data' => json_encode(['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'new_status' => 'Not Operational']),
+                    'message' => 'SHA 2625 is now Not Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_NOT_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DAMAGE,
+                    ]),
                     'created_at' => '2026-10-13 09:00:00',
                 ],
                 // Oct 14, 2026 — Admin: Flagged inspection on SHA 2625 (Clutch pedal note)
