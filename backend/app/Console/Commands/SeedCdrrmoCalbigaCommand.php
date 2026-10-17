@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Models\Agency;
-use App\Models\Dispatch;
 use App\Models\InspectionChecklistItem;
 use App\Models\Notification;
 use App\Models\PmSchedule;
@@ -178,7 +177,7 @@ class SeedCdrrmoCalbigaCommand extends Command
                 'due_date' => null,
                 'due_soon_threshold_km' => 2000,
                 'due_soon_threshold_days' => 14,
-                'status' => PmSchedule::STATUS_SCHEDULED,
+                'status' => PmSchedule::STATUS_UPCOMING,
                 'date_serviced' => null,
                 'completion_mileage' => null,
                 'completion_repair_source' => null,
@@ -216,8 +215,8 @@ class SeedCdrrmoCalbigaCommand extends Command
                     'date' => '2026-10-08',
                     'time' => '09:20:00',
                     'review_time' => '11:00:00',
-                    'flagged_item' => 'Steering',
-                    'flagged_note' => 'Steering: Medyo nag-uuyog an manibela pag-abot sa 60 kph sa may diversion road.',
+                    'flagged_item' => 'Power Steering',
+                    'flagged_note' => 'Power Steering: Medyo nag-uuyog an manibela pag-abot sa 60 kph sa may diversion road.',
                     'remarks' => 'Slight vibration observed at high speed. Front wheel alignment scheduled.',
                 ],
                 // Oct 09-14: Out of service (Damage reported and vehicle under repair)
@@ -259,8 +258,6 @@ class SeedCdrrmoCalbigaCommand extends Command
                         'checklist_item_id' => $chk->id,
                         'status' => $hasIssue ? 'Has Issue' : 'OK',
                         'remarks' => $hasIssue ? $ins['flagged_note'] : null,
-                        'created_at' => "{$ins['date']} {$ins['time']}",
-                        'updated_at' => "{$ins['date']} {$ins['review_time']}",
                     ]);
                 }
             }
@@ -274,9 +271,10 @@ class SeedCdrrmoCalbigaCommand extends Command
                 'agency_id' => $agency->id,
                 'vehicle_id' => $v5120->id,
                 'driver_id' => $calbiga->id,
-                'incident_date' => '2026-10-09',
-                'description' => 'Nagraragubrob ngan makuri an manibela pagliko sa tuo pag-agi sa libaong ngan baha sa Brgy. Nijaga samtang nagdudul-ong ug rescue equipment. May tulo liwat nga hydraulic fluid sa idarom.',
+                'nature_of_damage' => 'Nagraragubrob ngan makuri an manibela pagliko sa tuo pag-agi sa libaong ngan baha sa Brgy. Nijaga samtang nagdudul-ong ug rescue equipment. May tulo liwat nga hydraulic fluid sa idarom.',
+                'suspected_parts' => 'Front right lower suspension ball joint / outer tie rod end / power steering rack seal kit',
                 'photo_path' => null,
+                'date_reported' => '2026-10-09',
                 'status' => 'Reviewed',
                 'reviewed_by' => $admin->id,
                 'reviewed_at' => '2026-10-09 11:30:00',
@@ -314,7 +312,7 @@ class SeedCdrrmoCalbigaCommand extends Command
                 // Trip 1: Oct 02, 2026 (09:30–12:30) | Odo: 41,990 -> 42,045 km (55 km)
                 [
                     'second_driver_id' => $mabini ? $mabini->id : null,
-                    'mission_type' => Dispatch::MISSION_RESCUE,
+                    'mission_type' => 'Rescue Operation',
                     'mission_other' => null,
                     'location' => 'CDRRMO Base → Brgy. Hamorawon & Brgy. Dagum',
                     'date' => '2026-10-02',
@@ -327,7 +325,7 @@ class SeedCdrrmoCalbigaCommand extends Command
                 // Trip 2: Oct 07, 2026 (13:00–16:30) | Odo: 42,045 -> 42,105 km (60 km)
                 [
                     'second_driver_id' => null,
-                    'mission_type' => Dispatch::MISSION_RESCUE,
+                    'mission_type' => 'Rescue Operation',
                     'mission_other' => null,
                     'location' => 'City Hall Compound → Brgy. Tinambacan Emergency Outpost',
                     'date' => '2026-10-07',
@@ -340,7 +338,7 @@ class SeedCdrrmoCalbigaCommand extends Command
                 // Trip 3: Oct 19, 2026 (10:00–13:15) | Odo: 42,105 -> 42,150 km (45 km) - Post-repair
                 [
                     'second_driver_id' => $delaPena ? $delaPena->id : null,
-                    'mission_type' => Dispatch::MISSION_RESCUE,
+                    'mission_type' => 'Rescue Operation',
                     'mission_other' => null,
                     'location' => 'CDRRMO Base → Brgy. Obrero & Brgy. Carayman (Flood Monitoring)',
                     'date' => '2026-10-19',
@@ -455,7 +453,7 @@ class SeedCdrrmoCalbigaCommand extends Command
                     'user_id' => $admin->id,
                     'type' => Notification::TYPE_INSPECTION_FLAGGED,
                     'title' => 'Inspection Reported an Issue',
-                    'message' => 'SAB-5120 — 1 item flagged: Steering (steering vibration noted by Calbiga).',
+                    'message' => 'SAB-5120 — 1 item flagged: Power Steering (steering vibration noted by Calbiga).',
                     'data' => json_encode(['vehicle_id' => $v5120->id, 'plate_number' => 'SAB-5120', 'driver' => 'Rolando Calbiga']),
                     'created_at' => '2026-10-08 09:20:00',
                 ],
