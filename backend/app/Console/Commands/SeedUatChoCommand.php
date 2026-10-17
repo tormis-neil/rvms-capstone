@@ -123,7 +123,7 @@ class SeedUatChoCommand extends Command
                 'cost' => 6850.00,
                 'repair_source' => RepairLog::SOURCE_EXTERNAL,
                 'external_shop_name' => 'Motolite Express Service Station - Calbayog Branch',
-                'receipt_path' => 'receipts/cho_battery_or_20260610.pdf',
+                'receipt_path' => null,
                 'remarks' => 'Purchased under emergency purchase order. Official receipt filed with CHO logistics.',
                 'created_at' => Carbon::parse('2026-06-10 11:15:00'),
                 'updated_at' => Carbon::parse('2026-06-10 11:15:00'),

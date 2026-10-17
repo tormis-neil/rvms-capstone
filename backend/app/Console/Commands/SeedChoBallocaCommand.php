@@ -147,7 +147,7 @@ class SeedChoBallocaCommand extends Command
                 'cost' => 3800.00,
                 'repair_source' => RepairLog::SOURCE_EXTERNAL,
                 'external_shop_name' => 'Calbayog Auto Supply & Repair Center',
-                'receipt_path' => 'receipts/cho_hilux_or_20260828.pdf',
+                'receipt_path' => null,
                 'remarks' => 'Belt slippage eliminated during heavy electrical load and night driving. Brakes inspected with 65% remaining pad life. Official receipt filed.',
                 'created_at' => '2026-08-28 15:45:00',
                 'updated_at' => '2026-08-28 15:45:00',

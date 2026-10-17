@@ -144,7 +144,7 @@ class SeedChoSerratoCommand extends Command
                 'cost' => 5800.00,
                 'repair_source' => RepairLog::SOURCE_EXTERNAL,
                 'external_shop_name' => 'Calbayog Auto Electrical & Battery Center',
-                'receipt_path' => 'receipts/cho_ambulance_siren_or_20260508.pdf',
+                'receipt_path' => null,
                 'remarks' => 'Audible emergency warning siren restored to full 100W decibel level for clearing dense city traffic. Official receipt filed.',
                 'created_at' => '2026-05-08 15:30:00',
                 'updated_at' => '2026-05-08 15:30:00',

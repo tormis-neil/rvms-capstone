@@ -241,7 +241,7 @@ class SeedCdrrmoUnassignedCommand extends Command
                 'cost' => 4800.00,
                 'repair_source' => RepairLog::SOURCE_EXTERNAL,
                 'external_shop_name' => 'Calbayog Auto Supply & Engineering Services',
-                'receipt_path' => 'receipts/cdrrmo_tanker_or_20260618.pdf',
+                'receipt_path' => null,
                 'remarks' => 'Tested water delivery pressure at 8.5 bar without leaks. Discharged auxiliary tank cleanly. Official receipt filed.',
                 'created_at' => '2026-06-18 15:15:00',
                 'updated_at' => '2026-06-18 15:15:00',
