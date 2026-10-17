@@ -4,24 +4,23 @@ namespace App\Console\Commands;
 
 use App\Models\Agency;
 use App\Models\Dispatch;
-use App\Models\InspectionChecklistItem;
 use App\Models\Notification;
 use App\Models\PmSchedule;
 use App\Models\RepairLog;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\VehicleStatusWriter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Seed authentic historical UAT records specifically for Robert Canaman & SHA 1248 (Ambulance 2).
  *
- * Rules:
- * - Direct DB::table inserts to strictly preserve past created_at timestamps.
- * - Date Range: Sept 14 to Oct 02, 2026 (weekdays only, 9am - 5pm).
- * - Language: Simple English + authentic Calbayognon Waray (strictly using "san" and "sa", replacing all "han" and "ha").
- * - Co-crewed with Reynaldo Serrato as second driver on dispatches.
- * - Preserves all users, vehicles, and existing records for SHA 2625 (Balloca & Gamao) and SHA 1247 (Serrato).
+ * UAT Profile:
+ * - Driver Canaman represents an operational driver who was managed predominantly via the web admin console.
+ * - 0 Daily BLOWBAGETS Inspections and 0 Damage Reports (clean empty state in mobile app).
+ * - Full administrative fleet records: 1 GSO repair log, 2 PM schedules (1 Completed, 1 Upcoming), and 2 dispatches.
+ * - Receives 4 dispatch status update notifications on mobile when vehicle departs and returns.
  */
 class SeedChoCanamanCommand extends Command
 {
@@ -58,12 +57,6 @@ class SeedChoCanamanCommand extends Command
         $serrato = User::where('email', 'serrato.cho@email.com')->first();
         if (! $serrato) {
             $this->error('Driver Reynaldo Serrato (serrato.cho@email.com) not found in database.');
-            return self::FAILURE;
-        }
-
-        $checklists = InspectionChecklistItem::forAgencyCode('CHO')->get();
-        if ($checklists->isEmpty()) {
-            $this->error('BLOWBAGETS checklist catalog is empty.');
             return self::FAILURE;
         }
 
@@ -118,11 +111,11 @@ class SeedChoCanamanCommand extends Command
             })
             ->delete();
 
-        DB::transaction(function () use ($agency, $admin, $v1248, $canaman, $serrato, $checklists) {
+        DB::transaction(function () use ($agency, $admin, $v1248, $canaman, $serrato) {
             // -------------------------------------------------------------
             // 1. REPAIR LOG (1 Historical Repair: Apr 22, 2026, No Document)
             // -------------------------------------------------------------
-            $this->info('1. Seeding 1 historical repair log for SHA 1248 (No document)...');
+            $this->info('1. Seeding 1 historical repair log for SHA 1248 (GSO Motorpool)...');
 
             DB::table('repair_logs')->insert([
                 'agency_id' => $agency->id,
@@ -198,98 +191,17 @@ class SeedChoCanamanCommand extends Command
             ]);
 
             // -------------------------------------------------------------
-            // 3. DAILY BLOWBAGETS INSPECTIONS (4 Inspections by Robert Canaman)
-            // Date Range: Sept 14 - Oct 02, 2026 (weekdays only, 9am - 5pm)
-            // Language: Strict Waray using "sa" and "san" (no "ha" or "han")
+            // 3. DAILY BLOWBAGETS INSPECTIONS & DAMAGE REPORTS
+            // Omitted by realistic design: Driver Canaman tested purely via web admin dispatches.
             // -------------------------------------------------------------
-            $this->info('3. Seeding 4 daily inspections authored by Robert Canaman...');
-
-            $inspections = [
-                [
-                    'date' => '2026-09-15',
-                    'time' => '09:20:00',
-                    'review_time' => '11:15:00',
-                    'flagged_item' => null,
-                    'flagged_note' => null,
-                    'remarks' => 'Ginsusi an baterya, suga, ngan sirena. Kompleto an sulod san first aid cabinet ngan hapsay an dalagan san makina.',
-                ],
-                [
-                    'date' => '2026-09-21',
-                    'time' => '09:15:00',
-                    'review_time' => '10:45:00',
-                    'flagged_item' => null,
-                    'flagged_note' => null,
-                    'remarks' => 'Normal an lebel san lana ngan brake fluid. Gumagana an oxygen regulator ngan emergency flasher sa atop.',
-                ],
-                [
-                    'date' => '2026-09-25',
-                    'time' => '09:30:00',
-                    'review_time' => '11:30:00',
-                    'flagged_item' => 'Brakes',
-                    'flagged_note' => 'Brakes: Medyo humok an apak san preno ngan may guti-ay nga huni kon gin-aapakan samtang nagpapahinay sa karsada.',
-                    'remarks' => 'Slightly soft brake pedal feel, referred to CHO logistics for preventive checkup sa GSO. Stopping response still operational.',
-                ],
-                [
-                    'date' => '2026-09-30',
-                    'time' => '09:10:00',
-                    'review_time' => '11:00:00',
-                    'flagged_item' => null,
-                    'flagged_note' => null,
-                    'remarks' => 'Tanan nga suga sa unahan ngan likod gumagana. Andam an ambulansya para sa medical response ngan biyahe.',
-                ],
-            ];
-
-            foreach ($inspections as $ins) {
-                $inspId = DB::table('inspections')->insertGetId([
-                    'agency_id' => $agency->id,
-                    'vehicle_id' => $v1248->id,
-                    'driver_id' => $canaman->id,
-                    'inspection_date' => $ins['date'],
-                    'review_status' => 'Reviewed',
-                    'reviewed_by' => $admin->id,
-                    'reviewed_at' => "{$ins['date']} {$ins['review_time']}",
-                    'created_at' => "{$ins['date']} {$ins['time']}",
-                    'updated_at' => "{$ins['date']} {$ins['review_time']}",
-                ]);
-
-                foreach ($checklists as $chk) {
-                    $hasIssue = ($ins['flagged_item'] && strcasecmp($chk->name, $ins['flagged_item']) === 0);
-                    DB::table('inspection_items')->insert([
-                        'inspection_id' => $inspId,
-                        'checklist_item_id' => $chk->id,
-                        'status' => $hasIssue ? 'Has Issue' : 'OK',
-                        'remarks' => $hasIssue ? $ins['flagged_note'] : null,
-                    ]);
-                }
-            }
+            $this->info('3. Skipping inspections and damage reports for Canaman (pure web admin dispatch profile)...');
 
             // -------------------------------------------------------------
-            // 4. DAMAGE REPORT (1 Incident on Sep 23, 2026)
-            // Language: Strict Waray using "sa" and "san" (no "ha" or "han")
-            // -------------------------------------------------------------
-            $this->info('4. Seeding Damage Report submitted by Robert Canaman on Sep 23, 2026...');
-
-            DB::table('damage_reports')->insert([
-                'agency_id' => $agency->id,
-                'vehicle_id' => $v1248->id,
-                'driver_id' => $canaman->id,
-                'nature_of_damage' => 'Medyo mahinay an huyop ngan diri nagpapabugnaw an aircon sa likod san pasyente samtang nagbiyahe sa Brgy. Tinambacan. Alinsangan an cabin san ambulansya.',
-                'suspected_parts' => 'Rear patient cabin AC blower expansion valve / cabin evaporator filter',
-                'photo_path' => null,
-                'date_reported' => '2026-09-23',
-                'status' => 'Reviewed',
-                'reviewed_by' => $admin->id,
-                'reviewed_at' => '2026-09-24 09:15:00',
-                'created_at' => '2026-09-23 10:45:00',
-                'updated_at' => '2026-09-24 09:15:00',
-            ]);
-
-            // -------------------------------------------------------------
-            // 5. DISPATCHES (2 Dispatches co-crewed with Reynaldo Serrato)
+            // 4. DISPATCHES (2 Dispatches co-crewed with Reynaldo Serrato)
             // 1 Patient Transport under Others + 1 Medical Response
             // Progressing from 47,020 km -> 47,075 km
             // -------------------------------------------------------------
-            $this->info('5. Seeding 2 Dispatches for SHA 1248 (Patient Transport + Medical Response)...');
+            $this->info('4. Seeding 2 Dispatches for SHA 1248 (Patient Transport + Medical Response)...');
 
             $dispatches = [
                 // Dispatch 1: Patient Transport
@@ -349,28 +261,71 @@ class SeedChoCanamanCommand extends Command
                 ]);
 
             // -------------------------------------------------------------
-            // 6. HISTORICAL NOTIFICATIONS (Direct DB Inserts with Exact Past Timestamps)
+            // 5. HISTORICAL NOTIFICATIONS (Direct DB Inserts with Exact Past Timestamps)
+            // Status updates generated on mobile when admin opens and closes dispatches
             // -------------------------------------------------------------
-            $this->info('6. Seeding Chronological Notifications for Admin and Canaman...');
+            $this->info('5. Seeding Dispatch Status Notifications for Robert Canaman...');
 
             $notifs = [
-                // Sep 23, 2026 10:45 AM — Admin: New Damage Report Submitted by Canaman
+                // Sep 17, 2026 — Driver Canaman: Dispatched (Trip 1 departure)
                 [
-                    'user_id' => $admin->id,
-                    'type' => Notification::TYPE_NEW_DAMAGE_REPORT,
-                    'title' => 'New Damage Report Submitted',
-                    'message' => 'Robert Canaman reported weak rear patient cabin AC cooling on SHA 1248.',
-                    'data' => json_encode(['vehicle_id' => $v1248->id, 'plate_number' => 'SHA 1248', 'driver' => 'Robert Canaman']),
-                    'created_at' => '2026-09-23 10:45:00',
+                    'user_id' => $canaman->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 1248 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 1248',
+                        'vehicle_id' => $v1248->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-09-17 10:00:00',
                 ],
-                // Sep 25, 2026 09:30 AM — Admin: Flagged inspection on SHA 1248 (Brakes)
+                // Sep 17, 2026 — Driver Canaman: Returned from Trip 1
                 [
-                    'user_id' => $admin->id,
-                    'type' => Notification::TYPE_INSPECTION_FLAGGED,
-                    'title' => 'Inspection Reported an Issue',
-                    'message' => 'SHA 1248 — 1 item flagged: Brakes (soft pedal reported prior to scheduled PMS).',
-                    'data' => json_encode(['vehicle_id' => $v1248->id, 'plate_number' => 'SHA 1248', 'driver' => 'Robert Canaman']),
-                    'created_at' => '2026-09-25 09:30:00',
+                    'user_id' => $canaman->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 1248 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 1248',
+                        'vehicle_id' => $v1248->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-09-17 11:30:00',
+                ],
+                // Sep 24, 2026 — Driver Canaman: Dispatched (Trip 2 departure)
+                [
+                    'user_id' => $canaman->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 1248 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 1248',
+                        'vehicle_id' => $v1248->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-09-24 13:45:00',
+                ],
+                // Sep 24, 2026 — Driver Canaman: Returned from Trip 2
+                [
+                    'user_id' => $canaman->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 1248 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 1248',
+                        'vehicle_id' => $v1248->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-09-24 15:30:00',
                 ],
             ];
 
