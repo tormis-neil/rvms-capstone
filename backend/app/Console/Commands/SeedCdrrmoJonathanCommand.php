@@ -345,6 +345,66 @@ class SeedCdrrmoJonathanCommand extends Command
             $this->info('6. Seeding Chronological Notifications for Jonathan Dela Peña & Admin...');
 
             $notifs = [
+                // Sep 17, 2026 — Driver Jonathan: Dispatched (Trip 1 to Brgy. Tinambacan)
+                [
+                    'user_id' => $delaPena->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'CHO-4467 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'CHO-4467',
+                        'vehicle_id' => $v4467->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-09-17 09:30:00',
+                ],
+                // Sep 17, 2026 — Driver Jonathan: Returned from Trip 1
+                [
+                    'user_id' => $delaPena->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'CHO-4467 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'CHO-4467',
+                        'vehicle_id' => $v4467->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-09-17 13:30:00',
+                ],
+                // Sep 24, 2026 — Driver Jonathan: Dispatched (Trip 2 to City Sports Complex)
+                [
+                    'user_id' => $delaPena->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'CHO-4467 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'CHO-4467',
+                        'vehicle_id' => $v4467->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-09-24 13:00:00',
+                ],
+                // Sep 24, 2026 — Driver Jonathan: Returned from Trip 2
+                [
+                    'user_id' => $delaPena->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'CHO-4467 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'CHO-4467',
+                        'vehicle_id' => $v4467->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-09-24 16:00:00',
+                ],
                 // Sep 29, 2026 — Admin: Flagged inspection on CHO-4467 (Lights)
                 [
                     'user_id' => $admin->id,
@@ -392,6 +452,36 @@ class SeedCdrrmoJonathanCommand extends Command
                         'state' => PmSchedule::STATUS_DUE_SOON,
                     ]),
                     'created_at' => '2026-10-05 08:30:00',
+                ],
+                // Oct 06, 2026 — Driver Jonathan: Dispatched (Trip 3 to City Hall Annex)
+                [
+                    'user_id' => $delaPena->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'CHO-4467 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'CHO-4467',
+                        'vehicle_id' => $v4467->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-10-06 10:00:00',
+                ],
+                // Oct 06, 2026 — Driver Jonathan: Returned from Trip 3
+                [
+                    'user_id' => $delaPena->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'CHO-4467 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'CHO-4467',
+                        'vehicle_id' => $v4467->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-10-06 13:00:00',
                 ],
                 // Oct 09, 2026 — Admin: Flagged inspection on CHO-4467 (Air)
                 [
