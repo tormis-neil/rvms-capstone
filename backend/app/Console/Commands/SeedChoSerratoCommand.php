@@ -10,6 +10,7 @@ use App\Models\PmSchedule;
 use App\Models\RepairLog;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\VehicleStatusWriter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -381,6 +382,36 @@ class SeedChoSerratoCommand extends Command
             $this->info('6. Seeding Chronological Notifications for Serrato and Admin...');
 
             $notifs = [
+                // Sep 30, 2026 — Driver Serrato: Dispatched (Trip 1 departure)
+                [
+                    'user_id' => $serrato->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 1247 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 1247',
+                        'vehicle_id' => $v1247->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-09-30 10:15:00',
+                ],
+                // Sep 30, 2026 — Driver Serrato: Returned from Trip 1
+                [
+                    'user_id' => $serrato->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 1247 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 1247',
+                        'vehicle_id' => $v1247->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-09-30 11:45:00',
+                ],
                 // Oct 02, 2026 09:20 AM — Admin: Flagged inspection on SHA 1247 (Water)
                 [
                     'user_id' => $admin->id,
@@ -389,6 +420,36 @@ class SeedChoSerratoCommand extends Command
                     'message' => 'SHA 1247 — 1 item flagged: Water (radiator coolant reserve topped up sa motorpool).',
                     'data' => json_encode(['vehicle_id' => $v1247->id, 'plate_number' => 'SHA 1247', 'driver' => 'Reynaldo Serrato']),
                     'created_at' => '2026-10-02 09:20:00',
+                ],
+                // Oct 07, 2026 — Driver Serrato: Dispatched (Trip 2 departure)
+                [
+                    'user_id' => $serrato->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 1247 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 1247',
+                        'vehicle_id' => $v1247->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-10-07 13:30:00',
+                ],
+                // Oct 07, 2026 — Driver Serrato: Returned from Trip 2
+                [
+                    'user_id' => $serrato->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 1247 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 1247',
+                        'vehicle_id' => $v1247->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-10-07 15:15:00',
                 ],
                 // Oct 08, 2026 10:30 AM — Admin: New Damage Report Submitted by Serrato
                 [
@@ -437,6 +498,36 @@ class SeedChoSerratoCommand extends Command
                     'message' => 'SHA 1247 — 1 item flagged: Tires (low front left tire pressure resolved sa Shell).',
                     'data' => json_encode(['vehicle_id' => $v1247->id, 'plate_number' => 'SHA 1247', 'driver' => 'Reynaldo Serrato']),
                     'created_at' => '2026-10-12 09:25:00',
+                ],
+                // Oct 14, 2026 — Driver Serrato: Dispatched (Trip 3 departure)
+                [
+                    'user_id' => $serrato->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 1247 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 1247',
+                        'vehicle_id' => $v1247->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-10-14 09:30:00',
+                ],
+                // Oct 14, 2026 — Driver Serrato: Returned from Trip 3
+                [
+                    'user_id' => $serrato->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 1247 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 1247',
+                        'vehicle_id' => $v1247->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-10-14 11:15:00',
                 ],
             ];
 
