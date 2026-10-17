@@ -7,6 +7,7 @@ use App\Models\InspectionChecklistItem;
 use App\Models\Notification;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\VehicleStatusWriter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -198,6 +199,36 @@ class SeedChoGamaoCommand extends Command
             $this->info('3. Seeding Chronological Notifications for Rowel Gamao & Admin...');
 
             $notifs = [
+                // Sep 17, 2026 — Driver Gamao: Dispatched (Trip 1 departure)
+                [
+                    'user_id' => $gamao->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-09-17 08:30:00',
+                ],
+                // Sep 17, 2026 — Driver Gamao: Returned from Trip 1
+                [
+                    'user_id' => $gamao->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-09-17 12:00:00',
+                ],
                 // Sep 22, 2026 10:15 AM — Admin: New Damage Report Submitted by Gamao
                 [
                     'user_id' => $admin->id,
@@ -207,6 +238,36 @@ class SeedChoGamaoCommand extends Command
                     'data' => json_encode(['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'driver' => 'Rowel Gamao']),
                     'created_at' => '2026-09-22 10:15:00',
                 ],
+                // Sep 24, 2026 — Driver Gamao: Dispatched (Trip 2 departure)
+                [
+                    'user_id' => $gamao->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-09-24 13:00:00',
+                ],
+                // Sep 24, 2026 — Driver Gamao: Returned from Trip 2
+                [
+                    'user_id' => $gamao->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-09-24 16:00:00',
+                ],
                 // Sep 28, 2026 09:30 AM — Admin: Flagged inspection on SHA 2625 (Tires)
                 [
                     'user_id' => $admin->id,
@@ -215,6 +276,36 @@ class SeedChoGamaoCommand extends Command
                     'message' => 'SHA 2625 — 1 item flagged: Tires (low rear right tire pressure resolved sa Petron).',
                     'data' => json_encode(['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'driver' => 'Rowel Gamao']),
                     'created_at' => '2026-09-28 09:30:00',
+                ],
+                // Oct 02, 2026 — Driver Gamao: Dispatched (Trip 3 departure)
+                [
+                    'user_id' => $gamao->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-10-02 10:00:00',
+                ],
+                // Oct 02, 2026 — Driver Gamao: Returned from Trip 3
+                [
+                    'user_id' => $gamao->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-10-02 11:45:00',
                 ],
                 // Oct 05, 2026 08:30 AM — Driver Gamao: PM Reminder Due Soon (shared parity with Balloca)
                 [
@@ -231,6 +322,36 @@ class SeedChoGamaoCommand extends Command
                     ]),
                     'created_at' => '2026-10-05 08:30:00',
                 ],
+                // Oct 07, 2026 — Driver Gamao: Dispatched (Trip 4 departure)
+                [
+                    'user_id' => $gamao->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Dispatched.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_DISPATCHED,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                    ]),
+                    'created_at' => '2026-10-07 09:30:00',
+                ],
+                // Oct 07, 2026 — Driver Gamao: Returned from Trip 4
+                [
+                    'user_id' => $gamao->id,
+                    'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                    'title' => 'Vehicle Status Updated',
+                    'message' => 'SHA 2625 is now Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_DISPATCHED,
+                        'to_status' => Vehicle::STATUS_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                    ]),
+                    'created_at' => '2026-10-07 12:30:00',
+                ],
                 // Oct 09, 2026 09:25 AM — Admin: Flagged inspection on SHA 2625 (Directional Signals)
                 [
                     'user_id' => $admin->id,
@@ -245,8 +366,14 @@ class SeedChoGamaoCommand extends Command
                     'user_id' => $gamao->id,
                     'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
                     'title' => 'Vehicle Status Updated',
-                    'message' => 'SHA 2625 (Service Vehicle) status changed to Not Operational awaiting clutch repair.',
-                    'data' => json_encode(['vehicle_id' => $v2625->id, 'plate_number' => 'SHA 2625', 'new_status' => 'Not Operational']),
+                    'message' => 'SHA 2625 is now Not Operational.',
+                    'data' => json_encode([
+                        'plate' => 'SHA 2625',
+                        'vehicle_id' => $v2625->id,
+                        'from_status' => Vehicle::STATUS_OPERATIONAL,
+                        'to_status' => Vehicle::STATUS_NOT_OPERATIONAL,
+                        'source' => VehicleStatusWriter::SOURCE_DAMAGE,
+                    ]),
                     'created_at' => '2026-10-13 09:00:00',
                 ],
             ];
