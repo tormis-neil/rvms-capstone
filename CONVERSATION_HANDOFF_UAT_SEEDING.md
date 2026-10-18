@@ -160,11 +160,57 @@ In this session, we systematically audited, corrected, and synchronized the hist
 | **Reserve Fleet** | `SHA-2006` | `Operational` | Sep 14, 08:45 | 60,475 km | — | — | 1 (Done 60k) | 1 repair | 3 trips | 6 dispatch alerts |
 | **Reserve Fleet** | `AND-9023` | `Operational` | Sep 14, 09:00 | 64,950 km | — | — | 1 (`Due Soon` 65k)| 1 repair | 2 trips | 4 dispatch alerts + 1 PM |
 
-#### CDRRMO Master Seeder Orchestrator
-- **Command:** `php artisan rvms:seed-uat-cdrrmo {--fresh}`
-- **File:** `backend/app/Console/Commands/SeedUatCdrrmoCommand.php`
-- **Orchestration:** Calls `rvms:seed-cdrrmo-jonathan --fresh` $\rightarrow$ `rvms:seed-cdrrmo-calbiga` $\rightarrow$ `rvms:seed-cdrrmo-unassigned`.
-- **Status:** Complete & Verified.
+### C. Philippine National Police (PNP)
+
+#### 1. Manuel Tan & Assigned Patrol Vehicle
+- **Command:** `php artisan rvms:seed-pnp-tan {--fresh}`
+- **File:** `backend/app/Console/Commands/SeedPnpTanCommand.php`
+- **Key Features:**
+  - 5 BLOWBAGETS daily inspections submitted between Sep 30 and Oct 20, 2026 using authentic Calbayognon Waray with *"sa"* and *"san"*.
+  - 1 minor damage report (Oct 12, 2026 — loose spotlight bracket) keeping vehicle `Operational`.
+  - 2 PM schedules on assigned vehicle: 1 Completed in August (50k PMS) and 1 Due Soon in October (55k PMS).
+  - Driver & Admin mobile notifications generated for PM Due Soon, flagged inspections, and damage report.
+  - Pre-operational created_at calibrated to Sep 14, 2026 (Rule 11).
+
+#### 2. Unassigned Utility Vehicle: SHA-7901
+- **Command:** `php artisan rvms:seed-pnp-unassigned`
+- **File:** `backend/app/Console/Commands/SeedPnpUnassignedCommand.php`
+- **Key Features:**
+  - 2 historical repair logs without damage tickets (May 18, 2026 at GSO Motorpool for brake pads & caliper pins; Aug 25, 2026 at External Repair Shop for alternator regulator & relays).
+  - Null dummy attachments (`receipt_path: null`) observing Rule 8.
+  - Pre-operational created_at calibrated to Sep 14, 2026 (Rule 11).
+
+#### 3. Master PNP Orchestrator
+- **Command:** `php artisan rvms:seed-uat-pnp {--fresh}`
+- **File:** `backend/app/Console/Commands/SeedUatPnpCommand.php`
+- **Orchestration:** Calls `rvms:seed-pnp-tan --fresh` $\rightarrow$ `rvms:seed-pnp-unassigned`.
+
+---
+
+## 4. Master UAT Seeding Verification Matrix
+
+### City Health Office (CHO)
+| Driver | Vehicle | Status | Onboarded (`created_at`) | Odometer | Inspections | Damage Reports | PM Schedules | Repair Logs | Dispatches | Mobile Alerts |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Rowel Gamao** | `SHA 2625` | `Not Operational` | Sep 14, 09:30 / 08:30 | 58,400 km | 5 submitted | 1 (Tailgate latch) | 1 (`Due Soon` 60k) | 2 shared | 4 shared | 8 dispatch + 1 PM + 1 Not Op |
+| **Idelfonso Balloca** | `SHA 2625` | `Not Operational` | Sep 14, 09:15 / 08:30 | 58,400 km | 5 submitted | 1 (Clutch slipping) | 1 (`Due Soon` 60k) | 2 shared | 4 shared | 8 dispatch + 1 PM + 1 Not Op |
+| **Reynaldo Serrato** | `SHA 1247` | `Operational` | Sep 14, 10:00 / 08:45 | 39,590 km | 6 submitted | 1 (Sliding door latch)| 1 (`Due Soon` Semi) | 3 repairs | 3 trips | 6 dispatch + 1 PM |
+| **Robert Canaman** | `SHA 1248` | `Operational` | Sep 14, 10:15 / 09:00 | 47,075 km | 0 *(Empty state)* | 0 *(Empty state)* | 2 (1 Done, 1 Up) | 1 repair | 2 trips | 4 dispatch alerts |
+
+### CDRRMO (City Disaster Risk Reduction and Management Office)
+| Driver / Category | Vehicle | Status | Onboarded (`created_at`) | Odometer | Inspections | Damage Reports | PM Schedules | Repair Logs | Dispatches | Mobile Alerts |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Jonathan Dela Peña** | `CHO-4467` | `Operational` | Sep 14, 09:00 / 08:30 | 54,820 km | 5 submitted | 1 (Headlight) | 1 (`Due Soon` 55k) | 1 repair | 3 trips | 6 dispatch + 1 PM |
+| **Rolando Calbiga** | `SAB-5120` | `Operational` | Sep 14, 09:15 / 08:45 | 42,950 km | 5 submitted | 1 (Aux fan) | 2 (1 Done, 1 Up) | 1 repair | 3 trips | 6 dispatch + 1 Not Op + 1 Op |
+| **Christopher Mabini** | Co-Driver | — | Sep 14, 09:30 | — | — | — | — | — | 3 trips (co) | 6 dispatch alerts |
+| **Reserve Fleet** | `SHA-2006` | `Operational` | Sep 14, 08:45 | 60,475 km | — | — | 1 (Done 60k) | 1 repair | 3 trips | 6 dispatch alerts |
+| **Reserve Fleet** | `AND-9023` | `Operational` | Sep 14, 09:00 | 64,950 km | — | — | 1 (`Due Soon` 65k)| 1 repair | 2 trips | 4 dispatch alerts + 1 PM |
+
+### Philippine National Police (PNP)
+| Driver / Category | Vehicle | Status | Onboarded (`created_at`) | Odometer | Inspections | Damage Reports | PM Schedules | Repair Logs | Dispatches | Mobile Alerts |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Manuel Tan** | Assigned Patrol | `Operational` | Sep 14, 09:00 / 08:30 | 54,200 km | 5 submitted | 1 (Spotlight mount)| 2 (1 Done, 1 Due) | — | — | 1 PM + 4 admin alerts |
+| **Unassigned Fleet** | `SHA-7901` | `Operational` | Sep 14, 08:45 | 68,450 km | — | — | — | 2 repairs | — | — |
 
 ---
 
@@ -177,6 +223,7 @@ In this session, we systematically audited, corrected, and synchronized the hist
 2. **Database Schemas:**
    - Table `inspection_items` has **NO `created_at` or `updated_at` timestamps**. Never insert timestamps into `inspection_items`.
    - Table `damage_reports` uses columns: `nature_of_damage`, `suspected_parts`, `date_reported`, `status`, `photo_path` (do not use `incident_date` or `description`).
+   - Table `repair_logs` column `driver_id` is nullable (suitable for unassigned fleet repairs).
    - BLOWBAGETS checklist item name is `'Power Steering'`, **NOT `'Steering'`.**
 3. **`VehicleStatusWriter` Notification Format:**
    - Title: `'Vehicle Status Updated'`
@@ -189,16 +236,14 @@ In this session, we systematically audited, corrected, and synchronized the hist
 
 ---
 
-## 6. Next Steps: BFP & PNP Realistic UAT Seeding
+## 6. Next Steps: BFP Realistic UAT Seeding
 
-Now that CHO and CDRRMO historical UAT seeding and orchestration are 100% complete:
+Now that CHO, CDRRMO, and PNP historical UAT seeding and orchestration are 100% complete:
 1. **BFP (Bureau of Fire Protection):**
-   - Identify BFP vehicles (fire trucks, rescue vans) and active drivers.
-   - Create driver-specific seeders following Rules 1–10 (odometer calibration, BLOWBAGETS, authentic Waray `"sa/san"`, GSO/external repairs, null dummy attachments, dispatch departure/return notifications).
+   - Identify BFP vehicles (fire trucks, water tanker, rescue van) and active drivers.
+   - Note BFP-specific BLOWBAGETS checklist items (`Hydraulic System`, `Fire Pump`).
+   - Create driver and unassigned vehicle seeders following Rules 1–11.
    - Create `SeedUatBfpCommand.php` orchestrator with `--fresh`.
-2. **PNP (Philippine National Police):**
-   - Identify PNP patrol vehicles and drivers.
-   - Implement driver and fleet seeders adhering to Rules 1–10.
-   - Create `SeedUatPnpCommand.php` orchestrator with `--fresh`.
-3. **End-to-End Container Run:** Execute master seeders on the live Railway container and verify presentation across Web Admin and Mobile handoff screens.
+2. **End-to-End Container Run:** Execute master seeders on the live Railway container and verify presentation across Web Admin and Mobile handoff screens.
+
 
