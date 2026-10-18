@@ -60,13 +60,14 @@ class ExternalRepairReceiptTest extends TestCase
 
     /* ---------------------------- repair logs ----------------------------- */
 
-    public function test_an_external_repair_is_refused_without_a_receipt(): void
+    public function test_an_external_repair_is_allowed_without_a_receipt(): void
     {
         $this->postJson('/api/v1/repairs', $this->repairPayload(RepairLog::SOURCE_EXTERNAL, [
             'external_shop_name' => 'Calbayog Auto Works',
-        ]))->assertStatus(422)->assertJsonValidationErrors('receipt');
+        ]))->assertCreated();
 
-        $this->assertDatabaseCount('repair_logs', 0);
+        $this->assertDatabaseCount('repair_logs', 1);
+        $this->assertNull(RepairLog::query()->first()->receipt_path);
     }
 
     public function test_an_external_repair_stores_the_receipt(): void
@@ -212,14 +213,9 @@ class ExternalRepairReceiptTest extends TestCase
         $this->assertDatabaseCount('repair_logs', 1);
     }
 
-    /**
-     * The list is the single switch. If the Motorpool later confirms a job
-     * order is always issued, adding SOURCE_GSO to it is the whole change —
-     * both form requests and both dashboards read it.
-     */
-    public function test_only_the_external_shop_is_on_the_mandatory_list(): void
+    public function test_no_source_is_on_the_mandatory_list(): void
     {
-        $this->assertSame([RepairLog::SOURCE_EXTERNAL], RepairLog::REQUIRED_DOCUMENT_SOURCES);
+        $this->assertSame([], RepairLog::REQUIRED_DOCUMENT_SOURCES);
 
         // Every source is named in the hints, so the form can always say what
         // it is asking for.
@@ -239,7 +235,7 @@ class ExternalRepairReceiptTest extends TestCase
         ]);
     }
 
-    public function test_completing_a_pm_externally_is_refused_without_a_receipt(): void
+    public function test_completing_a_pm_externally_is_allowed_without_a_receipt(): void
     {
         $schedule = $this->schedule();
 
@@ -247,9 +243,10 @@ class ExternalRepairReceiptTest extends TestCase
             'date_serviced' => now()->toDateString(),
             'completion_repair_source' => RepairLog::SOURCE_EXTERNAL,
             'completion_external_shop_name' => 'Calbayog Diesel Works',
-        ])->assertStatus(422)->assertJsonValidationErrors('completion_receipt');
+        ])->assertOk();
 
-        $this->assertNotSame(PmSchedule::STATUS_COMPLETED, $schedule->fresh()->status);
+        $this->assertSame(PmSchedule::STATUS_COMPLETED, $schedule->fresh()->status);
+        $this->assertNull($schedule->fresh()->completion_receipt_path);
     }
 
     public function test_completing_a_pm_externally_stores_the_receipt(): void
@@ -282,23 +279,17 @@ class ExternalRepairReceiptTest extends TestCase
         $this->assertSame(PmSchedule::STATUS_COMPLETED, $schedule->fresh()->status);
     }
 
-    /**
-     * The two modules record the same fact from the same three sources, so a
-     * rule that held in one and not the other would be a hole rather than a
-     * design. Both refusals must also read identically.
-     */
-    public function test_both_modules_word_the_refusal_the_same_way(): void
+    public function test_both_modules_allow_external_operations_without_receipt(): void
     {
-        $repairMessage = $this->postJson('/api/v1/repairs', $this->repairPayload(RepairLog::SOURCE_EXTERNAL, [
+        $this->postJson('/api/v1/repairs', $this->repairPayload(RepairLog::SOURCE_EXTERNAL, [
             'external_shop_name' => 'Calbayog Auto Works',
-        ]))->json('errors.receipt.0');
+        ]))->assertCreated();
 
-        $pmMessage = $this->patchJson("/api/v1/pm-schedules/{$this->schedule()->id}/complete", [
+        $schedule = $this->schedule();
+        $this->patchJson("/api/v1/pm-schedules/{$schedule->id}/complete", [
             'date_serviced' => now()->toDateString(),
             'completion_repair_source' => RepairLog::SOURCE_EXTERNAL,
             'completion_external_shop_name' => 'Calbayog Diesel Works',
-        ])->json('errors.completion_receipt.0');
-
-        $this->assertSame($repairMessage, $pmMessage);
+        ])->assertOk();
     }
 }

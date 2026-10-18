@@ -26,25 +26,17 @@ class RepairLog extends Model
     ];
 
     /**
-     * Sources whose supporting document is MANDATORY (FR-13, FR-14, 2026-08).
-     *
-     * Only the external shop. The GSO Motorpool is another City office rather
-     * than a private business: its job order is worth keeping and can be
-     * attached, but no money leaves the LGU and the requirements interviews
-     * never established that it always issues paperwork the agency keeps.
-     * Demanding it on that assumption would leave an administrator unable to
-     * log the repair at all — no record instead of an imperfect one.
-     *
-     * If the Motorpool confirms a job order is always issued, add it here: the
-     * form requests, both dashboards and the tests all read this list.
+     * Sources whose supporting document is mandatory.
+     * All supporting documents are optional across all sources so that logging
+     * or updating repair records is never blocked when receipts are pending.
      */
-    public const REQUIRED_DOCUMENT_SOURCES = [self::SOURCE_EXTERNAL];
+    public const REQUIRED_DOCUMENT_SOURCES = [];
 
     /** What each source is expected to produce, shown under the file input. */
     public const DOCUMENT_HINTS = [
         self::SOURCE_INTERNAL => 'Any supporting document (optional).',
-        self::SOURCE_GSO => 'Job order or service slip from the GSO Motorpool, if one was issued.',
-        self::SOURCE_EXTERNAL => 'Official receipt or sales invoice from the shop (required).',
+        self::SOURCE_GSO => 'Job order or service slip from the GSO Motorpool, if one was issued (optional).',
+        self::SOURCE_EXTERNAL => 'Official receipt or sales invoice from the shop (optional).',
     ];
 
     protected $fillable = [

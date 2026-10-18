@@ -37,19 +37,17 @@ trait ValidatesRepairReceipt
     /**
      * Rules for the supporting-document field.
      *
-     * Accepted from any source; required only from those in
-     * RepairLog::REQUIRED_DOCUMENT_SOURCES,
-     * and then only when nothing is on file yet. That second half means editing
-     * a record that already has a document does not demand it be uploaded
-     * again — otherwise correcting a typo in a shop name would mean hunting
-     * down the original paperwork — and records created before this rule
-     * existed can still be edited.
+     * Optional supporting document for a repair (FR-13, FR-14).
+     *
+     * Accepted from any source, but always optional so that recording and
+     * editing repair logs or PM completions is never blocked when an official
+     * receipt is pending or unavailable.
      *
      * @param  string  $sourceField  The repair-source input this document belongs to.
      * @param  string|null  $existing  A path already stored on the record, if any.
      * @return list<mixed>
      */
-    protected function receiptRules(string $sourceField, ?string $existing = null): array
+    protected function receiptRules(string $sourceField = 'repair_source', ?string $existing = null): array
     {
         return [
             'nullable',
@@ -62,9 +60,6 @@ trait ValidatesRepairReceipt
             // one; heic/heif because that is what a phone camera produces.
             'mimes:pdf,jpg,jpeg,png,webp,heic,heif',
             'max:5120', // 5 MB, matching the damage photo
-            Rule::requiredIf(
-                fn () => in_array($this->input($sourceField), RepairLog::REQUIRED_DOCUMENT_SOURCES, true) && $existing === null
-            ),
         ];
     }
 

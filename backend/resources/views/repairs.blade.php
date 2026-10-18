@@ -211,9 +211,7 @@
                              cannot assume one is always issued, so demanding it would
                              leave the repair unrecordable. The hint changes per source. --}}
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">
-                                Supporting Document <span class="text-danger js-doc-required" style="display:none;">*</span>
-                            </label>
+                            <label class="form-label fw-semibold">Supporting Document <span class="text-secondary fw-normal">(Optional)</span></label>
                             <input type="file" class="form-control" name="receipt" accept=".pdf,image/*">
                             <div class="form-text js-doc-hint"></div>
                         </div>
@@ -291,9 +289,7 @@
                             <input type="text" class="form-control js-shop" name="external_shop_name" id="erShop" placeholder="Name of the external repair shop">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">
-                                Supporting Document <span class="text-danger js-doc-required" style="display:none;">*</span>
-                            </label>
+                            <label class="form-label fw-semibold">Supporting Document <span class="text-secondary fw-normal">(Optional)</span></label>
                             <input type="file" class="form-control" name="receipt" accept=".pdf,image/*">
                             <div class="form-text js-doc-hint"></div>
                             <div class="form-text" id="erReceiptHint"></div>
@@ -342,16 +338,11 @@
             const wraps = root.querySelectorAll('.js-shop-wrap');
             if (!source || wraps.length === 0) return;
             const hints = @json(\App\Models\RepairLog::DOCUMENT_HINTS);
-            const requiredSources = @json(\App\Models\RepairLog::REQUIRED_DOCUMENT_SOURCES);
             const hint = root.querySelector('.js-doc-hint');
-            const star = root.querySelector('.js-doc-required');
             const sync = () => {
                 const external = source.value === 'External Repair Shop';
                 wraps.forEach(w => { w.style.display = external ? '' : 'none'; });
-                // The document field is always shown; only its hint and its
-                // required marker change with the source.
                 if (hint) hint.textContent = hints[source.value] || '';
-                if (star) star.style.display = requiredSources.includes(source.value) ? '' : 'none';
             };
             source.addEventListener('change', sync);
             sync();

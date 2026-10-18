@@ -296,9 +296,7 @@
                              Offered for every source, required only for an external shop;
                              the GSO Motorpool's job order is kept where one exists. --}}
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">
-                                Supporting Document <span class="text-danger js-doc-required" style="display:none;">*</span>
-                            </label>
+                            <label class="form-label fw-semibold">Supporting Document <span class="text-secondary fw-normal">(Optional)</span></label>
                             <input type="file" class="form-control" name="completion_receipt" accept=".pdf,image/*">
                             <div class="form-text js-doc-hint"></div>
                         </div>
@@ -413,14 +411,11 @@
             const wraps = root.querySelectorAll('.js-shop-wrap');
             if (!source || wraps.length === 0) return;
             const hints = @json(\App\Models\RepairLog::DOCUMENT_HINTS);
-            const requiredSources = @json(\App\Models\RepairLog::REQUIRED_DOCUMENT_SOURCES);
             const hint = root.querySelector('.js-doc-hint');
-            const star = root.querySelector('.js-doc-required');
             const sync = () => {
                 const external = source.value === 'External Repair Shop';
                 wraps.forEach(w => { w.style.display = external ? '' : 'none'; });
                 if (hint) hint.textContent = hints[source.value] || '';
-                if (star) star.style.display = requiredSources.includes(source.value) ? '' : 'none';
             };
             source.addEventListener('change', sync);
             sync();
