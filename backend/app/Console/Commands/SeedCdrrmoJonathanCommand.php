@@ -159,6 +159,25 @@ class SeedCdrrmoJonathanCommand extends Command
         }
 
         DB::transaction(function () use ($agency, $admin, $v4467, $delaPena, $mabini, $checklists) {
+            // -------------------------------------------------------------
+            // 0. ACCOUNT & VEHICLE CREATION TIMESTAMPS
+            // Ensure accounts and vehicle exist prior to first operational submission (Sep 15, 2026)
+            // -------------------------------------------------------------
+            DB::table('users')->where('id', $admin->id)->update([
+                'created_at' => '2026-09-14 08:00:00',
+            ]);
+
+            DB::table('users')->where('id', $delaPena->id)->update([
+                'created_at' => '2026-09-14 09:00:00',
+            ]);
+
+            DB::table('users')->where('id', $mabini->id)->update([
+                'created_at' => '2026-09-14 09:30:00',
+            ]);
+
+            DB::table('vehicles')->where('id', $v4467->id)->update([
+                'created_at' => '2026-09-14 08:30:00',
+            ]);
 
             // -------------------------------------------------------------
             // 1. REPAIR LOG (June 10, 2026 - GSO Motorpool)

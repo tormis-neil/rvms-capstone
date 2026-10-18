@@ -133,6 +133,21 @@ class SeedCdrrmoCalbigaCommand extends Command
             ->delete();
 
         DB::transaction(function () use ($agency, $admin, $v5120, $calbiga, $mabini, $delaPena, $checklists) {
+            // -------------------------------------------------------------
+            // 0. ACCOUNT & VEHICLE CREATION TIMESTAMPS
+            // Ensure accounts and vehicle exist prior to first operational submission (Sept 16/Oct 02, 2026)
+            // -------------------------------------------------------------
+            DB::table('users')->where('id', $admin->id)->update([
+                'created_at' => '2026-09-14 08:00:00',
+            ]);
+
+            DB::table('users')->where('id', $calbiga->id)->update([
+                'created_at' => '2026-09-14 09:15:00',
+            ]);
+
+            DB::table('vehicles')->where('id', $v5120->id)->update([
+                'created_at' => '2026-09-14 08:45:00',
+            ]);
 
             // -------------------------------------------------------------
             // 1. PREVENTIVE MAINTENANCE SCHEDULES (1 Completed + 1 Upcoming)

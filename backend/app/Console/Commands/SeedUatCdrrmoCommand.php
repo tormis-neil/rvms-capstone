@@ -79,6 +79,22 @@ class SeedUatCdrrmoCommand extends Command
             ]
         );
 
+        $this->newLine();
+        $this->info('Onboarding & Creation Timestamps Audit (Prior to First Operational Action):');
+        $this->table(
+            ['Entity', 'Role / Identifier', 'created_at', 'First System Action', 'Temporal Audit'],
+            [
+                ['CDRRMO Administrator', 'cdrrmo.admin@email.com', '2026-09-14 08:00:00', '2026-09-15 11:15 (Review Inspection)', 'VALID (Precedes operations)'],
+                ['Toyota Coaster', 'CHO-4467', '2026-09-14 08:30:00', '2026-09-15 09:10 (First Inspection)', 'VALID (Precedes operations)'],
+                ['Isuzu D-Max 4x4', 'SAB-5120', '2026-09-14 08:45:00', '2026-10-02 09:10 (First Inspection)', 'VALID (Precedes operations)'],
+                ['Hino Rescue Truck (Reserve)', 'SHA-2006', '2026-09-14 08:45:00', '2026-09-16 09:30 (First Dispatch)', 'VALID (Precedes operations)'],
+                ['Hino Water Tanker (Reserve)', 'AND-9023', '2026-09-14 09:00:00', '2026-09-18 10:00 (First Dispatch)', 'VALID (Precedes operations)'],
+                ['Jonathan Dela Peña', 'jonathan@email.com', '2026-09-14 09:00:00', '2026-09-15 09:10 (First Inspection)', 'VALID (Precedes operations)'],
+                ['Rolando Calbiga', 'calbiga@email.com', '2026-09-14 09:15:00', '2026-09-16 09:30 (Reserve Dispatch)', 'VALID (Precedes operations)'],
+                ['Christopher Clark Mabini', 'mabini@email.com', '2026-09-14 09:30:00', '2026-09-16 09:30 (Co-Driver Trip)', 'VALID (Precedes operations)'],
+            ]
+        );
+
         return self::SUCCESS;
     }
 }

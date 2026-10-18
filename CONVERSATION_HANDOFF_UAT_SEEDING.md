@@ -152,12 +152,13 @@ In this session, we systematically audited, corrected, and synchronized the hist
 | **Robert Canaman** | `SHA 1248` | `Operational` | Sep 14, 10:15 / 09:00 | 47,075 km | 0 *(Empty state)* | 0 *(Empty state)* | 2 (1 Done, 1 Up) | 1 repair | 2 trips | 4 dispatch alerts |
 
 ### CDRRMO (City Disaster Risk Reduction and Management Office)
-| Driver / Category | Vehicle | Status | Odometer | Inspections | Damage Reports | PM Schedules | Repair Logs | Dispatches | Mobile Alerts |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Jonathan Dela Peña** | `CHO-4467` | `Operational` | 54,820 km | 5 submitted | 1 (Headlight) | 1 (`Due Soon` 55k) | 1 repair | 3 trips | 6 dispatch + 1 PM |
-| **Rolando Calbiga** | `SAB-5120` | `Operational` | 42,950 km | 5 submitted | 1 (Aux fan) | 2 (1 Done, 1 Up) | 1 repair | 3 trips | 6 dispatch + 1 Not Op + 1 Op |
-| **Reserve Fleet** | `SHA-2006` | `Operational` | 60,475 km | — | — | 1 (Done 60k) | 1 repair | 3 trips | 6 dispatch alerts |
-| **Reserve Fleet** | `AND-9023` | `Operational` | 64,950 km | — | — | 1 (`Due Soon` 65k)| 1 repair | 2 trips | 4 dispatch alerts + 1 PM |
+| Driver / Category | Vehicle | Status | Onboarded (`created_at`) | Odometer | Inspections | Damage Reports | PM Schedules | Repair Logs | Dispatches | Mobile Alerts |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Jonathan Dela Peña** | `CHO-4467` | `Operational` | Sep 14, 09:00 / 08:30 | 54,820 km | 5 submitted | 1 (Headlight) | 1 (`Due Soon` 55k) | 1 repair | 3 trips | 6 dispatch + 1 PM |
+| **Rolando Calbiga** | `SAB-5120` | `Operational` | Sep 14, 09:15 / 08:45 | 42,950 km | 5 submitted | 1 (Aux fan) | 2 (1 Done, 1 Up) | 1 repair | 3 trips | 6 dispatch + 1 Not Op + 1 Op |
+| **Christopher Mabini** | Co-Driver | — | Sep 14, 09:30 | — | — | — | — | — | 3 trips (co) | 6 dispatch alerts |
+| **Reserve Fleet** | `SHA-2006` | `Operational` | Sep 14, 08:45 | 60,475 km | — | — | 1 (Done 60k) | 1 repair | 3 trips | 6 dispatch alerts |
+| **Reserve Fleet** | `AND-9023` | `Operational` | Sep 14, 09:00 | 64,950 km | — | — | 1 (`Due Soon` 65k)| 1 repair | 2 trips | 4 dispatch alerts + 1 PM |
 
 #### CDRRMO Master Seeder Orchestrator
 - **Command:** `php artisan rvms:seed-uat-cdrrmo {--fresh}`

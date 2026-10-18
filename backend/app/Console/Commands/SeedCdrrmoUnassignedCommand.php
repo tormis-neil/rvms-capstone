@@ -113,6 +113,21 @@ class SeedCdrrmoUnassignedCommand extends Command
             ->delete();
 
         DB::transaction(function () use ($agency, $admin, $v2006, $v9023, $calbiga, $delaPena, $mabini) {
+            // -------------------------------------------------------------
+            // 0. ACCOUNT & VEHICLE CREATION TIMESTAMPS
+            // Ensure accounts and reserve vehicles exist prior to first dispatch logs (Sept 16/18, 2026)
+            // -------------------------------------------------------------
+            DB::table('users')->where('id', $admin->id)->update([
+                'created_at' => '2026-09-14 08:00:00',
+            ]);
+
+            DB::table('vehicles')->where('id', $v2006->id)->update([
+                'created_at' => '2026-09-14 08:45:00',
+            ]);
+
+            DB::table('vehicles')->where('id', $v9023->id)->update([
+                'created_at' => '2026-09-14 09:00:00',
+            ]);
 
             // =============================================================
             // VEHICLE 1: SHA-2006 (Rescue Truck - Hino XZU302L)
