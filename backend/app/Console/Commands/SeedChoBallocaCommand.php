@@ -116,6 +116,22 @@ class SeedChoBallocaCommand extends Command
 
         DB::transaction(function () use ($agency, $admin, $v2625, $balloca, $gamao, $checklists) {
             // -------------------------------------------------------------
+            // 0. ACCOUNT & VEHICLE CREATION TIMESTAMPS
+            // Ensure accounts and vehicle exist prior to first operational submission (Sep 15/17, 2026)
+            // -------------------------------------------------------------
+            DB::table('users')->where('id', $admin->id)->update([
+                'created_at' => '2026-09-14 08:00:00',
+            ]);
+
+            DB::table('users')->where('id', $balloca->id)->update([
+                'created_at' => '2026-09-14 09:15:00',
+            ]);
+
+            DB::table('vehicles')->where('id', $v2625->id)->update([
+                'created_at' => '2026-09-14 08:30:00',
+            ]);
+
+            // -------------------------------------------------------------
             // 1. REPAIR LOGS (2 Distinct Repairs on SHA 2625)
             // -------------------------------------------------------------
             $this->info('1. Seeding 2 distinct historical repair logs for SHA 2625...');

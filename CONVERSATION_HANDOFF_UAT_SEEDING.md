@@ -43,6 +43,11 @@ In this session, we systematically audited, corrected, and synchronized the hist
     - Opening a dispatch emits `Notification::TYPE_VEHICLE_STATUS_UPDATE` with message `"{Plate} is now Dispatched."` (`source: VehicleStatusWriter::SOURCE_DISPATCH_OPEN`).
     - Closing a dispatch emits `Notification::TYPE_VEHICLE_STATUS_UPDATE` with message `"{Plate} is now Operational."` (`source: VehicleStatusWriter::SOURCE_DISPATCH_CLOSE`).
     - Payload format: `{'plate': '...', 'vehicle_id': ..., 'from_status': '...', 'to_status': '...', 'source': '...'}`.
+11. **Rule 11 — Pre-Operational Account & Fleet Creation Timestamp Alignment:**
+    - No operational record (daily BLOWBAGETS inspection, damage report, or dispatch trip) may have a `created_at` timestamp earlier than the `created_at` timestamp of the participating driver account, assigned vehicle, or agency admin in `users` and `vehicles`.
+    - Standard onboarding window: All agency admins, active drivers, and fleet vehicles must be provisioned on the agency's official onboarding date (e.g., September 14, 2026 between 08:00 AM and 10:30 AM), strictly preceding the first operational submission on September 15.
+    - Historical repair logs and PM records transcribed from municipal motorpools (GSO) may legitimately carry earlier calendar dates (e.g., April, June, August 2026) as historical fleet records.
+    - Every driver seeder must explicitly calibrate `users.created_at` and `vehicles.created_at` directly within its seeding transaction.
 
 ---
 
@@ -139,18 +144,26 @@ In this session, we systematically audited, corrected, and synchronized the hist
 ## 4. Master UAT Seeding Verification Matrix
 
 ### City Health Office (CHO)
-| Driver | Vehicle | Status | Odometer | Inspections | Damage Reports | PM Schedules | Repair Logs | Dispatches | Mobile Alerts |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Rowel Gamao** | `SHA 2625` | `Not Operational` | 58,400 km | 5 submitted | 1 (Tailgate latch) | 1 (`Due Soon` 60k) | 2 shared | 4 shared | 8 dispatch + 1 PM + 1 Not Op |
-| **Idelfonso Balloca** | `SHA 2625` | `Not Operational` | 58,400 km | 5 submitted | 1 (Clutch slipping) | 1 (`Due Soon` 60k) | 2 shared | 4 shared | 8 dispatch + 1 PM + 1 Not Op |
-| **Reynaldo Serrato** | `SHA 1247` | `Operational` | 39,590 km | 6 submitted | 1 (Sliding door latch)| 1 (`Due Soon` Semi) | 3 repairs | 3 trips | 6 dispatch + 1 PM |
-| **Robert Canaman** | `SHA 1248` | `Operational` | 47,075 km | 0 *(Empty state)* | 0 *(Empty state)* | 2 (1 Done, 1 Up) | 1 repair | 2 trips | 4 dispatch alerts |
+| Driver | Vehicle | Status | Onboarded (`created_at`) | Odometer | Inspections | Damage Reports | PM Schedules | Repair Logs | Dispatches | Mobile Alerts |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Rowel Gamao** | `SHA 2625` | `Not Operational` | Sep 14, 09:30 / 08:30 | 58,400 km | 5 submitted | 1 (Tailgate latch) | 1 (`Due Soon` 60k) | 2 shared | 4 shared | 8 dispatch + 1 PM + 1 Not Op |
+| **Idelfonso Balloca** | `SHA 2625` | `Not Operational` | Sep 14, 09:15 / 08:30 | 58,400 km | 5 submitted | 1 (Clutch slipping) | 1 (`Due Soon` 60k) | 2 shared | 4 shared | 8 dispatch + 1 PM + 1 Not Op |
+| **Reynaldo Serrato** | `SHA 1247` | `Operational` | Sep 14, 10:00 / 08:45 | 39,590 km | 6 submitted | 1 (Sliding door latch)| 1 (`Due Soon` Semi) | 3 repairs | 3 trips | 6 dispatch + 1 PM |
+| **Robert Canaman** | `SHA 1248` | `Operational` | Sep 14, 10:15 / 09:00 | 47,075 km | 0 *(Empty state)* | 0 *(Empty state)* | 2 (1 Done, 1 Up) | 1 repair | 2 trips | 4 dispatch alerts |
 
 ### CDRRMO (City Disaster Risk Reduction and Management Office)
-| Driver | Vehicle | Status | Odometer | Inspections | Damage Reports | PM Schedules | Repair Logs | Dispatches | Mobile Alerts |
+| Driver / Category | Vehicle | Status | Odometer | Inspections | Damage Reports | PM Schedules | Repair Logs | Dispatches | Mobile Alerts |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Jonathan Dela Peña** | `CHO-4467` | `Operational` | 54,820 km | 5 submitted | 1 (Headlight) | 1 (`Due Soon` 55k) | 1 repair | 3 trips | 6 dispatch + 1 PM |
 | **Rolando Calbiga** | `SAB-5120` | `Operational` | 42,950 km | 5 submitted | 1 (Aux fan) | 2 (1 Done, 1 Up) | 1 repair | 3 trips | 6 dispatch + 1 Not Op + 1 Op |
+| **Reserve Fleet** | `SHA-2006` | `Operational` | 60,475 km | — | — | 1 (Done 60k) | 1 repair | 3 trips | 6 dispatch alerts |
+| **Reserve Fleet** | `AND-9023` | `Operational` | 64,950 km | — | — | 1 (`Due Soon` 65k)| 1 repair | 2 trips | 4 dispatch alerts + 1 PM |
+
+#### CDRRMO Master Seeder Orchestrator
+- **Command:** `php artisan rvms:seed-uat-cdrrmo {--fresh}`
+- **File:** `backend/app/Console/Commands/SeedUatCdrrmoCommand.php`
+- **Orchestration:** Calls `rvms:seed-cdrrmo-jonathan --fresh` $\rightarrow$ `rvms:seed-cdrrmo-calbiga` $\rightarrow$ `rvms:seed-cdrrmo-unassigned`.
+- **Status:** Complete & Verified.
 
 ---
 
@@ -163,34 +176,28 @@ In this session, we systematically audited, corrected, and synchronized the hist
 2. **Database Schemas:**
    - Table `inspection_items` has **NO `created_at` or `updated_at` timestamps**. Never insert timestamps into `inspection_items`.
    - Table `damage_reports` uses columns: `nature_of_damage`, `suspected_parts`, `date_reported`, `status`, `photo_path` (do not use `incident_date` or `description`).
-   - BLOWBAGETS checklist item name is `'Power Steering'`, **NOT `'Steering'`**.
+   - BLOWBAGETS checklist item name is `'Power Steering'`, **NOT `'Steering'`.**
 3. **`VehicleStatusWriter` Notification Format:**
    - Title: `'Vehicle Status Updated'`
    - Message: `'{Plate} is now {Status}.'`
    - Data payload: `json_encode(['plate' => ..., 'vehicle_id' => ..., 'from_status' => ..., 'to_status' => ..., 'source' => ...])`
    - Notice: Never use `'from'` or `'to'` as top-level keys in notification data because Firebase Cloud Messaging (FCM) reserves `'from'` and returns a 400 error.
+4. **Agency Scope Clarification:**
+   - **GSO (General Services Office):** NOT a client agency in the system. GSO was an interview subject used to ground repair/maintenance workflows and job orders.
+   - **Active Client Agencies:** CHO, CDRRMO, BFP, and PNP.
 
 ---
 
-## 6. Git Commits in this Session
+## 6. Next Steps: BFP & PNP Realistic UAT Seeding
 
-The following commits were pushed to `origin/main` on `https://github.com/tormis-neil/rvms-capstone.git`:
-- `19a2c9a` — `feat(seed): add dispatch status alerts and standardize Not Operational alert for Balloca on SHA 2625`
-- `95f4697` — `feat(seed): add dispatch status alerts and standardize Not Operational alert for Gamao on SHA 2625`
-- `a2c5e8b` — `feat(seed): add dispatch status alerts for Serrato on SHA 1247`
-- `2d6c030` — `feat(seed): tailor Canaman for web-admin dispatch UAT profile with 0 mobile inspections and 4 dispatch status alerts`
-- `7571ac0` — `feat(seed): refactor SeedUatChoCommand to orchestrate all 4 driver seeders for 100% data parity`
+Now that CHO and CDRRMO historical UAT seeding and orchestration are 100% complete:
+1. **BFP (Bureau of Fire Protection):**
+   - Identify BFP vehicles (fire trucks, rescue vans) and active drivers.
+   - Create driver-specific seeders following Rules 1–10 (odometer calibration, BLOWBAGETS, authentic Waray `"sa/san"`, GSO/external repairs, null dummy attachments, dispatch departure/return notifications).
+   - Create `SeedUatBfpCommand.php` orchestrator with `--fresh`.
+2. **PNP (Philippine National Police):**
+   - Identify PNP patrol vehicles and drivers.
+   - Implement driver and fleet seeders adhering to Rules 1–10.
+   - Create `SeedUatPnpCommand.php` orchestrator with `--fresh`.
+3. **End-to-End Container Run:** Execute master seeders on the live Railway container and verify presentation across Web Admin and Mobile handoff screens.
 
-### Untracked Files Intentionally Kept Clean:
-- `skills/historical-data-seeding-rules.md` (Updated locally, untracked)
-- `CONVERSATION_HANDOFF_UAT_SEEDING.md` (This handoff document, untracked)
-- `CalbayogGO-1.docx`, `FINAL-MANUSCRIPT-PathFinder-Mobile-Based-3D-navigation.pdf`, `Lesson-2.-Requirements-Modelling-Data-Flow-Diagram.pdf`, `RVMS_Capstone_Handoff.md`, `rvms-capstone (2).pdf`
-
----
-
-## 7. Recommended Next Steps for the New Chat
-
-When opening the new chat, paste or reference this document (`CONVERSATION_HANDOFF_UAT_SEEDING.md`). The recommended next focus areas are:
-1. **CDRRMO Master Seeder Alignment:** Check if there is a master CDRRMO seeder (e.g. `SeedUatCdrrmoCommand.php` or similar) that should be refactored to orchestrate `SeedCdrrmoJonathanCommand` and `SeedCdrrmoCalbigaCommand` similarly to CHO.
-2. **Other Municipal Agencies:** Review if other departments (e.g., GSO, Mayor's Office, BFP/Traffic) require historical UAT seeding under Rules 1–10.
-3. **End-to-End Container Run:** Execute `php artisan rvms:seed-uat-cho --fresh` and CDRRMO seeders on the live Railway container and verify UI presentation across Web Admin and Mobile handoff screens.

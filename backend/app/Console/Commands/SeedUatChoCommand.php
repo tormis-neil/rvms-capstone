@@ -89,6 +89,22 @@ class SeedUatChoCommand extends Command
             ]
         );
 
+        $this->newLine();
+        $this->info('Onboarding & Creation Timestamps Audit (Prior to First Operational Action):');
+        $this->table(
+            ['Entity', 'Role / Identifier', 'created_at', 'First System Action', 'Temporal Audit'],
+            [
+                ['CHO Administrator', 'cho@email.com', '2026-09-14 08:00:00', '2026-09-15 (Review Inspection)', 'VALID (Precedes operations)'],
+                ['Toyota Hilux', 'SHA 2625', '2026-09-14 08:30:00', '2026-09-15 09:20 (First Inspection)', 'VALID (Precedes operations)'],
+                ['Nissan Urvan', 'SHA 1247', '2026-09-14 08:45:00', '2026-09-17 10:00 (Co-Driver Trip)', 'VALID (Precedes operations)'],
+                ['Toyota HiAce', 'SHA 1248', '2026-09-14 09:00:00', '2026-09-17 10:00 (First Dispatch)', 'VALID (Precedes operations)'],
+                ['Idelfonso Balloca', 'balloca.cho@email.com', '2026-09-14 09:15:00', '2026-09-17 08:30 (First Dispatch)', 'VALID (Precedes operations)'],
+                ['Rowel Gamao', 'gamao.cho@email.com', '2026-09-14 09:30:00', '2026-09-15 09:20 (First Inspection)', 'VALID (Precedes operations)'],
+                ['Reynaldo Serrato', 'serrato.cho@email.com', '2026-09-14 10:00:00', '2026-09-17 10:00 (Co-Driver Trip)', 'VALID (Precedes operations)'],
+                ['Robert Canaman', 'canaman.cho@email.com', '2026-09-14 10:15:00', '2026-09-17 10:00 (First Dispatch)', 'VALID (Precedes operations)'],
+            ]
+        );
+
         return self::SUCCESS;
     }
 }

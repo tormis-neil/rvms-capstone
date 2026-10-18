@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\DB;
  */
 class SeedCdrrmoJonathanCommand extends Command
 {
-    protected $signature = 'rvms:seed-cdrrmo-jonathan';
+    protected $signature = 'rvms:seed-cdrrmo-jonathan {--fresh : Wipe previously seeded CDRRMO UAT data before seeding}';
 
     protected $description = 'Seed authentic historical UAT records for Jonathan Dela Peña & CHO-4467 (Patient Transport Vehicle)';
 
@@ -76,60 +76,87 @@ class SeedCdrrmoJonathanCommand extends Command
             return self::FAILURE;
         }
 
-        $this->info('Cleaning up existing Jonathan-authored logs on CHO-4467 to ensure idempotency...');
+        if ($this->option('fresh')) {
+            $this->info('Cleaning up all CDRRMO operational history (inspections, damages, repairs, PMs, dispatches, notifications)...');
+            $this->info('Preserving all user accounts and vehicle records.');
 
-        // Clear Jonathan's inspections
-        $jonathanInspIds = DB::table('inspections')
-            ->where('agency_id', $agency->id)
-            ->where('vehicle_id', $v4467->id)
-            ->where('driver_id', $delaPena->id)
-            ->pluck('id');
+            // Delete all inspection items and inspections for CDRRMO
+            $cdrrmoInspIds = DB::table('inspections')->where('agency_id', $agency->id)->pluck('id');
+            DB::table('inspection_items')->whereIn('inspection_id', $cdrrmoInspIds)->delete();
+            DB::table('inspections')->where('agency_id', $agency->id)->delete();
 
-        DB::table('inspection_items')->whereIn('inspection_id', $jonathanInspIds)->delete();
-        DB::table('inspections')->whereIn('id', $jonathanInspIds)->delete();
+            // Delete all damage reports for CDRRMO
+            DB::table('damage_reports')->where('agency_id', $agency->id)->delete();
 
-        // Clear Jonathan's damage reports
-        DB::table('damage_reports')
-            ->where('agency_id', $agency->id)
-            ->where('vehicle_id', $v4467->id)
-            ->where('driver_id', $delaPena->id)
-            ->delete();
+            // Delete all repair logs for CDRRMO
+            DB::table('repair_logs')->where('agency_id', $agency->id)->delete();
 
-        // Clear previous dispatches authored by Jonathan
-        DB::table('dispatches')
-            ->where('agency_id', $agency->id)
-            ->where('vehicle_id', $v4467->id)
-            ->where('driver_id', $delaPena->id)
-            ->delete();
+            // Delete all PM schedules for CDRRMO
+            DB::table('pm_schedules')->where('agency_id', $agency->id)->delete();
 
-        // Clear previous PM schedules & repair logs on CHO-4467
-        DB::table('repair_logs')
-            ->where('agency_id', $agency->id)
-            ->where('vehicle_id', $v4467->id)
-            ->delete();
+            // Delete all dispatches for CDRRMO
+            DB::table('dispatches')->where('agency_id', $agency->id)->delete();
 
-        DB::table('pm_schedules')
-            ->where('agency_id', $agency->id)
-            ->where('vehicle_id', $v4467->id)
-            ->delete();
+            // Delete all notifications for CDRRMO
+            DB::table('notifications')->where('agency_id', $agency->id)->delete();
 
-        // Clear Jonathan notifications & admin alerts regarding Jonathan / CHO-4467
-        DB::table('notifications')
-            ->where('agency_id', $agency->id)
-            ->where('user_id', $delaPena->id)
-            ->delete();
+            $this->info('All previous CDRRMO operational logs cleared. Ready to seed only Jonathan data.');
+        } else {
+            $this->info('Cleaning up existing Jonathan-authored logs on CHO-4467 to ensure idempotency...');
 
-        DB::table('notifications')
-            ->where('agency_id', $agency->id)
-            ->where('user_id', $admin->id)
-            ->where(function ($q) use ($v4467) {
-                $q->where('data', 'like', '%CHO-4467%')
-                  ->orWhere('data', 'like', '%CHO 4467%')
-                  ->orWhere('data', 'like', '%Jonathan Dela Peña%')
-                  ->orWhere('message', 'like', '%CHO-4467%')
-                  ->orWhere('message', 'like', '%CHO 4467%');
-            })
-            ->delete();
+            // Clear Jonathan's inspections
+            $jonathanInspIds = DB::table('inspections')
+                ->where('agency_id', $agency->id)
+                ->where('vehicle_id', $v4467->id)
+                ->where('driver_id', $delaPena->id)
+                ->pluck('id');
+
+            DB::table('inspection_items')->whereIn('inspection_id', $jonathanInspIds)->delete();
+            DB::table('inspections')->whereIn('id', $jonathanInspIds)->delete();
+
+            // Clear Jonathan's damage reports
+            DB::table('damage_reports')
+                ->where('agency_id', $agency->id)
+                ->where('vehicle_id', $v4467->id)
+                ->where('driver_id', $delaPena->id)
+                ->delete();
+
+            // Clear previous dispatches authored by Jonathan
+            DB::table('dispatches')
+                ->where('agency_id', $agency->id)
+                ->where('vehicle_id', $v4467->id)
+                ->where('driver_id', $delaPena->id)
+                ->delete();
+
+            // Clear previous PM schedules & repair logs on CHO-4467
+            DB::table('repair_logs')
+                ->where('agency_id', $agency->id)
+                ->where('vehicle_id', $v4467->id)
+                ->delete();
+
+            DB::table('pm_schedules')
+                ->where('agency_id', $agency->id)
+                ->where('vehicle_id', $v4467->id)
+                ->delete();
+
+            // Clear Jonathan notifications & admin alerts regarding Jonathan / CHO-4467
+            DB::table('notifications')
+                ->where('agency_id', $agency->id)
+                ->where('user_id', $delaPena->id)
+                ->delete();
+
+            DB::table('notifications')
+                ->where('agency_id', $agency->id)
+                ->where('user_id', $admin->id)
+                ->where(function ($q) use ($v4467) {
+                    $q->where('data', 'like', '%CHO-4467%')
+                      ->orWhere('data', 'like', '%CHO 4467%')
+                      ->orWhere('data', 'like', '%Jonathan Dela Peña%')
+                      ->orWhere('message', 'like', '%CHO-4467%')
+                      ->orWhere('message', 'like', '%CHO 4467%');
+                })
+                ->delete();
+        }
 
         DB::transaction(function () use ($agency, $admin, $v4467, $delaPena, $mabini, $checklists) {
 

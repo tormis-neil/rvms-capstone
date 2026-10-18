@@ -113,6 +113,22 @@ class SeedChoSerratoCommand extends Command
 
         DB::transaction(function () use ($agency, $admin, $v1247, $serrato, $checklists) {
             // -------------------------------------------------------------
+            // 0. ACCOUNT & VEHICLE CREATION TIMESTAMPS
+            // Ensure accounts and vehicle exist prior to first operational submission (Sep 17/29, 2026)
+            // -------------------------------------------------------------
+            DB::table('users')->where('id', $admin->id)->update([
+                'created_at' => '2026-09-14 08:00:00',
+            ]);
+
+            DB::table('users')->where('id', $serrato->id)->update([
+                'created_at' => '2026-09-14 10:00:00',
+            ]);
+
+            DB::table('vehicles')->where('id', $v1247->id)->update([
+                'created_at' => '2026-09-14 08:45:00',
+            ]);
+
+            // -------------------------------------------------------------
             // 1. REPAIR LOGS (3 Distinct Historical Repairs: Jan to Aug 2026)
             // -------------------------------------------------------------
             $this->info('1. Seeding 3 historical repair logs for SHA 1247 (Jan - Aug 2026)...');

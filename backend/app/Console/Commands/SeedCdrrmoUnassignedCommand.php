@@ -8,6 +8,7 @@ use App\Models\PmSchedule;
 use App\Models\RepairLog;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\VehicleStatusWriter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -96,10 +97,9 @@ class SeedCdrrmoUnassignedCommand extends Command
             ->whereIn('vehicle_id', $vehicleIds)
             ->delete();
 
-        // Clear previous admin PM notifications for these two vehicles
+        // Clear previous notifications for these two vehicles
         DB::table('notifications')
             ->where('agency_id', $agency->id)
-            ->where('user_id', $admin->id)
             ->where(function ($q) {
                 $q->where('message', 'like', '%SHA-2006%')
                   ->orWhere('message', 'like', '%SHA 2006%')
@@ -223,6 +223,50 @@ class SeedCdrrmoUnassignedCommand extends Command
                     'created_at' => "{$dsp['date']} {$dsp['time_out']}",
                     'updated_at' => "{$dsp['date']} {$dsp['time_in']}",
                 ]);
+
+                // Rule 10: Dispatch Departure & Return Mobile Status Updates for driver(s)
+                $assignedDrivers = array_filter([$dsp['driver_id'], $dsp['second_driver_id']]);
+                foreach ($assignedDrivers as $driverUid) {
+                    // Departure: Dispatched
+                    DB::table('notifications')->insert([
+                        'agency_id' => $agency->id,
+                        'user_id' => $driverUid,
+                        'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                        'title' => 'Vehicle Status Updated',
+                        'message' => 'SHA-2006 is now Dispatched.',
+                        'data' => json_encode([
+                            'plate' => 'SHA-2006',
+                            'vehicle_id' => $v2006->id,
+                            'from_status' => Vehicle::STATUS_OPERATIONAL,
+                            'to_status' => Vehicle::STATUS_DISPATCHED,
+                            'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                        ]),
+                        'is_read' => 0,
+                        'read_at' => null,
+                        'created_at' => "{$dsp['date']} {$dsp['time_out']}",
+                        'updated_at' => "{$dsp['date']} {$dsp['time_out']}",
+                    ]);
+
+                    // Return: Operational
+                    DB::table('notifications')->insert([
+                        'agency_id' => $agency->id,
+                        'user_id' => $driverUid,
+                        'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                        'title' => 'Vehicle Status Updated',
+                        'message' => 'SHA-2006 is now Operational.',
+                        'data' => json_encode([
+                            'plate' => 'SHA-2006',
+                            'vehicle_id' => $v2006->id,
+                            'from_status' => Vehicle::STATUS_DISPATCHED,
+                            'to_status' => Vehicle::STATUS_OPERATIONAL,
+                            'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                        ]),
+                        'is_read' => 0,
+                        'read_at' => null,
+                        'created_at' => "{$dsp['date']} {$dsp['time_in']}",
+                        'updated_at' => "{$dsp['date']} {$dsp['time_in']}",
+                    ]);
+                }
             }
 
             // =============================================================
@@ -341,6 +385,50 @@ class SeedCdrrmoUnassignedCommand extends Command
                     'created_at' => "{$dsp['date']} {$dsp['time_out']}",
                     'updated_at' => "{$dsp['date']} {$dsp['time_in']}",
                 ]);
+
+                // Rule 10: Dispatch Departure & Return Mobile Status Updates for driver(s)
+                $assignedDrivers = array_filter([$dsp['driver_id'], $dsp['second_driver_id']]);
+                foreach ($assignedDrivers as $driverUid) {
+                    // Departure: Dispatched
+                    DB::table('notifications')->insert([
+                        'agency_id' => $agency->id,
+                        'user_id' => $driverUid,
+                        'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                        'title' => 'Vehicle Status Updated',
+                        'message' => 'AND-9023 is now Dispatched.',
+                        'data' => json_encode([
+                            'plate' => 'AND-9023',
+                            'vehicle_id' => $v9023->id,
+                            'from_status' => Vehicle::STATUS_OPERATIONAL,
+                            'to_status' => Vehicle::STATUS_DISPATCHED,
+                            'source' => VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                        ]),
+                        'is_read' => 0,
+                        'read_at' => null,
+                        'created_at' => "{$dsp['date']} {$dsp['time_out']}",
+                        'updated_at' => "{$dsp['date']} {$dsp['time_out']}",
+                    ]);
+
+                    // Return: Operational
+                    DB::table('notifications')->insert([
+                        'agency_id' => $agency->id,
+                        'user_id' => $driverUid,
+                        'type' => Notification::TYPE_VEHICLE_STATUS_UPDATE,
+                        'title' => 'Vehicle Status Updated',
+                        'message' => 'AND-9023 is now Operational.',
+                        'data' => json_encode([
+                            'plate' => 'AND-9023',
+                            'vehicle_id' => $v9023->id,
+                            'from_status' => Vehicle::STATUS_DISPATCHED,
+                            'to_status' => Vehicle::STATUS_OPERATIONAL,
+                            'source' => VehicleStatusWriter::SOURCE_DISPATCH_CLOSE,
+                        ]),
+                        'is_read' => 0,
+                        'read_at' => null,
+                        'created_at' => "{$dsp['date']} {$dsp['time_in']}",
+                        'updated_at' => "{$dsp['date']} {$dsp['time_in']}",
+                    ]);
+                }
             }
         });
 
@@ -354,6 +442,12 @@ class SeedCdrrmoUnassignedCommand extends Command
                 ['Dispatches (SHA-2006)', DB::table('dispatches')->where('vehicle_id', $v2006->id)->count()],
                 ['Dispatches (AND-9023)', DB::table('dispatches')->where('vehicle_id', $v9023->id)->count()],
                 ['Admin PM Alerts', DB::table('notifications')->where('agency_id', $agency->id)->where('user_id', $admin->id)->where('type', Notification::TYPE_PM_DUE_SOON)->count()],
+                ['Total Notifications (SHA-2006 & AND-9023)', DB::table('notifications')->where('agency_id', $agency->id)->where(function ($q) {
+                    $q->where('message', 'like', '%SHA-2006%')
+                      ->orWhere('message', 'like', '%SHA 2006%')
+                      ->orWhere('message', 'like', '%AND-9023%')
+                      ->orWhere('message', 'like', '%AND 9023%');
+                })->count()],
             ]
         );
 

@@ -97,6 +97,22 @@ class SeedChoGamaoCommand extends Command
 
         DB::transaction(function () use ($agency, $admin, $v2625, $gamao, $checklists, $pmId) {
             // -------------------------------------------------------------
+            // 0. ACCOUNT & VEHICLE CREATION TIMESTAMPS
+            // Ensure accounts and vehicle exist prior to first operational submission (Sep 15, 2026)
+            // -------------------------------------------------------------
+            DB::table('users')->where('id', $admin->id)->update([
+                'created_at' => '2026-09-14 08:00:00',
+            ]);
+
+            DB::table('users')->where('id', $gamao->id)->update([
+                'created_at' => '2026-09-14 09:30:00',
+            ]);
+
+            DB::table('vehicles')->where('id', $v2625->id)->update([
+                'created_at' => '2026-09-14 08:30:00',
+            ]);
+
+            // -------------------------------------------------------------
             // 1. DAILY BLOWBAGETS INSPECTIONS (Submitted by Rowel Gamao)
             // Alternating shift dates with Balloca: Sep 15, Sep 21, Sep 28, Oct 05, Oct 09
             // Language: Waray-waray using "sa" (not "ha")

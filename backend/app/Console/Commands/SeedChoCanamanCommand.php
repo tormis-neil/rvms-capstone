@@ -113,6 +113,22 @@ class SeedChoCanamanCommand extends Command
 
         DB::transaction(function () use ($agency, $admin, $v1248, $canaman, $serrato) {
             // -------------------------------------------------------------
+            // 0. ACCOUNT & VEHICLE CREATION TIMESTAMPS
+            // Ensure accounts and vehicle exist prior to first operational submission (Sep 17, 2026)
+            // -------------------------------------------------------------
+            DB::table('users')->where('id', $admin->id)->update([
+                'created_at' => '2026-09-14 08:00:00',
+            ]);
+
+            DB::table('users')->where('id', $canaman->id)->update([
+                'created_at' => '2026-09-14 10:15:00',
+            ]);
+
+            DB::table('vehicles')->where('id', $v1248->id)->update([
+                'created_at' => '2026-09-14 09:00:00',
+            ]);
+
+            // -------------------------------------------------------------
             // 1. REPAIR LOG (1 Historical Repair: Apr 22, 2026, No Document)
             // -------------------------------------------------------------
             $this->info('1. Seeding 1 historical repair log for SHA 1248 (GSO Motorpool)...');
