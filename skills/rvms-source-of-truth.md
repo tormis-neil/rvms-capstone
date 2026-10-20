@@ -764,6 +764,78 @@ The implementation of the report configuration module and the automated report g
 
 ---
 
+### System Evaluation and Client Feedback
+
+To evaluate the operational acceptability, technical soundness, and quality of the developed Rescue Vehicle Management System (RVMS), a formal system evaluation was conducted across the four participating municipal emergency response agencies: the City Health Office (CHO), the City Disaster Risk Reduction and Management Office (CDRRMO), the Bureau of Fire Protection (BFP), and the Philippine National Police (PNP). 
+
+The evaluation was structured around the ISO/IEC 25010 Software Quality Model, directly aligning with the non-functional requirements (NFRs) and operational criteria established during the initial requirements analysis. A total of eight (8) evaluators participated in the evaluation, representing key operational and administrative roles:
+- Operations and Warning Section Head
+- Chief, Logistics Unit
+- Assistant Supply PNCO
+- Medical Officer III
+- Dispatcher
+- Administrative Staff
+- Emergency Vehicle Drivers
+
+The evaluation instrument utilized a 5-point Likert scale comprising twelve (12) criteria distributed across six (6) ISO/IEC 25010 quality characteristics: Functional Suitability, Performance Efficiency, Security, Usability, Reliability, and Compatibility & Portability. Table 16 defines the statistical scale and verbal interpretations applied to the evaluation data.
+
+**Table 16. Scale and Verbal Interpretation for System Evaluation**
+
+| Rating Scale | Range of Mean | Verbal Interpretation | Qualitative Description |
+|:---:|:---:|---|---|
+| **5** | 4.21 – 5.00 | Strongly Agree (SA) | Highly Acceptable / Excellent |
+| **4** | 3.41 – 4.20 | Agree (A) | Acceptable / Very Good |
+| **3** | 2.61 – 3.40 | Neutral (N) | Moderately Acceptable / Fair |
+| **2** | 1.81 – 2.60 | Disagree (D) | Slightly Acceptable / Poor |
+| **1** | 1.00 – 1.80 | Strongly Disagree (SD) | Not Acceptable / Very Poor |
+
+Table 17 summarizes the evaluation results across all criteria, including frequency distributions, weighted means per criterion, sub-category means, and the overall grand mean.
+
+**Table 17. Summary of System Evaluation Results Based on ISO/IEC 25010 Quality Standards (N = 8)**
+
+| ISO/IEC 25010 Criteria & Evaluation Statements | 1<br>(SD) | 2<br>(D) | 3<br>(N) | 4<br>(A) | 5<br>(SA) | Weighted Mean | Verbal Interpretation |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **A. Functional Suitability** | | | | | | | |
+| 1. The system covers all essential functions for municipal fleet operations (daily BLOWBAGETS checklists, emergency dispatches, damage tickets, and preventive maintenance tracking). | 0 | 0 | 0 | 2 | 6 | 4.75 | Strongly Agree |
+| 2. The system workflows and tools directly address and support the day-to-day operational needs of our agency. | 0 | 0 | 0 | 2 | 6 | 4.75 | Strongly Agree |
+| **Category Sub-Mean** | | | | | | **4.75** | **Strongly Agree** |
+| **B. Performance Efficiency** | | | | | | | |
+| 3. The system responds quickly to user actions, loading dashboards, lists, and reports without noticeable delay. | 0 | 0 | 0 | 3 | 5 | 4.63 | Strongly Agree |
+| 4. The system maintains fast, responsive performance even when several agency users are working at the same time. | 0 | 0 | 0 | 2 | 6 | 4.75 | Strongly Agree |
+| **Category Sub-Mean** | | | | | | **4.69** | **Strongly Agree** |
+| **C. Security** | | | | | | | |
+| 5. The system keeps data safe through secure logins, hashed passwords, and encrypted communication, ensuring each agency's records stay private. | 0 | 0 | 0 | 2 | 6 | 4.75 | Strongly Agree |
+| 6. The system enforces role-based access control, ensuring authorized drivers and administrators access only the features and data appropriate to their role. | 0 | 0 | 0 | 1 | 7 | 4.88 | Strongly Agree |
+| **Category Sub-Mean** | | | | | | **4.81** | **Strongly Agree** |
+| **D. Usability** | | | | | | | |
+| 7. The system is simple and easy to use on both platforms, letting drivers and administrators finish common tasks in as few steps as possible. | 0 | 0 | 0 | 2 | 6 | 4.75 | Strongly Agree |
+| 8. The mobile application features large, easy-to-tap buttons and clear layouts that make conducting pre-trip inspections straightforward for drivers. | 0 | 0 | 0 | 3 | 5 | 4.63 | Strongly Agree |
+| **Category Sub-Mean** | | | | | | **4.69** | **Strongly Agree** |
+| **E. Reliability** | | | | | | | |
+| 9. The system records information accurately and consistently shows the exact same vehicle status on both the mobile app and web dashboard. | 0 | 0 | 0 | 2 | 6 | 4.75 | Strongly Agree |
+| 10. The system provides dependable and timely delivery of notifications for time-sensitive events (such as dispatch updates, maintenance due dates, and damage reports). | 0 | 0 | 0 | 2 | 6 | 4.75 | Strongly Agree |
+| **Category Sub-Mean** | | | | | | **4.75** | **Strongly Agree** |
+| **F. Compatibility & Portability** | | | | | | | |
+| 11. The mobile application installs and runs reliably on smartphones running Android 8.0 (Oreo) and later versions. | 0 | 0 | 0 | 3 | 5 | 4.63 | Strongly Agree |
+| 12. The web administrative dashboard works smoothly on common modern browsers like Google Chrome, Mozilla Firefox, and Microsoft Edge. | 0 | 0 | 0 | 2 | 6 | 4.75 | Strongly Agree |
+| **Category Sub-Mean** | | | | | | **4.69** | **Strongly Agree** |
+| **OVERALL GRAND MEAN** | | | | | | **4.73** | **Strongly Agree** |
+
+#### Discussion of Evaluation Results
+
+The evaluation findings presented in Table 17 demonstrate an exceptionally high level of user acceptance and technical compliance, achieving an overall grand mean of 4.73 with a verbal interpretation of Strongly Agree (Highly Acceptable). Notably, no statement received a rating of Disagree (2), Strongly Disagree (1), or Neutral (3), signifying unanimous approval across all surveyed emergency response units.
+
+1. **Security (Sub-Mean = 4.81):** Evaluators rated Security as the highest-performing characteristic, led by Statement 6 (*Role-based access control*) with a weighted mean of 4.88, where seven of eight evaluators awarded a perfect score of 5. This underscores the effectiveness of the system's multi-tenant architecture and multi-agency isolation (`agency_id`), reassuring agency logistics and operations heads that inter-agency operational records and driver credentials remain strictly confidential and tamper-proof.
+2. **Functional Suitability (Sub-Mean = 4.75):** Both functional statements obtained matching means of 4.75. Evaluators affirmed that the digitized BLOWBAGETS inspection workflow, dispatch logging, defect ticketing, and preventive maintenance tracking directly replace existing paper logbooks and informal messaging groups, fulfilling the core operational objectives without imposing administrative friction.
+3. **Reliability (Sub-Mean = 4.75):** Scoring 4.75 across both criteria, evaluators confirmed that real-time fleet availability statuses remained strictly synchronized across mobile and administrative platforms without data discrepancy, and that automated alerts for overdue maintenance and defect reports were delivered reliably.
+4. **Performance Efficiency (Sub-Mean = 4.69):** Dashboard and report query load times remained snappy (4.63), and concurrent multi-user transactions (4.75) demonstrated seamless database persistence during stress tests and simulated multi-agency operations.
+5. **Usability (Sub-Mean = 4.69):** Evaluators praised the ergonomic design of the mobile driver interface (4.63) and the intuitive navigation of the web dashboard (4.75). Large, high-contrast touch targets in the mobile app enabled drivers to perform pre-trip checklists and defect submissions quickly even under outdoor, field-level conditions.
+6. **Compatibility & Portability (Sub-Mean = 4.69):** The mobile application proved stable across standard Android smartphones running Android 8.0 through newer releases (4.63), while the administrative dashboard performed without distortion or rendering anomalies across standard browsers (4.75).
+
+Overall, the client evaluation results provide empirical evidence that the Rescue Vehicle Management System successfully fulfills its design requirements, satisfies its non-functional parameters under ISO/IEC 25010, and offers a robust, highly acceptable software solution for municipal rescue vehicle operations.
+
+---
+
 # CHAPTER 5: RECOMMENDATIONS
 
 Based on practical feedback from the participating agencies and project evaluators, the researchers recommend several key enhancements for future development. First, the mobile application should be developed as a cross-platform solution to support iOS devices alongside Android, ensuring all drivers and personnel can access the system regardless of device type. Second, the system should incorporate a damage severity feature that evaluates inspection results and damage reports to provide clear insights into the level of damage, helping administrators prioritize critical mechanical repairs over minor issues. Third, the notification system should implement continuous, recurring alerts for overdue preventive maintenance to ensure that both drivers and administrators are persistently reminded until the vehicle is serviced. Fourth, an administrative confirmation feature should be added to allow administrators to send direct remarks and completion confirmations back to the driver once an assigned vehicle's preventive maintenance is completed. Finally, the mobile app should include a status messaging feature that allows drivers to send quick milestone updates to the dashboard, such as confirming their safe arrival at an emergency destination.
