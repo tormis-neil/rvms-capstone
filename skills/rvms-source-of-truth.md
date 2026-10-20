@@ -238,17 +238,17 @@ Figure 3 presents the context diagram of the Rescue Vehicle Management System. T
 
 #### Data Flow Diagram
 
-The Data Flow Diagram (DFD) of the Rescue Vehicle Management System illustrates the logical movement of data between external entities, system processes, and data stores. To maintain readability while clearly representing the operations of the two system users, the DFD is presented through two entity-oriented views using the Gane and Sarson notation: Figure 4 for Authorized Driver Operations and Figure 4.1 for Agency Administrator Operations. Together, these two diagrams detail the internal mechanics and data persistence of the system while balancing the twenty data flows established in the context diagram.
+The Data Flow Diagram (DFD) of the Rescue Vehicle Management System illustrates the logical movement of data between external entities, system processes, and data stores. To maintain readability while clearly representing the operations of the two system users, the DFD is presented through two entity-oriented views using the Gane and Sarson notation: Figure 4.1 for Authorized Driver Operations and Figure 4.2 for Agency Administrator Operations. Together, these two diagrams detail the internal mechanics and data persistence of the system while balancing the twenty data flows established in the context diagram.
 
-**Figure 4. Data Flow Diagram: Authorized Driver Operations**  
-*(See Figure 4 in manuscript.)*
-
-Figure 4 illustrates the Authorized Driver Operations view of the Data Flow Diagram, showing how the mobile application interacts with five system processes and six data stores. Through the Login Credentials, Registration Details, and Profile Update flows, the Authorized Driver sends account data to Manage User Account (1), which validates and updates the Account Record in D1 Users. Manage Vehicle Record (2) reads the Driver Record from D1 Users and the Vehicle Record from D2 Vehicles to return the Assigned Vehicle Information to the driver's mobile screen. For daily safety checks, the driver submits the BLOWBAGETS Inspection to Manage Inspection (3), which saves the Inspection Record into D3 Inspections. When a vehicle defect or incident occurs, the driver submits a Damage Report to Manage Vehicle Damage (4), storing the Damage Record into D4 Damage Reports. Finally, Send Notification (8) checks the Vehicle Status in D2 Vehicles and upcoming maintenance in D6 PM Schedules, records the Notification Record in D8 Notifications, and delivers the Notification alert directly to the driver's mobile device. All administrative operations and remaining data stores are presented in Figure 4.1.
-
-**Figure 4.1. Data Flow Diagram: Agency Administrator Operations**  
+**Figure 4.1. Data Flow Diagram: Authorized Driver Operations**  
 *(See Figure 4.1 in manuscript.)*
 
-Figure 4.1 illustrates the Agency Administrator Operations view of the Data Flow Diagram, detailing how the web dashboard connects administrative workflows across all eight system processes and eight data stores. Through the Login Credentials and Account Detail flows, the Agency Administrator interacts with Manage User Account (1) to sign in and record user profiles in D1 Users. Through Manage Vehicle Record (2), the administrator exchanges Vehicle Record and Driver Record data with D1 Users and D2 Vehicles to update fleet profiles, receiving the real-time Monitoring Status flow for vehicle readiness and license expiry alerts. Manage Inspection (3) reads saved checklists from D3 Inspections and provides the Driver Report for admin review. When vehicle issues arise, the administrator assesses damage through Damage Review and records repairs through Repair Record under Manage Vehicle Damage (4), updating D4 Damage Reports, D5 Repair Logs, and the vehicle availability status in D2 Vehicles. In maintenance operations, the administrator submits the PM Record to Manage Preventive Maintenance (5), which tracks scheduled servicing against Current Mileage from D2 Vehicles and updates D6 PM Schedules. Manage Dispatch (6) receives the Dispatch Record to deploy and return rescue vehicles, storing trip logs in D7 Dispatches while automatically updating the vehicle status in D2 Vehicles. To support reporting, the administrator applies a Report Filter to Generate Report (7), which gathers summary records across operational tables to output the Dashboard Summary and printable Generated Report. Lastly, Send Notification (8) logs alerts in D8 Notifications and sends in-app Notifications to the administrator for pending registrations, inspection defects, and due maintenance. Together, Figure 4 and Figure 4.1 fully account for all twenty data flows established in the context diagram.
+Figure 4.1 illustrates the Authorized Driver Operations view of the Data Flow Diagram, showing how the mobile application interacts with five system processes and six data stores. Through the Login Credentials, Registration Details, and Profile Update flows, the Authorized Driver sends account data to Manage User Account (1), which validates and updates the Account Record in D1 Users. Manage Vehicle Record (2) reads the Driver Record from D1 Users and the Vehicle Record from D2 Vehicles to return the Assigned Vehicle Information to the driver's mobile screen. For daily safety checks, the driver submits the BLOWBAGETS Inspection to Manage Inspection (3), which saves the Inspection Record into D3 Inspections. When a vehicle defect or incident occurs, the driver submits a Damage Report to Manage Vehicle Damage (4), storing the Damage Record into D4 Damage Reports. Finally, Send Notification (8) checks the Vehicle Status in D2 Vehicles and upcoming maintenance in D6 PM Schedules, records the Notification Record in D8 Notifications, and delivers the Notification alert directly to the driver's mobile device. All administrative operations and remaining data stores are presented in Figure 4.2.
+
+**Figure 4.2. Data Flow Diagram: Agency Administrator Operations**  
+*(See Figure 4.2 in manuscript.)*
+
+Figure 4.2 illustrates the Agency Administrator Operations view of the Data Flow Diagram, detailing how the web dashboard connects administrative workflows across all eight system processes and eight data stores. Through the Login Credentials and Account Detail flows, the Agency Administrator interacts with Manage User Account (1) to sign in and record user profiles in D1 Users. Through Manage Vehicle Record (2), the administrator exchanges Vehicle Record and Driver Record data with D1 Users and D2 Vehicles to update fleet profiles, receiving the real-time Monitoring Status flow for vehicle readiness and license expiry alerts. Manage Inspection (3) reads saved checklists from D3 Inspections and provides the Driver Report for admin review. When vehicle issues arise, the administrator assesses damage through Damage Review and records repairs through Repair Record under Manage Vehicle Damage (4), updating D4 Damage Reports, D5 Repair Logs, and the vehicle availability status in D2 Vehicles. In maintenance operations, the administrator submits the PM Record to Manage Preventive Maintenance (5), which tracks scheduled servicing against Current Mileage from D2 Vehicles and updates D6 PM Schedules. Manage Dispatch (6) receives the Dispatch Record to deploy and return rescue vehicles, storing trip logs in D7 Dispatches while automatically updating the vehicle status in D2 Vehicles. To support reporting, the administrator applies a Report Filter to Generate Report (7), which gathers summary records across operational tables to output the Dashboard Summary and printable Generated Report. Lastly, Send Notification (8) logs alerts in D8 Notifications and sends in-app Notifications to the administrator for pending registrations, inspection defects, and due maintenance. Together, Figure 4.1 and Figure 4.2 fully account for all twenty data flows established in the context diagram.
 
 #### Functional Decomposition Diagram
 
@@ -263,17 +263,17 @@ Figure 5 presents the Functional Decomposition Diagram of the Rescue Vehicle Man
 
 ##### Entity Relationship Diagram
 
-An Entity Relationship Diagram (ERD) is a graphical representation of the database entities and their relationships, illustrating how real-world objects are modeled through attributes, primary keys, and foreign keys. To maintain clarity and prevent visual overcrowding across the eleven domain tables of the Rescue Vehicle Management System, the database design is presented through two entity-oriented views using Crow's Foot notation: Figure 6 for Authorized Driver Operations and Figure 6.1 for Agency Administrator Operations.
+An Entity Relationship Diagram (ERD) is a graphical representation of the database entities and their relationships, illustrating how real-world objects are modeled through attributes, primary keys, and foreign keys. To maintain clarity and prevent visual overcrowding across the eleven domain tables of the Rescue Vehicle Management System, the database design is presented through two entity-oriented views using Crow's Foot notation: Figure 6.1 for Authorized Driver Operations and Figure 6.2 for Agency Administrator Operations.
 
-**Figure 6. Entity Relationship Diagram: Authorized Driver Operations**  
-*(See Figure 6 in manuscript.)*
-
-Figure 6 illustrates the Authorized Driver Operations view of the Entity Relationship Diagram, capturing the relational database schema supporting driver authentication, fleet assignment, daily pre-trip inspections, and defect reporting. The diagram comprises seven domain tables: agencies, users, vehicles, inspections, inspection_items, inspection_checklist_items, and damage_reports. The agencies table serves as the multi-tenancy anchor, maintaining a one-to-many relationship with users and vehicles through their respective agency_id foreign keys to enforce agency-isolated data access. The users table stores driver credentials, verification states, device push tokens, and professional qualifications including driver license and TESDA NC II expiry dates. A one-to-many relationship links users to vehicles via assigned_driver_id for primary vehicle assignment, as well as secondary_driver_id for dual-crewed operational units. For daily vehicle monitoring, inspections references the evaluated unit in vehicles (vehicle_id), the operating driver in users (driver_id), and the evaluating supervisor in users (reviewed_by). Each inspection record breaks down into multiple granular entries in inspection_items via inspection_id, where each row evaluates a standardized criterion referenced from the inspection_checklist_items catalog (checklist_item_id) and records its functional condition along with mandatory driver remarks for noted defects. In the event of vehicular collision, component failure, or physical wear, damage_reports captures incident details, photographic evidence paths, and suspected defect components, linking the affected unit in vehicles (vehicle_id), the filing driver in users (driver_id), and the assessing Agency Administrator in users (reviewed_by). All relationships follow Crow's Foot notation, with parent tables indicating mandatory single cardinalities and child records representing optional or multiple instances.
-
-**Figure 6.1. Entity Relationship Diagram: Agency Administrator Operations**  
+**Figure 6.1. Entity Relationship Diagram: Authorized Driver Operations**  
 *(See Figure 6.1 in manuscript.)*
 
-Figure 6.1 illustrates the Agency Administrator Operations view of the Entity Relationship Diagram, modeling the administrative relational database schema governing vehicle deployments, service scheduling, corrective maintenance, and automated system alerts. The diagram consists of seven domain tables: agencies, users, vehicles, dispatches, pm_schedules, repair_logs, and notifications. The agencies table anchors the multi-tenancy architecture, enforcing agency-level data isolation by maintaining one-to-many foreign key relationships with users and vehicles. The vehicles table functions as the operational core across administrative workflows, maintaining the single shared operational status and tracking cumulative odometer mileage. A one-to-many relationship links users to vehicles via assigned_driver_id and secondary_driver_id. For emergency response and administrative travel, the dispatches table logs mission deployments, departure/arrival timestamps, travel orders, and odometer readings, establishing foreign key connections to the deployed unit in vehicles (vehicle_id), the primary driver in users (driver_id), and an optional secondary crew driver in users (second_driver_id). In fleet maintenance operations, pm_schedules defines preventive service plans linked to vehicles (vehicle_id), tracking mileage-based or time-based service intervals, alert thresholds, and post-service completion details. When corrective servicing or parts replacement is required, repair_logs maintains a historical log of repair activities tied to vehicles (vehicle_id) and the assigned driver (driver_id), recording the service scope, parts replaced, financial expenditures, and external repair facility details. Finally, the notifications table manages automated alerts for damage submissions, flagged inspections, license expirations, and overdue maintenance, linking each alert to its targeted recipient in users (user_id). All relationships are rendered using Crow's Foot notation, with parent tables indicating mandatory single cardinalities and child tables representing optional or multiple instances.
+Figure 6.1 illustrates the Authorized Driver Operations view of the Entity Relationship Diagram, capturing the relational database schema supporting driver authentication, fleet assignment, daily pre-trip inspections, and defect reporting. The diagram comprises seven domain tables: agencies, users, vehicles, inspections, inspection_items, inspection_checklist_items, and damage_reports. The agencies table serves as the multi-tenancy anchor, maintaining a one-to-many relationship with users and vehicles through their respective agency_id foreign keys to enforce agency-isolated data access. The users table stores driver credentials, verification states, device push tokens, and professional qualifications including driver license and TESDA NC II expiry dates. A one-to-many relationship links users to vehicles via assigned_driver_id for primary vehicle assignment, as well as secondary_driver_id for dual-crewed operational units. For daily vehicle monitoring, inspections references the evaluated unit in vehicles (vehicle_id), the operating driver in users (driver_id), and the evaluating supervisor in users (reviewed_by). Each inspection record breaks down into multiple granular entries in inspection_items via inspection_id, where each row evaluates a standardized criterion referenced from the inspection_checklist_items catalog (checklist_item_id) and records its functional condition along with mandatory driver remarks for noted defects. In the event of vehicular collision, component failure, or physical wear, damage_reports captures incident details, photographic evidence paths, and suspected defect components, linking the affected unit in vehicles (vehicle_id), the filing driver in users (driver_id), and the assessing Agency Administrator in users (reviewed_by). All relationships follow Crow's Foot notation, with parent tables indicating mandatory single cardinalities and child records representing optional or multiple instances.
+
+**Figure 6.2. Entity Relationship Diagram: Agency Administrator Operations**  
+*(See Figure 6.2 in manuscript.)*
+
+Figure 6.2 illustrates the Agency Administrator Operations view of the Entity Relationship Diagram, modeling the administrative relational database schema governing vehicle deployments, service scheduling, corrective maintenance, and automated system alerts. The diagram consists of seven domain tables: agencies, users, vehicles, dispatches, pm_schedules, repair_logs, and notifications. The agencies table anchors the multi-tenancy architecture, enforcing agency-level data isolation by maintaining one-to-many foreign key relationships with users and vehicles. The vehicles table functions as the operational core across administrative workflows, maintaining the single shared operational status and tracking cumulative odometer mileage. A one-to-many relationship links users to vehicles via assigned_driver_id and secondary_driver_id. For emergency response and administrative travel, the dispatches table logs mission deployments, departure/arrival timestamps, travel orders, and odometer readings, establishing foreign key connections to the deployed unit in vehicles (vehicle_id), the primary driver in users (driver_id), and an optional secondary crew driver in users (second_driver_id). In fleet maintenance operations, pm_schedules defines preventive service plans linked to vehicles (vehicle_id), tracking mileage-based or time-based service intervals, alert thresholds, and post-service completion details. When corrective servicing or parts replacement is required, repair_logs maintains a historical log of repair activities tied to vehicles (vehicle_id) and the assigned driver (driver_id), recording the service scope, parts replaced, financial expenditures, and external repair facility details. Finally, the notifications table manages automated alerts for damage submissions, flagged inspections, license expirations, and overdue maintenance, linking each alert to its targeted recipient in users (user_id). All relationships are rendered using Crow's Foot notation, with parent tables indicating mandatory single cardinalities and child tables representing optional or multiple instances.
 
 ---
 
@@ -517,6 +517,250 @@ Table 15 shows the data dictionary for the notifications table of the Rescue Veh
 | updated_at | Datetime | Yes | Date and time the record was last updated. | — | — |
 
 Table 15 – The notifications table stores the alerts raised by the system for both Authorized Drivers and Agency Administrators. It records the recipient, the category of the alert, the headline and body text, and a reference payload identifying the record the alert concerns. The read flag and the date and time read allow an Agency Administrator to keep their own notification list manageable as alerts accumulate. Each record represents one alert addressed to one user.
+
+---
+
+### Implementation Results
+
+This phase evaluated whether the operational outputs and interfaces of the developed Rescue Vehicle Management System (RVMS) successfully aligned with the specific objectives established in Chapter 1. The primary objective of the study was to input vehicle and driver information into a centralized, agency-isolated database. The second objective focused on tracking vehicle maintenance through standardized pre-trip inspections, defect reporting, corrective repairs, and preventive maintenance scheduling. The third objective aimed to provide an administrative module for dispatch operations and fleet availability monitoring, and the fourth objective was to generate relevant, filtered, and printable operational reports. The functional results demonstrating how each of the four objectives was met through the web dashboard and mobile application are presented in the following subsections.
+
+#### 1. To input vehicle and driver information.
+
+The first objective focused on replacing informal, paper-based records with standardized digital input mechanisms for capturing emergency vehicle specifications and driver credentials into an agency-isolated database. To achieve this, the system provides dedicated administrative input forms on the web dashboard for encoding vehicle and driver profiles, alongside a mobile registration interface that allows emergency drivers to input their personal and licensing credentials.
+
+```
++----------------------------------------------------------------------------------------------------+
+|                                                                                                    |
+|                             [ INSERT SCREENSHOT: FIGURE 7.1 HERE ]                                 |
+|                                                                                                    |
+|  File: skills/screenshots/figure-7-1-add-driver-form.png                                           |
+|  Content: Full-screen view of the Web Dashboard "Add Driver" modal/drawer displaying the input     |
+|           fields for full name, email, contact number, driver's license number, license expiry     |
+|           calendar picker, and optional TESDA NC II Driving certificate number & expiry date.      |
+|                                                                                                    |
++----------------------------------------------------------------------------------------------------+
+```
+
+**Figure 7.1. Add Driver Input Form (Web Dashboard)**
+
+Figure 7.1 displays the modal input form utilized by Agency Administrators to encode new driver profiles into the system. The interface provides structured data fields for capturing the driver's full name, official government email address, mobile contact number, driver’s license number, and license expiration date via an interactive date picker. In addition, the form accommodates professional qualification tracking by providing optional input fields for the driver's Technical Education and Skills Development Authority (TESDA) National Certificate II (NC II, Driving) certification number and its corresponding expiration date. When submitted, the system validates the uniqueness of the license number and stores the expiry dates in the database, enabling the automated notification engine to trigger timely renewal alerts before credentials lapse.
+
+```
++----------------------------------------------------------------------------------------------------+
+|                                                                                                    |
+|                             [ INSERT SCREENSHOT: FIGURE 7.2 HERE ]                                 |
+|                                                                                                    |
+|  File: skills/screenshots/figure-7-2-add-vehicle-form.png                                          |
+|  Content: Full-screen view of the Web Dashboard "Add Vehicle" modal/drawer showing vehicle type    |
+|           presets (Ambulance, Fire Truck, Rescue Vehicle, Patrol Car), the custom "Other" input   |
+|           field, plate number, make, model, engine/chassis numbers, mileage, and driver assignment.|
+|                                                                                                    |
++----------------------------------------------------------------------------------------------------+
+```
+
+**Figure 7.2. Add Vehicle Input Form (Web Dashboard)**
+
+Figure 7.2 illustrates the vehicle registration modal used by administrators to input rescue fleet specifications. The form features a vehicle type selector offering standard emergency presets—Ambulance, Fire Truck, Rescue Vehicle, and Patrol Car—as well as an *"Other"* classification that dynamically reveals an open text input to accommodate specialized disaster equipment. Additional fields capture the unit's official plate number, make and model, engine number, chassis number, and initial odometer mileage reading. Furthermore, the modal incorporates driver assignment selectors that allow the administrator to designate an authorized primary driver and an optional secondary driver for dual-crewed operational units. These selectors dynamically populate only with approved, active drivers registered under the administrator's agency, preventing cross-agency vehicle assignment errors.
+
+```
++----------------------------------------------------------------------------------------------------+
+|                                                                                                    |
+|                             [ INSERT SCREENSHOT: FIGURE 7.3 HERE ]                                 |
+|                                                                                                    |
+|  File: skills/screenshots/figure-7-3-driver-registration-mobile.png                                |
+|  Content: Mobile Application screen displaying the Driver "Sign In or Register" interface, showing |
+|           the input fields for full name, contact number, agency selection dropdown, driver's      |
+|           license number, license expiry date, and password creation.                              |
+|                                                                                                    |
++----------------------------------------------------------------------------------------------------+
+```
+
+**Figure 7.3. Driver Sign In and Registration Screen (Mobile Application)**
+
+Figure 7.3 shows the driver registration and authentication interface on the Android mobile application. Unregistered drivers can self-register into the system by inputting their full name, mobile contact number, designated emergency agency (selected from CDRRMO, BFP, CHO, or PNP), government driver’s license number, license expiration date, and account password. Once submitted, the account credentials are stored in the database with a *"Pending"* approval status, temporarily restricting access to vehicle data. This input workflow guarantees that only legitimately verified personnel are granted mobile access to daily vehicle inspections and assigned rescue units once vetted by their respective Agency Administrator.
+
+The implementation of these three dedicated input mechanisms successfully fulfills the first objective by providing secure, validated, and user-friendly entry interfaces that systematically capture all essential vehicle and driver data required for fleet management.
+
+#### 2. To track vehicle maintenance.
+
+The second objective addressed the lack of standardized pre-trip safety checks, verbal defect reporting, and the absence of consolidated maintenance records across the participating rescue agencies. To resolve these challenges, the system provides a multi-tiered tracking mechanism spanning both mobile and web platforms. Authorized drivers utilize the mobile application to review past submitted daily inspections and file detailed damage reports for unexpected vehicular issues. On the web dashboard, Agency Administrators oversee submitted inspections and damage reports through a unified triage module, monitor active preventive maintenance (PMS) schedules to prevent component failures, and maintain a comprehensive historical ledger of corrective repairs with financial cost tracking.
+
+```
++----------------------------------------------------------------------------------------------------+
+|                                                                                                    |
+|                             [ INSERT SCREENSHOT: FIGURE 8.1 HERE ]                                 |
+|                                                                                                    |
+|  File: skills/screenshots/figure-8-1-submitted-inspection-flagged.png                             |
+|  Content: Mobile Application screen displaying a previously submitted BLOWBAGETS inspection        |
+|           details view. Shows the vehicle information, submission timestamp, checklist items       |
+|           marked as "OK", and at least one item flagged as "Has Issue" accompanied by the          |
+|           driver's mandatory descriptive remarks.                                                  |
+|                                                                                                    |
++----------------------------------------------------------------------------------------------------+
+```
+
+**Figure 8.1. Submitted Daily Inspection Details with Flagged Item (Mobile Application)**
+
+Figure 8.1 illustrates the inspection review screen on the Android mobile application, displaying a previously submitted digital BLOWBAGETS inspection containing a flagged mechanical concern. The interface presents the unit's plate number, the date and time of inspection, and the driver's name, followed by the itemized checklist covering standard vehicle components. Items in satisfactory condition display a green *"OK"* status badge, whereas the identified defect—such as an engine, brake, or steering component—is prominently marked with an amber or red *"Has Issue"* indicator. Directly beneath the flagged item, the screen displays the driver's mandatory explanatory remarks detailing the observed mechanical symptom. This historical view allows drivers to track the operational condition of their assigned rescue vehicle over time and verify that previously documented issues have been officially logged into the system.
+
+```
++----------------------------------------------------------------------------------------------------+
+|                                                                                                    |
+|                             [ INSERT SCREENSHOT: FIGURE 8.2 HERE ]                                 |
+|                                                                                                    |
+|  File: skills/screenshots/figure-8-2-new-damage-report-filled.png                                  |
+|  Content: Mobile Application screen displaying a new Damage and Defect Report form completely       |
+|           filled out by the driver prior to submission. Shows the selected vehicle, nature/        |
+|           severity of damage, suspected defective parts, descriptive notes, and the attached       |
+|           photographic evidence preview.                                                           |
+|                                                                                                    |
++----------------------------------------------------------------------------------------------------+
+```
+
+**Figure 8.2. Filled Damage and Defect Report Form Prior to Submission (Mobile Application)**
+
+Figure 8.2 shows the incident reporting interface on the mobile application, depicting a newly authored damage report in a completed state ready for submission. When sudden breakdowns, collisions, or structural defects occur outside routine morning inspections, drivers use this screen to document the incident. The form displays the pre-selected assigned rescue unit, the nature and severity of the defect, and selectable categories identifying suspected defective components. In addition, the driver provides a narrative description of the operational breakdown and attaches photographic evidence captured via the mobile device’s camera or uploaded from local storage. By requiring descriptive details and physical photographic proof before submission, the interface ensures that the administrative office receives comprehensive, actionable defect data directly from the field.
+
+```
++----------------------------------------------------------------------------------------------------+
+|                                                                                                    |
+|                             [ INSERT SCREENSHOT: FIGURE 8.3 HERE ]                                 |
+|                                                                                                    |
+|  File: skills/screenshots/figure-8-3-admin-inspections-damage-landing.png                          |
+|  Content: Full-screen view of the Web Dashboard primary "Inspections & Damage" landing interface.  |
+|           Shows the consolidated overview table listing submitted inspections and damage reports,  |
+|           filter controls, flagged item indicators, review statuses, and administrative actions.   |
+|                                                                                                    |
++----------------------------------------------------------------------------------------------------+
+```
+
+**Figure 8.3. Primary Inspections and Damage Reports Management Interface (Web Dashboard)**
+
+Figure 8.3 displays the primary landing screen accessed when an administrator navigates to the *"Inspections & Damage"* module on the web dashboard. This central triage screen consolidates all daily inspection submissions and incident damage reports filed by agency drivers. The interactive table presents the submission date and time, reporting driver, vehicle plate number, report type, summary of flagged checklist items or damages, and current review status (*Pending* or *Reviewed*). Flagged inspections with reported defects are visually accentuated with warning indicators to immediately capture administrative attention. From this interface, administrators can filter records by date range, vehicle, or driver, inspect detailed submissions, and initiate administrative reviews to assess mechanical severity and update vehicle availability.
+
+```
++----------------------------------------------------------------------------------------------------+
+|                                                                                                    |
+|                             [ INSERT SCREENSHOT: FIGURE 8.4 HERE ]                                 |
+|                                                                                                    |
+|  File: skills/screenshots/figure-8-4-active-pm-schedules.png                                       |
+|  Content: Full-screen view of the Web Dashboard Preventive Maintenance (PM) interface displaying   |
+|           active maintenance schedules. Shows the lifecycle category tabs (Upcoming, Due Soon,     |
+|           Due, Completed), vehicle plate numbers, target mileage/date thresholds, current mileage, |
+|           and warning status badges.                                                               |
+|                                                                                                    |
++----------------------------------------------------------------------------------------------------+
+```
+
+**Figure 8.4. Active Preventive Maintenance Schedules Management Interface (Web Dashboard)**
+
+Figure 8.4 illustrates the active preventive maintenance (PMS) tracking module on the web dashboard. The interface is organized into distinct lifecycle status tabs—*Upcoming*, *Due Soon*, *Due*, and *Completed*—allowing administrators to monitor upcoming service milestones across the entire fleet. The active schedule table details each vehicle's plate number, make and model, service target description (such as a 10,000 km periodic maintenance service or bi-annual brake system overhaul), tracking interval type (mileage-based or time-based), target threshold, current vehicle mileage, and automated status indicator. By continuously comparing live vehicle odometer readings and calendar dates against target service thresholds, the system flags vehicles entering the *"Due Soon"* warning threshold, enabling administrators to schedule routine servicing proactively before severe mechanical failure occurs.
+
+```
++----------------------------------------------------------------------------------------------------+
+|                                                                                                    |
+|                             [ INSERT SCREENSHOT: FIGURE 8.5 HERE ]                                 |
+|                                                                                                    |
+|  File: skills/screenshots/figure-8-5-all-repair-logs-table.png                                     |
+|  Content: Full-screen view of the Web Dashboard Repair Logs management table displaying the        |
+|           complete historical ledger of all saved corrective repairs. Shows columns for repair     |
+|           dates, plate numbers, scope of work, parts replaced, total costs in ₱, repair sources,   |
+|           and cumulative financial audit totals.                                                   |
+|                                                                                                    |
++----------------------------------------------------------------------------------------------------+
+```
+
+**Figure 8.5. Historical Corrective Repair Logs Ledger (Web Dashboard)**
+
+Figure 8.5 shows the comprehensive Repair Logs ledger on the web dashboard, presenting all historical corrective repairs recorded for the agency's rescue fleet. Unlike preventive maintenance milestones, this table maintains a permanent chronological record of ad-hoc and corrective repairs resulting from mechanical breakdowns, wear, or damage. The data table displays the repair date, vehicle plate number, scope of work conducted, itemized list of replacement spare parts, total financial expenditure in Philippine Pesos (₱), repair facility source (*Internal Office*, *City GSO Motorpool*, or *External Repair Shop*), and the assigned driver. By aggregating maintenance expenditures and documenting the exact components replaced across all agency units, this interface provides complete operational transparency, establishes an audit-ready maintenance history, and supports informed fleet budgeting.
+
+The integration of these five dedicated interfaces successfully satisfies the second objective by establishing a continuous, documented maintenance tracking pipeline—from pre-trip driver inspections and mobile damage reports to centralized administrative triage, proactive preventive scheduling, and permanent repair cost auditing.
+
+#### 3. To provide an admin module for dispatch and vehicle management.
+
+The third objective focused on providing Agency Administrators with a centralized administrative module for overseeing fleet vehicle availability and coordinating emergency dispatches. Prior to the implementation of the system, participating agencies relied on disconnected whiteboards, manual logbooks, and informal messaging group chats to confirm vehicle availability and document deployments. To resolve these operational vulnerabilities, the administrative web platform integrates two core management interfaces: a centralized Vehicle Management module that maintains an active inventory of rescue units, tracks cumulative mileage, and enforces operational status controls; and a comprehensive Dispatch Logs ledger that documents emergency deployments, crew assignments, mission types, and travel distances from initial departure to mission return.
+
+```
++----------------------------------------------------------------------------------------------------+
+|                                                                                                    |
+|                             [ INSERT SCREENSHOT: FIGURE 9.1 HERE ]                                 |
+|                                                                                                    |
+|  File: skills/screenshots/figure-9-1-vehicle-management-table.png                                 |
+|  Content: Full-screen view of the Web Dashboard Vehicle Management page (/vehicles). Shows the     |
+|           complete fleet inventory table with columns for vehicle type, plate number, make and     |
+|           model, engine and chassis numbers, current odometer mileage, assigned primary driver,   |
+|           optional secondary driver, current operational status badge, and management actions.     |
+|                                                                                                    |
++----------------------------------------------------------------------------------------------------+
+```
+
+**Figure 9.1. Vehicle Management and Fleet Inventory Interface (Web Dashboard)**
+
+Figure 9.1 illustrates the Vehicle Management interface on the web dashboard, providing Agency Administrators with an active, centralized registry of all emergency vehicles assigned to their agency. The data table itemizes each unit’s essential operational details, including vehicle classification (e.g., Ambulance, Fire Truck, Rescue Vehicle, Patrol Car), official plate number, make and model, engine number, chassis number, and cumulative odometer mileage. The interface also displays the designated primary driver and optional secondary driver assigned to each unit, establishing clear personnel accountability for vehicle handling. Most crucially, the table prominently displays each vehicle's real-time operational status using standardized badges: *Operational* (available for active deployment), *Dispatched* (currently out on an emergency run), *Not Operational* (grounded due to safety defects or mechanical failure), and *Under Preventive Maintenance* (undergoing scheduled servicing). This inventory view enables administrators to edit vehicle specifications, reassign drivers, monitor odometer progression, and enforce operational lockout rules that prevent unserviceable or grounded vehicles from being deployed.
+
+```
++----------------------------------------------------------------------------------------------------+
+|                                                                                                    |
+|                             [ INSERT SCREENSHOT: FIGURE 9.2 HERE ]                                 |
+|                                                                                                    |
+|  File: skills/screenshots/figure-9-2-all-dispatch-logs-table.png                                   |
+|  Content: Full-screen view of the Web Dashboard Dispatch Logs management page (/dispatches). Shows |
+|           the complete tabular ledger of all dispatch records—both active and completed runs—with  |
+|           columns for dispatched plate number, primary & secondary drivers, mission type,          |
+|           destination, departure and arrival timestamps, odometer in/out, and return status.       |
+|                                                                                                    |
++----------------------------------------------------------------------------------------------------+
+```
+
+**Figure 9.2. Comprehensive Dispatch Logs Ledger (Web Dashboard)**
+
+Figure 9.2 shows the Dispatch Logs management interface on the web dashboard, presenting the complete operational ledger of all emergency and administrative vehicle dispatches conducted by the agency. The interface records every deployment parameter: the dispatched vehicle plate number, the primary driver, an optional secondary driver for dual-crewed responses, the emergency mission category (*Fire Response*, *Medical Response*, *Rescue Operation*, *Patrol*, *Administrative Travel*, or *Others*), and the target destination barangay or facility. For active deployments, the table records the departure timestamp (*Time Out*) and departure odometer reading, marking the vehicle status as *Dispatched* across the entire system. Once the vehicle returns from its mission, the administrator records the arrival timestamp (*Time In*), the final odometer reading, post-trip administrative remarks, and the designated return status (*Operational*, *Not Operational*, or *Under Preventive Maintenance*). If the entered arrival odometer exceeds the stored mileage, the system automatically updates the vehicle's cumulative odometer reading in the central database, seamlessly advancing mileage-based preventive maintenance tracking without manual re-entry.
+
+The implementation of the vehicle fleet registry and the dispatch tracking ledger successfully fulfills the third objective by providing administrators with absolute operational command over fleet availability, eliminating undocumented deployments, and establishing an unbroken digital record of all rescue operations.
+
+#### 4. To generate relevant reports.
+
+The fourth objective aimed to eliminate manual, paper-based reporting and the time-consuming administrative burden of consolidating physical logbooks and ledger cards across rescue agencies. Prior to system deployment, generating operational summaries for the City Mayor's Office, the Commission on Audit (COA), or inter-agency emergency councils required manually gathering and cross-referencing paper inspection forms, driver log sheets, and repair receipts. To resolve these inefficiencies, the system provides a centralized reporting engine on the web dashboard. Administrators can configure tailored queries across six operational categories using flexible date, vehicle, and driver filters, and immediately generate formatted, audit-ready operational reports complete with analytical summary metrics and official sign-off lines.
+
+```
++----------------------------------------------------------------------------------------------------+
+|                                                                                                    |
+|                            [ INSERT SCREENSHOT: FIGURE 10.1 HERE ]                                 |
+|                                                                                                    |
+|  File: skills/screenshots/figure-10-1-report-generation-configuration.png                          |
+|  Content: Full-screen view of the Web Dashboard Report Generation interface (/reports). Shows the   |
+|           navigation tabs for all six report categories (Inspection Records, Damage Reports,       |
+|           Repair Logs, PM Schedules, Dispatch Logs, and Vehicle Status Summaries), accompanied by  |
+|           the interactive filter controls for date range, vehicle selection, driver selection,     |
+|           and the primary "Generate Report" trigger button.                                        |
+|                                                                                                    |
++----------------------------------------------------------------------------------------------------+
+```
+
+**Figure 10.1. Centralized Report Generation and Filter Configuration Interface (Web Dashboard)**
+
+Figure 10.1 displays the centralized Report Generation interface on the web dashboard, providing Agency Administrators with a single, unified workspace to produce operational documentation. The interface organizes agency reporting into six dedicated category tabs: *Inspection Records*, *Damage and Defect Reports*, *Repair and Maintenance History*, *Preventive Maintenance Schedules*, *Dispatch Logs*, and *Vehicle Status Summaries*. Within each tab, administrators can customize their data query using intuitive filter parameters, including preset or custom date range selectors (daily, weekly, monthly, or custom quarterly periods), vehicle plate number dropdowns, and individual driver selectors. This structured configuration screen allows administrators to isolate specific operational subsets—such as reviewing all incidents associated with a particular ambulance or auditing dispatches across a holiday weekend—before generating the final consolidated output.
+
+```
++----------------------------------------------------------------------------------------------------+
+|                                                                                                    |
+|                            [ INSERT SCREENSHOT: FIGURE 10.2 HERE ]                                 |
+|                                                                                                    |
+|  File: skills/screenshots/figure-10-2-inspection-records-report-output.png                          |
+|  Content: Full-screen view of the generated Inspection Records Report output on the Web Dashboard. |
+|           Displays the official agency header, active filter parameters, summary metric cards      |
+|           (total inspections conducted, count of flagged defect checks, compliance rate), the      |
+|           itemized tabular ledger detailing individual inspections and flagged checklist items,   |
+|           and official administrative sign-off lines.                                              |
+|                                                                                                    |
++----------------------------------------------------------------------------------------------------+
+```
+
+**Figure 10.2. Generated Inspection Records Report Output (Web Dashboard)**
+
+Figure 10.2 illustrates the generated Inspection Records Report produced by the system's reporting engine. Designed for both on-screen review and official printing, the generated output incorporates formal institutional formatting starting with an official agency header and a clear statement of applied filter criteria. At the top of the report, high-level summary cards provide immediate analytical insights, presenting key performance indicators such as the total volume of daily inspections completed within the specified period, the number of inspections containing flagged safety defects, and the overall fleet pre-trip compliance rate. Below the summary statistics, an itemized tabular ledger chronologically details each inspection event, citing the inspection timestamp, vehicle plate number, inspecting driver, evaluated BLOWBAGETS components, specific flagged defects, and recorded driver remarks. The document concludes with standard administrative signature lines (*Prepared By*, *Verified By*, and *Approved By*), providing formal accountability and making the generated report immediately suitable for administrative audits, fleet performance evaluations, and government oversight compliance.
+
+The implementation of the report configuration module and the automated report generation output successfully satisfies the fourth objective by replacing laborious manual record consolidation with instant, reliable, and audit-ready digital documentation.
 
 ---
 
