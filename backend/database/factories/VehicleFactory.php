@@ -26,6 +26,7 @@ class VehicleFactory extends Factory
             'chassis_number' => strtoupper(fake()->bothify('???########')),
             'current_mileage' => fake()->numberBetween(1000, 120000),
             'status' => Vehicle::STATUS_OPERATIONAL,
+            'remarks' => 'Initial intake inspection passed; unit mechanically sound and cleared for emergency service.',
         ];
     }
 

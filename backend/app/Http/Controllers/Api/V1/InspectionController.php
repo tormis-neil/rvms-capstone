@@ -197,10 +197,22 @@ class InspectionController extends Controller
         ]);
 
         if ($status = $request->validated('vehicle_status')) {
+            $extra = [];
+
+            if ($request->filled('remarks')) {
+                $extra['remarks'] = trim((string) $request->validated('remarks'));
+            } elseif ($inspection->vehicle->status !== $status) {
+                $summary = $inspection->remarksSummary();
+                $extra['remarks'] = ($summary !== '' && $summary !== 'None')
+                    ? "Inspection findings: {$summary}"
+                    : 'Evaluated during BLOWBAGETS inspection review.';
+            }
+
             app(VehicleStatusWriter::class)->write(
                 $inspection->vehicle,
                 $status,
                 VehicleStatusWriter::SOURCE_INSPECTION,
+                $extra,
             );
         }
 

@@ -94,6 +94,29 @@ class WebInspectionPageTest extends TestCase
         $this->assertSame(Vehicle::STATUS_NOT_OPERATIONAL, $inspection->vehicle->fresh()->status);
     }
 
+    public function test_review_persists_admin_diagnostic_remarks_and_renders_textarea(): void
+    {
+        $inspection = $this->makeInspection($this->agency);
+
+        $this->actingAs($this->admin)
+            ->get('/inspections')
+            ->assertOk()
+            ->assertSee('id="riAdminRemarks"', false);
+
+        $this->actingAs($this->admin)
+            ->from('/inspections')
+            ->patch("/inspections/{$inspection->id}/review", [
+                'vehicle_status' => Vehicle::STATUS_NOT_OPERATIONAL,
+                'remarks' => 'Grounded due to brake caliper leak found during BLOWBAGETS review.',
+            ])
+            ->assertRedirect(route('inspections'));
+
+        $this->assertSame(
+            'Grounded due to brake caliper leak found during BLOWBAGETS review.',
+            $inspection->vehicle->fresh()->remarks
+        );
+    }
+
     public function test_review_without_status_change_still_marks_reviewed(): void
     {
         $inspection = $this->makeInspection($this->agency);

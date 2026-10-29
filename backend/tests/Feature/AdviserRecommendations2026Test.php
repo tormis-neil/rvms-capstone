@@ -354,6 +354,7 @@ class AdviserRecommendations2026Test extends TestCase
             'make' => 'Toyota',
             'model' => 'HiAce',
             'current_mileage' => 1_000,
+            'remarks' => 'Baseline intake check passed.',
         ], $overrides);
     }
 

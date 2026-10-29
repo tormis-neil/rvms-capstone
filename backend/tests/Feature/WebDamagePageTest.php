@@ -69,6 +69,29 @@ class WebDamagePageTest extends TestCase
         $this->assertSame(Vehicle::STATUS_NOT_OPERATIONAL, $report->vehicle->fresh()->status);
     }
 
+    public function test_review_persists_admin_diagnostic_remarks_and_renders_textarea(): void
+    {
+        $report = $this->makeReport($this->agency);
+
+        $this->actingAs($this->admin)
+            ->get('/inspections')
+            ->assertOk()
+            ->assertSee('id="rdAdminRemarks"', false);
+
+        $this->actingAs($this->admin)
+            ->from('/inspections')
+            ->patch("/damage-reports/{$report->id}/review", [
+                'vehicle_status' => Vehicle::STATUS_NOT_OPERATIONAL,
+                'remarks' => 'Grounded for side mirror assembly replacement at GSO Motorpool.',
+            ])
+            ->assertRedirect(route('inspections'));
+
+        $this->assertSame(
+            'Grounded for side mirror assembly replacement at GSO Motorpool.',
+            $report->vehicle->fresh()->remarks
+        );
+    }
+
     /**
      * Regression: "Leave as Operational" submitted an empty value and changed
      * nothing. Assessing a damage report now writes Operational explicitly.

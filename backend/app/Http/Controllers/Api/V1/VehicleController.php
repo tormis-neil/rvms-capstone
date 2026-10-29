@@ -37,7 +37,10 @@ class VehicleController extends Controller
 
     public function store(StoreVehicleRequest $request)
     {
-        $vehicle = Vehicle::create($request->validated())->refresh();
+        $vehicle = Vehicle::create(array_merge($request->validated(), [
+            'status_source' => VehicleStatusWriter::SOURCE_INITIAL_REGISTRATION,
+            'status_changed_at' => now(),
+        ]))->refresh();
 
         return VehicleResource::make($vehicle->load('assignedDriver'))
             ->response()
@@ -51,7 +54,12 @@ class VehicleController extends Controller
 
     public function update(StoreVehicleRequest $request, Vehicle $vehicle)
     {
-        $vehicle->update($request->validated());
+        $data = $request->validated();
+        if (! $request->has('remarks')) {
+            unset($data['remarks']);
+        }
+
+        $vehicle->update($data);
 
         return VehicleResource::make($vehicle->fresh()->load('assignedDriver'));
     }

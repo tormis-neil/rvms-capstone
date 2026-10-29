@@ -20,6 +20,13 @@ class PmSchedule extends Model
 
     public const TYPE_MILEAGE = 'Mileage-Based';
     public const TYPE_TIME = 'Time-Based';
+    public const TYPE_BOTH = 'Mileage & Time-Based';
+
+    public const TYPES = [
+        self::TYPE_MILEAGE,
+        self::TYPE_TIME,
+        self::TYPE_BOTH,
+    ];
 
     public const STATUS_UPCOMING = 'Upcoming';
     public const STATUS_DUE_SOON = 'Due Soon';
@@ -66,10 +73,21 @@ class PmSchedule extends Model
         return $this->status === self::STATUS_COMPLETED;
     }
 
+    public function usesMileage(): bool
+    {
+        return in_array($this->pm_type, [self::TYPE_MILEAGE, self::TYPE_BOTH], true);
+    }
+
+    public function usesTime(): bool
+    {
+        return in_array($this->pm_type, [self::TYPE_TIME, self::TYPE_BOTH], true);
+    }
+
     /**
      * The status this active schedule should have, given the vehicle's current
-     * mileage (mileage-based) or today's date (time-based). Completed schedules
-     * are never recalculated. Plan §6.7.
+     * mileage (mileage-based), today's date (time-based), or whichever threshold
+     * is reached first (Mileage & Time-Based). Completed schedules are never
+     * recalculated. Plan §6.7.
      */
     public function recalculatedStatus(?int $currentMileage = null): string
     {
@@ -77,35 +95,41 @@ class PmSchedule extends Model
             return self::STATUS_COMPLETED;
         }
 
-        if ($this->pm_type === self::TYPE_MILEAGE) {
+        $mileageStatus = self::STATUS_UPCOMING;
+        if ($this->usesMileage() && $this->due_mileage !== null) {
             $due = (int) $this->due_mileage;
             $mileage = (int) ($currentMileage ?? $this->vehicle?->current_mileage ?? 0);
             $window = (int) ($this->due_soon_threshold_km ?? 0);
 
             if ($mileage >= $due) {
-                return self::STATUS_DUE;
+                $mileageStatus = self::STATUS_DUE;
+            } elseif ($mileage >= ($due - $window)) {
+                $mileageStatus = self::STATUS_DUE_SOON;
             }
-
-            return $mileage >= ($due - $window) ? self::STATUS_DUE_SOON : self::STATUS_UPCOMING;
         }
 
-        // Time-based
-        $today = Carbon::today();
-        $dueDate = $this->due_date;
+        $timeStatus = self::STATUS_UPCOMING;
+        if ($this->usesTime() && $this->due_date !== null) {
+            $today = Carbon::today();
+            $dueDate = $this->due_date;
+            $window = (int) ($this->due_soon_threshold_days ?? 0);
 
-        if ($dueDate === null) {
-            return self::STATUS_UPCOMING;
+            if ($today->greaterThanOrEqualTo($dueDate)) {
+                $timeStatus = self::STATUS_DUE;
+            } elseif ($today->greaterThanOrEqualTo($dueDate->copy()->subDays($window))) {
+                $timeStatus = self::STATUS_DUE_SOON;
+            }
         }
 
-        if ($today->greaterThanOrEqualTo($dueDate)) {
+        if ($mileageStatus === self::STATUS_DUE || $timeStatus === self::STATUS_DUE) {
             return self::STATUS_DUE;
         }
 
-        $window = (int) ($this->due_soon_threshold_days ?? 0);
+        if ($mileageStatus === self::STATUS_DUE_SOON || $timeStatus === self::STATUS_DUE_SOON) {
+            return self::STATUS_DUE_SOON;
+        }
 
-        return $today->greaterThanOrEqualTo($dueDate->copy()->subDays($window))
-            ? self::STATUS_DUE_SOON
-            : self::STATUS_UPCOMING;
+        return self::STATUS_UPCOMING;
     }
 
     /** Badge class matching the prototype's PM status pills. */
@@ -119,9 +143,16 @@ class PmSchedule extends Model
         };
     }
 
-    /** The "target" cell: due mileage or due date depending on type. */
+    /** The "target" cell: due mileage, due date, or both depending on type. */
     public function targetLabel(): string
     {
+        if ($this->pm_type === self::TYPE_BOTH) {
+            $km = $this->due_mileage !== null ? number_format($this->due_mileage).' km' : null;
+            $date = $this->due_date?->format('M j, Y');
+
+            return implode(' / ', array_filter([$km, $date])) ?: '—';
+        }
+
         if ($this->pm_type === self::TYPE_MILEAGE) {
             return $this->due_mileage !== null ? number_format($this->due_mileage).' km' : '—';
         }

@@ -25,8 +25,9 @@ class StorePmScheduleRequest extends FormRequest
     public function rules(): array
     {
         $agencyId = $this->user()->agency_id;
-        $isMileage = $this->input('pm_type') === PmSchedule::TYPE_MILEAGE;
-        $isTime = $this->input('pm_type') === PmSchedule::TYPE_TIME;
+        $pmType = $this->input('pm_type');
+        $isMileage = in_array($pmType, [PmSchedule::TYPE_MILEAGE, PmSchedule::TYPE_BOTH], true);
+        $isTime = in_array($pmType, [PmSchedule::TYPE_TIME, PmSchedule::TYPE_BOTH], true);
 
         return [
             'vehicle_id' => [
@@ -47,7 +48,7 @@ class StorePmScheduleRequest extends FormRequest
                     ->whereNot('status', PmSchedule::STATUS_COMPLETED)
                     ->ignore($this->route('pmSchedule')?->id),
             ],
-            'pm_type' => ['required', Rule::in([PmSchedule::TYPE_MILEAGE, PmSchedule::TYPE_TIME])],
+            'pm_type' => ['required', Rule::in(PmSchedule::TYPES)],
 
             // Optional pre-service document at create — the pre-inspection
             // checklist / recommendation that justifies scheduling (FR-14, 2026-09).

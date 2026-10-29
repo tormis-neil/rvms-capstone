@@ -94,6 +94,52 @@ class PmScheduleTest extends TestCase
         ])->assertStatus(422)->assertJsonValidationErrors(['due_date', 'due_soon_threshold_days']);
     }
 
+    public function test_admin_creates_a_dual_trigger_schedule_requiring_both_mileage_and_time_fields(): void
+    {
+        [$agency, $admin, $vehicle] = $this->adminWithVehicle(mileage: 44000);
+        Sanctum::actingAs($admin);
+
+        // Missing both mileage and time fields should fail validation on all five fields.
+        $this->postJson('/api/v1/pm-schedules', [
+            'vehicle_id' => $vehicle->id,
+            'service_target' => 'Major Preventive Service (5,000 km or 6 Months)',
+            'pm_type' => PmSchedule::TYPE_BOTH,
+        ])->assertStatus(422)->assertJsonValidationErrors([
+            'interval_km',
+            'last_pm_mileage',
+            'due_soon_threshold_km',
+            'due_date',
+            'due_soon_threshold_days',
+        ]);
+
+        $dueDate = now()->addMonths(6)->toDateString();
+
+        $response = $this->postJson('/api/v1/pm-schedules', [
+            'vehicle_id' => $vehicle->id,
+            'service_target' => 'Major Preventive Service (5,000 km or 6 Months)',
+            'pm_type' => PmSchedule::TYPE_BOTH,
+            'interval_km' => 5000,
+            'last_pm_mileage' => 40000,
+            'due_soon_threshold_km' => 500,
+            'due_date' => $dueDate,
+            'due_soon_threshold_days' => 14,
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.pm_type', PmSchedule::TYPE_BOTH)
+            ->assertJsonPath('data.due_mileage', 45000)
+            ->assertJsonPath('data.status', PmSchedule::STATUS_UPCOMING);
+
+        $this->assertDatabaseHas('pm_schedules', [
+            'vehicle_id' => $vehicle->id,
+            'agency_id' => $agency->id,
+            'pm_type' => PmSchedule::TYPE_BOTH,
+            'due_mileage' => 45000,
+            'due_soon_threshold_km' => 500,
+            'due_soon_threshold_days' => 14,
+        ]);
+    }
+
     public function test_completion_stores_fields_and_does_not_create_a_next_cycle(): void
     {
         [$agency, $admin, $vehicle] = $this->adminWithVehicle();

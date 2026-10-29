@@ -257,9 +257,11 @@
                                 <option value="Under Preventive Maintenance">Under Preventive Maintenance (maintenance required)</option>
                             </select>
                         </div>
-                        {{-- The prototype's "Admin Remarks (Optional)" textarea is omitted: the approved
-                             schema deliberately excludes admin-remarks columns on inspection reviews
-                             (design decision 7 — documented omission). --}}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="riAdminRemarks">Administrative Findings / Mechanical Remarks <span class="text-secondary fw-normal small">(Optional)</span></label>
+                            <textarea class="form-control" name="remarks" id="riAdminRemarks" rows="2" maxlength="1000" placeholder="Explain the mechanical findings or reason for grounding, servicing, or clearing the vehicle..."></textarea>
+                            <div class="form-text">Recorded on the vehicle and sent to the assigned driver when the operational status changes.</div>
+                        </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
@@ -309,9 +311,11 @@
                                 <option value="Under Preventive Maintenance">Under Preventive Maintenance (maintenance required)</option>
                             </select>
                         </div>
-                        {{-- The prototype's "Admin Remarks" textarea is omitted: the approved schema
-                             deliberately excludes admin-remarks columns on damage reviews
-                             (design decision 7 — documented omission). --}}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="rdAdminRemarks">Administrative Findings / Mechanical Remarks <span class="text-secondary fw-normal small">(Optional)</span></label>
+                            <textarea class="form-control" name="remarks" id="rdAdminRemarks" rows="2" maxlength="1000" placeholder="Explain the damage assessment findings and reason for the status decision..."></textarea>
+                            <div class="form-text">Recorded on the vehicle and sent to the assigned driver when the operational status changes.</div>
+                        </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
@@ -442,6 +446,7 @@
             // option here, so it falls back to Operational and the server guard
             // blocks the write while a dispatch is open).
             setStatusSelect('#reviewInspectionForm', d.vehicleStatus);
+            document.getElementById('riAdminRemarks').value = '';
             reviewRows.reviewInspectionForm = d;
         });
 
@@ -508,6 +513,7 @@
                 : '<em class="text-secondary small">None</em>';
 
             setStatusSelect('#reviewDamageForm', d.vehicleStatus);
+            document.getElementById('rdAdminRemarks').value = '';
             reviewRows.reviewDamageForm = d;
         });
 

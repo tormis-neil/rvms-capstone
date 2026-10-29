@@ -96,15 +96,21 @@ class PmController extends Controller
             $data['schedule_document_path'] = $path;
         }
 
-        if ($data['pm_type'] === PmSchedule::TYPE_MILEAGE) {
+        $usesMileage = in_array($data['pm_type'], [PmSchedule::TYPE_MILEAGE, PmSchedule::TYPE_BOTH], true);
+        $usesTime = in_array($data['pm_type'], [PmSchedule::TYPE_TIME, PmSchedule::TYPE_BOTH], true);
+
+        if ($usesMileage) {
             $data['due_mileage'] = (int) $data['last_pm_mileage'] + (int) $data['interval_km'];
-            $data['due_date'] = null;
-            $data['due_soon_threshold_days'] = null;
         } else {
             $data['interval_km'] = null;
             $data['last_pm_mileage'] = null;
             $data['due_mileage'] = null;
             $data['due_soon_threshold_km'] = null;
+        }
+
+        if (! $usesTime) {
+            $data['due_date'] = null;
+            $data['due_soon_threshold_days'] = null;
         }
 
         $data['status'] = (new PmSchedule)->forceFill($data)->recalculatedStatus(

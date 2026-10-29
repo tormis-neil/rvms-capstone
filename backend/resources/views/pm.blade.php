@@ -68,7 +68,7 @@
                                             <td><div class="badge bg-light text-dark border">{{ $pm->pm_type }}</div></td>
                                             <td>
                                                 <div class="fw-bold {{ $pm->status === \App\Models\PmSchedule::STATUS_DUE ? 'text-danger' : ($pm->status === \App\Models\PmSchedule::STATUS_DUE_SOON ? 'text-warning' : 'text-dark') }}">{{ $pm->targetLabel() }}</div>
-                                                @if ($pm->pm_type === \App\Models\PmSchedule::TYPE_MILEAGE)
+                                                @if ($pm->usesMileage())
                                                 <div class="small text-secondary">Current: {{ number_format($pm->vehicle->current_mileage ?? 0) }} km{{ $pm->status === \App\Models\PmSchedule::STATUS_DUE ? ' — overdue' : '' }}</div>
                                                 @endif
                                             </td>
@@ -196,6 +196,7 @@
                             <select class="form-select js-pm-type" name="pm_type">
                                 <option value="Mileage-Based">Mileage-Based</option>
                                 <option value="Time-Based">Time-Based</option>
+                                <option value="Mileage & Time-Based">Mileage &amp; Time-Based (Whichever Comes First)</option>
                             </select>
                         </div>
                         {{-- Structured, type-appropriate fields replace the prototype's ambiguous
@@ -352,6 +353,7 @@
                             <select class="form-select js-pm-type" name="pm_type" id="epType">
                                 <option value="Mileage-Based">Mileage-Based</option>
                                 <option value="Time-Based">Time-Based</option>
+                                <option value="Mileage & Time-Based">Mileage &amp; Time-Based (Whichever Comes First)</option>
                             </select>
                         </div>
                         <div class="js-mileage-fields">
@@ -421,16 +423,17 @@
             sync();
         }
 
-        // Show the mileage-based or time-based fields for a modal's PM Type select.
+        // Show the mileage-based, time-based, or dual-trigger fields for a modal's PM Type select.
         function bindTypeToggle(root) {
             const select = root.querySelector('.js-pm-type');
             const mileage = root.querySelector('.js-mileage-fields');
             const time = root.querySelector('.js-time-fields');
             if (!select || !mileage || !time) return;
             const sync = () => {
-                const isMileage = select.value === 'Mileage-Based';
-                mileage.style.display = isMileage ? '' : 'none';
-                time.style.display = isMileage ? 'none' : '';
+                const usesMileage = select.value === 'Mileage-Based' || select.value === 'Mileage & Time-Based';
+                const usesTime = select.value === 'Time-Based' || select.value === 'Mileage & Time-Based';
+                mileage.style.display = usesMileage ? '' : 'none';
+                time.style.display = usesTime ? '' : 'none';
             };
             select.addEventListener('change', sync);
             sync();
@@ -448,13 +451,13 @@
             if (!row) return;
             document.getElementById('completePmForm').action = completePmTemplate.replace('__ID__', row.dataset.id);
 
-            // Only mileage-based schedules have an odometer to record.
+            // Mileage-based and dual-trigger schedules have an odometer to record.
             const wrap = markCompletedModal.querySelector('.js-completion-mileage');
             const input = document.getElementById('cpMileage');
-            const isMileage = row.dataset.pmType === 'Mileage-Based';
+            const usesMileage = row.dataset.pmType === 'Mileage-Based' || row.dataset.pmType === 'Mileage & Time-Based';
 
-            wrap.style.display = isMileage ? '' : 'none';
-            input.value = isMileage ? (row.dataset.currentMileage || '') : '';
+            wrap.style.display = usesMileage ? '' : 'none';
+            input.value = usesMileage ? (row.dataset.currentMileage || '') : '';
         });
 
         // Edit — populate from the clicked row.
@@ -475,9 +478,10 @@
             document.getElementById('epDueSoonKm').value = d.dueSoonKm || '';
             document.getElementById('epDueDate').value = d.dueDate || '';
             document.getElementById('epDueSoonDays').value = d.dueSoonDays || '';
-            const isMileage = d.pmType === 'Mileage-Based';
-            editModal.querySelector('.js-mileage-fields').style.display = isMileage ? '' : 'none';
-            editModal.querySelector('.js-time-fields').style.display = isMileage ? 'none' : '';
+            const usesMileage = d.pmType === 'Mileage-Based' || d.pmType === 'Mileage & Time-Based';
+            const usesTime = d.pmType === 'Time-Based' || d.pmType === 'Mileage & Time-Based';
+            editModal.querySelector('.js-mileage-fields').style.display = usesMileage ? '' : 'none';
+            editModal.querySelector('.js-time-fields').style.display = usesTime ? '' : 'none';
         });
     </script>
 @endsection

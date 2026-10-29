@@ -76,6 +76,42 @@ class WebPmPageTest extends TestCase
         ]);
     }
 
+    public function test_admin_creates_a_dual_trigger_schedule_from_the_page_and_renders_both_targets(): void
+    {
+        $vehicle = Vehicle::factory()->create(['agency_id' => $this->agency->id, 'current_mileage' => 44000]);
+        $dueDate = now()->addMonths(6);
+
+        $this->actingAs($this->admin)
+            ->from('/pm')
+            ->post('/pm', [
+                'vehicle_id' => $vehicle->id,
+                'service_target' => 'Dual Interval Tune-Up',
+                'pm_type' => PmSchedule::TYPE_BOTH,
+                'interval_km' => 5000,
+                'last_pm_mileage' => 40000,
+                'due_soon_threshold_km' => 500,
+                'due_date' => $dueDate->toDateString(),
+                'due_soon_threshold_days' => 14,
+            ])
+            ->assertRedirect(route('pm'));
+
+        $this->assertDatabaseHas('pm_schedules', [
+            'vehicle_id' => $vehicle->id,
+            'pm_type' => PmSchedule::TYPE_BOTH,
+            'due_mileage' => 45000,
+            'due_soon_threshold_km' => 500,
+            'due_soon_threshold_days' => 14,
+            'status' => PmSchedule::STATUS_UPCOMING,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get('/pm')
+            ->assertOk()
+            ->assertSee('Dual Interval Tune-Up')
+            ->assertSee('Mileage & Time-Based')
+            ->assertSee('45,000 km / ' . $dueDate->format('M j, Y'));
+    }
+
     public function test_mark_completed_from_the_page(): void
     {
         $vehicle = Vehicle::factory()->create(['agency_id' => $this->agency->id]);

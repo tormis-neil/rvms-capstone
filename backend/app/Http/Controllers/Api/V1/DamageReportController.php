@@ -115,10 +115,21 @@ class DamageReportController extends Controller
         ]);
 
         if ($status = $request->validated('vehicle_status')) {
+            $extra = [];
+
+            if ($request->filled('remarks')) {
+                $extra['remarks'] = trim((string) $request->validated('remarks'));
+            } elseif ($damageReport->vehicle->status !== $status) {
+                $extra['remarks'] = filled($damageReport->nature_of_damage)
+                    ? "Damage assessment: {$damageReport->nature_of_damage}"
+                    : 'Assessed during damage report review.';
+            }
+
             app(VehicleStatusWriter::class)->write(
                 $damageReport->vehicle,
                 $status,
                 VehicleStatusWriter::SOURCE_DAMAGE,
+                $extra,
             );
         }
 

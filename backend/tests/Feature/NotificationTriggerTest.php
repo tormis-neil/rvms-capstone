@@ -311,6 +311,7 @@ class NotificationTriggerTest extends TestCase
             $this->vehicle,
             Vehicle::STATUS_UNDER_PM,
             VehicleStatusWriter::SOURCE_PM,
+            ['remarks' => 'Scheduled 60,000 km major preventive maintenance service.'],
         );
 
         $notification = Notification::withoutGlobalScopes()
@@ -319,6 +320,63 @@ class NotificationTriggerTest extends TestCase
         $this->assertSame('Operational', $notification->data['from_status']);
         $this->assertSame('Under Preventive Maintenance', $notification->data['to_status']);
         $this->assertSame('PM Schedules', $notification->data['source']);
+        $this->assertSame('Scheduled 60,000 km major preventive maintenance service.', $notification->data['remarks']);
+    }
+
+    public function test_inspection_and_damage_review_status_changes_include_diagnostic_remarks_in_driver_alert(): void
+    {
+        $inspection = \App\Models\Inspection::factory()->create([
+            'agency_id' => $this->agency->id,
+            'vehicle_id' => $this->vehicle->id,
+            'driver_id' => $this->driver->id,
+        ]);
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->patchJson("/api/v1/inspections/{$inspection->id}/review", [
+                'vehicle_status' => Vehicle::STATUS_NOT_OPERATIONAL,
+                'remarks' => 'Brake caliper fluid leak confirmed; grounded for GSO Motorpool repair.',
+            ])
+            ->assertOk();
+
+        $this->assertSame(
+            'Brake caliper fluid leak confirmed; grounded for GSO Motorpool repair.',
+            $this->vehicle->fresh()->remarks
+        );
+
+        $firstAlert = Notification::withoutGlobalScopes()
+            ->where('user_id', $this->driver->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame('Inspection Review', $firstAlert->data['source']);
+        $this->assertSame(
+            'Brake caliper fluid leak confirmed; grounded for GSO Motorpool repair.',
+            $firstAlert->data['remarks']
+        );
+
+        $report = \App\Models\DamageReport::factory()->create([
+            'agency_id' => $this->agency->id,
+            'vehicle_id' => $this->vehicle->id,
+            'driver_id' => $this->driver->id,
+        ]);
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->patchJson("/api/v1/damage-reports/{$report->id}/review", [
+                'vehicle_status' => Vehicle::STATUS_OPERATIONAL,
+                'remarks' => 'Brake line repaired and road-tested; cleared for active dispatch.',
+            ])
+            ->assertOk();
+
+        $secondAlert = Notification::withoutGlobalScopes()
+            ->where('user_id', $this->driver->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame('Damage Review', $secondAlert->data['source']);
+        $this->assertSame(
+            'Brake line repaired and road-tested; cleared for active dispatch.',
+            $secondAlert->data['remarks']
+        );
     }
 
     /* ---------------------- driver self-registration --------------------- */

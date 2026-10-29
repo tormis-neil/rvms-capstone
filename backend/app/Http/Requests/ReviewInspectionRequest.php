@@ -23,6 +23,7 @@ class ReviewInspectionRequest extends FormRequest
     {
         return [
             'vehicle_status' => ['nullable', Rule::in(Vehicle::MANUAL_STATUSES)],
+            'remarks' => ['nullable', 'string', 'max:1000'],
         ];
     }
 }

@@ -44,6 +44,7 @@ class IdentifierUniquenessTest extends TestCase
             'engine_number' => 'ENG-001',
             'chassis_number' => 'CHS-001',
             'current_mileage' => 100,
+            'remarks' => 'Baseline intake condition verified.',
         ], $overrides);
     }
 

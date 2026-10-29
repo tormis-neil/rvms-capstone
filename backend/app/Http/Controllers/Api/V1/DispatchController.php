@@ -67,6 +67,9 @@ class DispatchController extends Controller
                 $dispatch->vehicle,
                 Vehicle::STATUS_DISPATCHED,
                 VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+                [
+                    'remarks' => sprintf('Dispatched for %s — %s.', $dispatch->missionLabel(), $dispatch->location),
+                ],
             );
 
             return $dispatch;
@@ -143,7 +146,11 @@ class DispatchController extends Controller
             ]);
 
             $vehicle = $dispatch->vehicle;
-            $extra = [];
+            $extra = [
+                'remarks' => $request->filled('remarks')
+                    ? trim((string) $request->validated('remarks'))
+                    : sprintf('Returned from %s (%s).', $dispatch->missionLabel(), $dispatch->location),
+            ];
 
             if ($odometerIn !== null && $odometerIn > (int) $vehicle->current_mileage) {
                 $extra['current_mileage'] = $odometerIn;

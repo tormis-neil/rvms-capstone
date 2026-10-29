@@ -28,6 +28,8 @@ use Illuminate\Validation\ValidationException;
 class VehicleStatusWriter
 {
     /** Sources, used verbatim in the "set <when> · <source>" line. */
+    public const SOURCE_INITIAL_REGISTRATION = 'Initial Registration';
+
     public const SOURCE_VEHICLES = 'Vehicle Management';
 
     public const SOURCE_INSPECTION = 'Inspection Review';
@@ -132,6 +134,7 @@ class VehicleStatusWriter
                     'from_status' => $previous,
                     'to_status' => $status,
                     'source' => $source,
+                    'remarks' => $vehicle->remarks,
                 ],
             );
         }

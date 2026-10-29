@@ -222,6 +222,7 @@ class AdviserRecommendationsWebTest extends TestCase
                 'current_mileage' => 500,
                 'assigned_driver_id' => $primary->id,
                 'secondary_driver_id' => $secondary->id,
+                'remarks' => 'Baseline intake inspection completed.',
             ])->assertRedirect(route('vehicles'));
 
         $this->assertSame(

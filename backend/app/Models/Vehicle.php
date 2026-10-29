@@ -97,6 +97,12 @@ class Vehicle extends Model
     }
 
     /**
+     * An open dispatch was edited onto a DIFFERENT vehicle, so the one it used
+     * to name is released.
+     */
+    public const SOURCE_INITIAL_REGISTRATION = 'Initial Registration';
+
+    /**
      * Provenance line for the status-change confirmation, e.g.
      * "set Jul 24, 2026 · PM Schedules". Empty when the status predates
      * tracking (seeded or migrated rows).

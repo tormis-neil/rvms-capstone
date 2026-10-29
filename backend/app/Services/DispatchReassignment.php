@@ -56,6 +56,9 @@ class DispatchReassignment
             $dispatch->vehicle,
             Vehicle::STATUS_DISPATCHED,
             VehicleStatusWriter::SOURCE_DISPATCH_OPEN,
+            [
+                'remarks' => sprintf('Dispatched for %s — %s.', $dispatch->missionLabel(), $dispatch->location),
+            ],
         );
     }
 
@@ -84,6 +87,9 @@ class DispatchReassignment
             $previous,
             Vehicle::STATUS_OPERATIONAL,
             VehicleStatusWriter::SOURCE_DISPATCH_EDIT,
+            [
+                'remarks' => 'Released from reassigned dispatch.',
+            ],
         );
     }
 }

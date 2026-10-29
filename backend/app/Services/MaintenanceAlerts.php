@@ -67,6 +67,8 @@ class MaintenanceAlerts
             'vehicle_id' => $schedule->vehicle_id,
             'plate' => $schedule->vehicle?->plate_number,
             'service_target' => $schedule->service_target,
+            'pm_type' => $schedule->pm_type,
+            'due_target' => $schedule->targetLabel(),
             'state' => $schedule->status,
         ];
 

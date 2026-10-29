@@ -20,9 +20,11 @@ class DamageReportController extends Controller
     public function review(Request $request, DamageReport $damageReport): RedirectResponse
     {
         // Only the three manual statuses; Dispatched is written by the Dispatch
-        // module alone (FR-18). No admin-remarks column (design decision 7).
+        // module alone (FR-18). Optional diagnostic remarks update vehicles.remarks
+        // and ride in the status notification payload (FR-21).
         $validated = $request->validate([
             'vehicle_status' => ['nullable', Rule::in(Vehicle::MANUAL_STATUSES)],
+            'remarks' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $damageReport->update([
@@ -32,10 +34,22 @@ class DamageReportController extends Controller
         ]);
 
         if (! empty($validated['vehicle_status'])) {
+            $status = $validated['vehicle_status'];
+            $extra = [];
+
+            if ($request->filled('remarks')) {
+                $extra['remarks'] = trim((string) $validated['remarks']);
+            } elseif ($damageReport->vehicle->status !== $status) {
+                $extra['remarks'] = filled($damageReport->nature_of_damage)
+                    ? "Damage assessment: {$damageReport->nature_of_damage}"
+                    : 'Assessed during damage report review.';
+            }
+
             app(VehicleStatusWriter::class)->write(
                 $damageReport->vehicle,
-                $validated['vehicle_status'],
+                $status,
                 VehicleStatusWriter::SOURCE_DAMAGE,
+                $extra,
             );
         }
 

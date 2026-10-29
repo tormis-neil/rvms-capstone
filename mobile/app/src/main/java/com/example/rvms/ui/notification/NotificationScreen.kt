@@ -21,9 +21,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CarRental
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -55,6 +57,9 @@ import com.example.rvms.theme.Surface
 import com.example.rvms.theme.TextPrimary
 import com.example.rvms.theme.TextSecondary
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * The driver's notification inbox (FR-21).
@@ -62,6 +67,10 @@ import kotlinx.coroutines.launch
  * Drivers receive two of the nine types — a vehicle status update for a vehicle
  * assigned to them, and a preventive-maintenance reminder. Everything else is
  * admin-facing and is filtered out server-side by user id.
+ *
+ * Tapping a notification opens its diagnostic detail dialog (showing the
+ * status transition, source module, and the administrator's mechanical remarks
+ * or findings) and marks the alert read.
  *
  * Rows are grouped Today / Yesterday / Earlier exactly as the web dashboard
  * groups them; the grouping and the time label are both computed by the API so
@@ -81,6 +90,7 @@ fun NotificationScreen(
     var unreadCount by remember { mutableIntStateOf(0) }
     var isRefreshing by remember { mutableStateOf(false) }
     var loaded by remember { mutableStateOf(false) }
+    var selectedNotification by remember { mutableStateOf<NotificationDto?>(null) }
 
     var loadError by remember { mutableStateOf<String?>(null) }
 
@@ -99,6 +109,13 @@ fun NotificationScreen(
     }
 
     RefreshOnResume { load() }
+
+    selectedNotification?.let { selected ->
+        NotificationDetailDialog(
+            notification = selected,
+            onDismiss = { selectedNotification = null },
+        )
+    }
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
@@ -176,14 +193,17 @@ fun NotificationScreen(
                 )
 
                 rows.forEach { notification ->
+                    val remarksPreview = notification.payload.stringField("remarks")
                     NotificationItem(
                         title = notification.title,
                         body = notification.message,
+                        remarksSnippet = remarksPreview,
                         time = notification.timeLabel.orEmpty(),
                         icon = iconFor(notification.type),
                         iconTint = toneColor(notification.tone),
                         isRead = notification.isRead,
                         onClick = {
+                            selectedNotification = notification
                             if (!notification.isRead) {
                                 scope.launch {
                                     ServiceLocator.notificationRepository.markRead(notification.id)
@@ -197,6 +217,152 @@ fun NotificationScreen(
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }
+    }
+}
+
+private fun JsonObject?.stringField(key: String): String? =
+    this?.get(key)
+        ?.runCatching { jsonPrimitive.contentOrNull }
+        ?.getOrNull()
+        ?.takeIf { it.isNotBlank() && it != "null" }
+
+/**
+ * Diagnostic detail dialog shown when a driver taps a notification row.
+ * Exposes the administrator's mechanical remarks, status transition, and source
+ * module on status alerts so the driver knows why a vehicle was grounded,
+ * placed under maintenance, dispatched, or cleared for service.
+ */
+@Composable
+private fun NotificationDetailDialog(
+    notification: NotificationDto,
+    onDismiss: () -> Unit,
+) {
+    val payload = notification.payload
+    val plate = payload.stringField("plate")
+    val fromStatus = payload.stringField("from_status")
+    val toStatus = payload.stringField("to_status")
+    val source = payload.stringField("source")
+    val remarks = payload.stringField("remarks")
+    val serviceTarget = payload.stringField("service_target")
+    val pmType = payload.stringField("pm_type")
+    val dueTarget = payload.stringField("due_target")
+    val pmState = payload.stringField("state")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Surface,
+        title = {
+            Column {
+                Text(
+                    text = notification.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                )
+                notification.timeLabel?.takeIf { it.isNotBlank() }?.let { time ->
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = time,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondary,
+                    )
+                }
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = notification.message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Medium,
+                )
+
+                HorizontalDivider(color = Background)
+
+                plate?.let {
+                    DiagnosticRow(label = "Vehicle Plate", value = it)
+                }
+
+                if (fromStatus != null && toStatus != null) {
+                    DiagnosticRow(label = "Status Transition", value = "$fromStatus → $toStatus")
+                } else if (toStatus != null) {
+                    DiagnosticRow(label = "Updated Status", value = toStatus)
+                }
+
+                source?.let {
+                    DiagnosticRow(label = "Source Module", value = it)
+                }
+
+                serviceTarget?.let {
+                    DiagnosticRow(label = "Service Target", value = it)
+                }
+
+                pmType?.let {
+                    DiagnosticRow(label = "Schedule Type", value = it)
+                }
+
+                dueTarget?.let {
+                    DiagnosticRow(label = "Due At", value = it)
+                }
+
+                pmState?.let {
+                    DiagnosticRow(label = "Maintenance State", value = it)
+                }
+
+                if (notification.type == "Vehicle_Status_Update" || remarks != null) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Background)
+                            .padding(12.dp),
+                    ) {
+                        Text(
+                            text = "Administrator's Remarks & Findings",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextSecondary,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = remarks ?: "No additional mechanical remarks recorded.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextPrimary,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = "Close",
+                    color = NavyBlue,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        },
+    )
+}
+
+@Composable
+private fun DiagnosticRow(
+    label: String,
+    value: String,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = TextSecondary,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextPrimary,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }
 
@@ -243,6 +409,7 @@ private fun EmptyInbox() {
 private fun NotificationItem(
     title: String,
     body: String,
+    remarksSnippet: String? = null,
     time: String,
     icon: ImageVector,
     iconTint: Color,
@@ -301,6 +468,16 @@ private fun NotificationItem(
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                 )
+                remarksSnippet?.let { note ->
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Remarks: $note",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = NavyBlue,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }

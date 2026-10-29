@@ -57,7 +57,16 @@ class WebVehiclePageTest extends TestCase
 
         $this->actingAs($this->admin);
 
-        // Add
+        // Add (requires baseline remarks on initial registration)
+        $this->from('/vehicles')->post('/vehicles', [
+            'type' => 'Fire Truck',
+            'plate_number' => 'NEW-0001',
+            'make' => 'Isuzu',
+            'model' => 'FTR 850',
+            'current_mileage' => 100,
+            'assigned_driver_id' => $driver->id,
+        ])->assertSessionHasErrors('remarks');
+
         $this->post('/vehicles', [
             'type' => 'Fire Truck',
             'plate_number' => 'NEW-0001',
@@ -65,12 +74,15 @@ class WebVehiclePageTest extends TestCase
             'model' => 'FTR 850',
             'current_mileage' => 100,
             'assigned_driver_id' => $driver->id,
+            'remarks' => 'Baseline intake check passed; unit ready for duty.',
         ])->assertRedirect(route('vehicles'));
 
         $vehicle = Vehicle::withoutGlobalScopes()->where('plate_number', 'NEW-0001')->firstOrFail();
         $this->assertSame($this->agency->id, $vehicle->agency_id);
+        $this->assertSame('Baseline intake check passed; unit ready for duty.', $vehicle->remarks);
+        $this->assertSame('Initial Registration', $vehicle->status_source);
 
-        // Edit
+        // Edit (omitting remarks preserves existing baseline/status remarks)
         $this->put("/vehicles/{$vehicle->id}", [
             'type' => 'Fire Truck',
             'plate_number' => 'NEW-0002',
@@ -79,6 +91,7 @@ class WebVehiclePageTest extends TestCase
             'current_mileage' => 200,
         ])->assertRedirect(route('vehicles'));
         $this->assertSame('NEW-0002', $vehicle->fresh()->plate_number);
+        $this->assertSame('Baseline intake check passed; unit ready for duty.', $vehicle->fresh()->remarks);
 
         // Status (manual choices only)
         $this->patch("/vehicles/{$vehicle->id}/status", ['status' => Vehicle::STATUS_UNDER_PM, 'remarks' => 'Reason for the change.'])
@@ -137,6 +150,7 @@ class WebVehiclePageTest extends TestCase
                 'make' => 'Yamaha',
                 'model' => 'WR250',
                 'current_mileage' => 500,
+                'remarks' => 'New patrol motorcycle inspected upon delivery.',
             ])
             ->assertRedirect(route('vehicles'))
             ->assertSessionHas('status', 'Vehicle registered successfully.');

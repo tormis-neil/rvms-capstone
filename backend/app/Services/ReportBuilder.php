@@ -646,14 +646,10 @@ class ReportBuilder
             : $vehicle->plate_number.' ('.$vehicle->type.')';
     }
 
-    /** Mileage-based schedules are due at a reading, time-based at a date. */
+    /** Mileage-based schedules are due at a reading, time-based at a date, dual-trigger at both. */
     private function pmDueLabel(PmSchedule $schedule): string
     {
-        if ($schedule->pm_type === PmSchedule::TYPE_MILEAGE && $schedule->due_mileage !== null) {
-            return number_format($schedule->due_mileage).' km';
-        }
-
-        return $this->date($schedule->due_date);
+        return $schedule->targetLabel();
     }
 
     private function date(?CarbonInterface $value): string

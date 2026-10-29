@@ -46,6 +46,19 @@ class PmScheduleFactory extends Factory
         ]);
     }
 
+    public function dualBased(): static
+    {
+        return $this->state(fn () => [
+            'pm_type' => PmSchedule::TYPE_BOTH,
+            'interval_km' => 5000,
+            'last_pm_mileage' => 40000,
+            'due_mileage' => 45000,
+            'due_soon_threshold_km' => 500,
+            'due_date' => now()->addMonths(6)->toDateString(),
+            'due_soon_threshold_days' => 14,
+        ]);
+    }
+
     public function completed(): static
     {
         return $this->state(fn () => [

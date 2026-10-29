@@ -26,18 +26,20 @@ class PmScheduleSeeder extends Seeder
                 continue;
             }
 
-            // Mileage-based, due soon: due mileage just above the current mileage,
-            // within the threshold window.
+            // Dual-trigger (Mileage & Time-Based), due soon: demonstrates concurrent
+            // mileage and date tracking (whichever comes first).
             $current = (int) $vehicle->current_mileage;
             $mileage = new PmSchedule([
                 'agency_id' => $agency->id,
                 'vehicle_id' => $vehicle->id,
                 'service_target' => 'Oil Change & Filter',
-                'pm_type' => PmSchedule::TYPE_MILEAGE,
+                'pm_type' => PmSchedule::TYPE_BOTH,
                 'interval_km' => 5000,
                 'last_pm_mileage' => max(0, $current - 4700),
                 'due_mileage' => $current + 300,
                 'due_soon_threshold_km' => 500,
+                'due_date' => now()->addMonths(6)->toDateString(),
+                'due_soon_threshold_days' => 14,
             ]);
             $mileage->status = $mileage->recalculatedStatus($current);
             $mileage->save();

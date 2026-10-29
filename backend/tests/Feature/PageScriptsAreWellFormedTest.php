@@ -43,7 +43,9 @@ class PageScriptsAreWellFormedTest extends TestCase
             if (! preg_match('/<script(?![^>]*\bsrc=)[^>]*>/', $contents)) {
                 continue;
             }
-            $relative = str_replace($root.'/', '', $file->getPathname());
+            $pathname = str_replace('\\', '/', $file->getPathname());
+            $normalizedRoot = str_replace('\\', '/', $root);
+            $relative = str_replace($normalizedRoot.'/', '', $pathname);
             $cases[$relative] = [$relative];
         }
 

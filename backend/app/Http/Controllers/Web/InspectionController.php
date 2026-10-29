@@ -56,9 +56,11 @@ class InspectionController extends Controller
     public function review(Request $request, Inspection $inspection): RedirectResponse
     {
         // Only the three manual statuses; Dispatched is written by the Dispatch
-        // module alone (FR-18). No admin-remarks column (design decision 7).
+        // module alone (FR-18). Optional diagnostic remarks update vehicles.remarks
+        // and ride in the status notification payload (FR-21).
         $validated = $request->validate([
             'vehicle_status' => ['nullable', Rule::in(Vehicle::MANUAL_STATUSES)],
+            'remarks' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $inspection->update([
@@ -68,10 +70,23 @@ class InspectionController extends Controller
         ]);
 
         if (! empty($validated['vehicle_status'])) {
+            $status = $validated['vehicle_status'];
+            $extra = [];
+
+            if ($request->filled('remarks')) {
+                $extra['remarks'] = trim((string) $validated['remarks']);
+            } elseif ($inspection->vehicle->status !== $status) {
+                $summary = $inspection->remarksSummary();
+                $extra['remarks'] = ($summary !== '' && $summary !== 'None')
+                    ? "Inspection findings: {$summary}"
+                    : 'Evaluated during BLOWBAGETS inspection review.';
+            }
+
             app(VehicleStatusWriter::class)->write(
                 $inspection->vehicle,
-                $validated['vehicle_status'],
+                $status,
                 VehicleStatusWriter::SOURCE_INSPECTION,
+                $extra,
             );
         }
 

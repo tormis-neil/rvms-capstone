@@ -30,6 +30,7 @@ class StoreVehicleRequest extends FormRequest
     {
         $agencyId = $this->user()->agency_id;
         $vehicleId = $this->route('vehicle')?->id;
+        $isCreating = $vehicleId === null;
 
         return [
             'type' => ['required', 'string', 'max:100'],
@@ -76,6 +77,13 @@ class StoreVehicleRequest extends FormRequest
                     ->where('agency_id', $agencyId)
                     ->where('role', User::ROLE_DRIVER),
             ],
+            // Baseline remarks are mandatory upon initial registration so intake
+            // assessments and pre-existing conditions are documented from day one.
+            'remarks' => [
+                $isCreating ? 'required' : 'nullable',
+                'string',
+                'max:1000',
+            ],
         ];
     }
 
@@ -89,6 +97,7 @@ class StoreVehicleRequest extends FormRequest
             'assigned_driver_id.exists' => 'The assigned driver must be an authorized driver of your agency.',
             'secondary_driver_id.exists' => 'The secondary driver must be an authorized driver of your agency.',
             'secondary_driver_id.different' => 'The secondary driver must be different from the primary driver.',
+            'remarks.required' => 'Baseline condition remarks are required when registering a vehicle.',
         ];
     }
 }

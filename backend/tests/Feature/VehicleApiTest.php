@@ -44,6 +44,7 @@ class VehicleApiTest extends TestCase
             'engine_number' => '4HK1-TC-587234',
             'chassis_number' => 'JALC4W14697100345',
             'current_mileage' => 45230,
+            'remarks' => 'Baseline intake inspection passed; unit mechanically sound.',
         ];
     }
 
@@ -67,9 +68,13 @@ class VehicleApiTest extends TestCase
         $response = $this->postJson('/api/v1/vehicles', $this->validPayload())
             ->assertCreated()
             ->assertJsonPath('data.plate_number', 'ABC-1234')
-            ->assertJsonPath('data.status', Vehicle::STATUS_OPERATIONAL);
+            ->assertJsonPath('data.status', Vehicle::STATUS_OPERATIONAL)
+            ->assertJsonPath('data.remarks', 'Baseline intake inspection passed; unit mechanically sound.');
 
-        $this->assertSame($this->agency->id, Vehicle::withoutGlobalScopes()->findOrFail($response->json('data.id'))->agency_id);
+        $created = Vehicle::withoutGlobalScopes()->findOrFail($response->json('data.id'));
+        $this->assertSame($this->agency->id, $created->agency_id);
+        $this->assertSame('Initial Registration', $created->status_source);
+        $this->assertNotNull($created->status_changed_at);
     }
 
     public function test_store_rejects_missing_required_fields(): void
@@ -78,7 +83,18 @@ class VehicleApiTest extends TestCase
 
         $this->postJson('/api/v1/vehicles', [])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['type', 'plate_number', 'make', 'model', 'current_mileage']);
+            ->assertJsonValidationErrors(['type', 'plate_number', 'make', 'model', 'current_mileage', 'remarks']);
+    }
+
+    public function test_store_requires_baseline_remarks_on_registration(): void
+    {
+        $this->actingAsAdmin();
+
+        $payload = $this->validPayload(['remarks' => '']);
+
+        $this->postJson('/api/v1/vehicles', $payload)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['remarks']);
     }
 
     public function test_plate_number_must_be_unique_within_the_agency(): void

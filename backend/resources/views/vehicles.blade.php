@@ -205,6 +205,11 @@
                                 </select>
                                 @error('secondary_driver_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Baseline / Intake Remarks</label>
+                                <textarea name="remarks" rows="2" class="form-control @error('remarks') is-invalid @enderror" placeholder="Document initial mechanical condition, intake assessment, or pre-existing notes..." required>{{ old('remarks') }}</textarea>
+                                @error('remarks')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
                         </div>
                 </div>
                 <div class="modal-footer border-0">
@@ -291,6 +296,10 @@
                                     @endforeach
                                 </select>
                             </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Remarks <span class="text-secondary fw-normal">(Optional)</span></label>
+                                <textarea name="remarks" id="evRemarks" rows="2" class="form-control" placeholder="Baseline intake notes or current condition remarks..."></textarea>
+                            </div>
                         </div>
                 </div>
                 <div class="modal-footer border-0">
@@ -348,6 +357,10 @@
                             <span class="text-secondary small fw-semibold">Chassis No.</span>
                             <span class="fw-medium text-uppercase" id="vvChassis">JALC4W14697100345</span>
                         </li>
+                        <li class="list-group-item py-3">
+                            <div class="text-secondary small fw-semibold mb-1">Remarks / Condition Notes</div>
+                            <div class="fw-medium text-break" id="vvRemarks">—</div>
+                        </li>
                     </ul>
                 </div>
                 <div class="modal-footer border-0">
@@ -386,6 +399,7 @@
             document.getElementById('vvMileage').textContent = d.mileage;
             document.getElementById('vvEngine').textContent = d.engine;
             document.getElementById('vvChassis').textContent = d.chassis;
+            document.getElementById('vvRemarks').textContent = d.remarks || '—';
             const badge = document.getElementById('vvStatus');
             badge.classList.remove(...badgeClasses);
             badge.classList.add('status-badge', d.badge);
@@ -441,6 +455,7 @@
             document.getElementById('evMileage').value = d.mileage.replace(/[^0-9]/g, '');
             document.getElementById('evDriver').value = d.driverId || '';
             document.getElementById('evSecondaryDriver').value = d.secondaryDriverId || '';
+            document.getElementById('evRemarks').value = d.remarks || '';
         });
 
         // The Update Status modal and ALL of its wiring now live in
