@@ -263,7 +263,7 @@ private fun VehicleCard(vehicle: VehicleDto, agencyName: String) {
                 DetailRow("Engine No.", vehicle.engineNumber ?: "—")
                 DetailRow("Chassis No.", vehicle.chassisNumber ?: "—")
                 DetailRow("Current Mileage", formatMileage(vehicle.currentMileage))
-                DetailRow("Remarks / Condition Notes", vehicle.remarks?.takeIf { it.isNotBlank() } ?: "—")
+                DetailRow("Administrative Findings / Mechanical Remarks", vehicle.remarks?.takeIf { it.isNotBlank() } ?: "—")
             }
         }
 

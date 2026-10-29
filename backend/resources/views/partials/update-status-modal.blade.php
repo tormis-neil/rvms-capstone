@@ -35,18 +35,18 @@
             @csrf
             @method('PATCH')
             <div class="modal-body p-4">
-                <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-4">
-                    <div>
+                <div class="bg-light rounded-3 p-3 mb-4">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
                         <div class="fw-bold" id="usVehicle">—</div>
-                        {{-- WHERE the current status came from — design decision 9
-                             requires the admin see this before committing. --}}
-                        <div class="small text-secondary" id="usOrigin">—</div>
-                        {{-- The assigned driver, where the row knows it. Vehicle
-                             Management's old copy showed this INSTEAD of the origin;
-                             both are useful, so the merged form shows both. --}}
-                        <div class="small text-secondary" id="usDriver"></div>
+                        <span class="badge px-3 py-1 rounded-pill flex-shrink-0 text-nowrap" id="usBadge">—</span>
                     </div>
-                    <span class="badge px-3 py-2 rounded-pill" id="usBadge">—</span>
+                    {{-- WHERE the current status came from — design decision 9
+                         requires the admin see this before committing. --}}
+                    <div class="small text-secondary" id="usOrigin">—</div>
+                    {{-- The assigned driver, where the row knows it. Vehicle
+                         Management's old copy showed this INSTEAD of the origin;
+                         both are useful, so the merged form shows both. --}}
+                    <div class="small text-secondary" id="usDriver"></div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold">New Operational Status</label>
@@ -66,9 +66,9 @@
                          came from, a PM carries its schedule. Note this is a note on
                          the CURRENT status, not a history — the next change
                          overwrites it, like current_mileage. --}}
-                    <label class="form-label fw-semibold">Reason for this change <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold" for="usRemarks">Administrative Findings / Mechanical Remarks <span class="text-danger small fw-normal">(Required)</span></label>
                     <textarea class="form-control" name="remarks" id="usRemarks" rows="2" required
-                              placeholder="Why is the status changing? e.g. Returned from GSO Motorpool, brakes replaced"></textarea>
+                              placeholder="Document mechanical findings, condition assessment, or reason for status change (e.g. Returned from GSO Motorpool, brakes replaced)..."></textarea>
                 </div>
             </div>
             <div class="modal-footer border-0">
@@ -107,7 +107,7 @@
 
             const badge = document.getElementById('usBadge');
             badge.textContent = row.vehicleStatus || '—';
-            badge.className = 'badge px-3 py-2 rounded-pill ' + (badgeClasses[row.vehicleStatus] || 'bg-light text-dark border');
+            badge.className = 'badge px-3 py-1 rounded-pill flex-shrink-0 text-nowrap ' + (badgeClasses[row.vehicleStatus] || 'bg-light text-dark border');
 
             // Start from the current status so a change is always deliberate.
             const select = document.getElementById('usStatus');

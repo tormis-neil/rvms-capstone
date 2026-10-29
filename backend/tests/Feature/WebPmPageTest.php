@@ -86,7 +86,6 @@ class WebPmPageTest extends TestCase
             ->post('/pm', [
                 'vehicle_id' => $vehicle->id,
                 'service_target' => 'Dual Interval Tune-Up',
-                'pm_type' => PmSchedule::TYPE_BOTH,
                 'interval_km' => 5000,
                 'last_pm_mileage' => 40000,
                 'due_soon_threshold_km' => 500,
@@ -108,8 +107,9 @@ class WebPmPageTest extends TestCase
             ->get('/pm')
             ->assertOk()
             ->assertSee('Dual Interval Tune-Up')
-            ->assertSee('Mileage & Time-Based')
-            ->assertSee('45,000 km / ' . $dueDate->format('M j, Y'));
+            ->assertSee('DUE AT (WHICHEVER COMES FIRST)')
+            ->assertSee('45,000 km / ' . $dueDate->format('M j, Y'))
+            ->assertDontSee('js-pm-type', false);
     }
 
     public function test_mark_completed_from_the_page(): void

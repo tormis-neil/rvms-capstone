@@ -143,20 +143,12 @@ class PmSchedule extends Model
         };
     }
 
-    /** The "target" cell: due mileage, due date, or both depending on type. */
+    /** The "target" cell: displays both due mileage and due date (whichever comes first). */
     public function targetLabel(): string
     {
-        if ($this->pm_type === self::TYPE_BOTH) {
-            $km = $this->due_mileage !== null ? number_format($this->due_mileage).' km' : null;
-            $date = $this->due_date?->format('M j, Y');
+        $km = $this->due_mileage !== null ? number_format($this->due_mileage).' km' : null;
+        $date = $this->due_date?->format('M j, Y');
 
-            return implode(' / ', array_filter([$km, $date])) ?: '—';
-        }
-
-        if ($this->pm_type === self::TYPE_MILEAGE) {
-            return $this->due_mileage !== null ? number_format($this->due_mileage).' km' : '—';
-        }
-
-        return $this->due_date?->format('M j, Y') ?? '—';
+        return implode(' / ', array_filter([$km, $date])) ?: '—';
     }
 }

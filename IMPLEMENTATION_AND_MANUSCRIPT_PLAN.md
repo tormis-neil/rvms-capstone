@@ -11,12 +11,12 @@
 
 ## Overview of the Three Panel Features
 
-1. **Feature 1 — Dual-Trigger Preventive Maintenance (`Mileage & Time-Based`):**
-   Allow mileage intervals and calendar dates to run concurrently on a single preventive maintenance schedule (e.g., every 5,000 km or 6 months), triggering `Due Soon` or `Due` alerts based on whichever threshold is reached first.
+1. **Feature 1 — Unified Dual-Trigger Preventive Maintenance (Whichever Comes First):**
+   Unify all preventive maintenance schedules in RVMS so mileage intervals (`interval_km`, `last_pm_mileage`, `due_mileage`, `due_soon_threshold_km`) and calendar dates (`due_date`, `due_soon_threshold_days`) run concurrently on every schedule (with no single-trigger `PM Type` selector in the UI), triggering `Due Soon` or `Due` alerts based on whichever threshold is reached first.
 2. **Feature 2 — Driver Diagnostic Transparency on Status Alerts:**
-   Allow Authorized Drivers on the Android mobile app to tap any vehicle status notification (`Vehicle_Status_Update`) to view the Agency Administrator's mechanical remarks, diagnostic findings, status transition (`from_status` $\rightarrow$ `to_status`), and triggering module explaining why the vehicle was grounded, serviced, or cleared for duty.
-3. **Feature 3 — Mandatory Baseline Remarks upon Initial Vehicle Registration:**
-   Require baseline intake condition remarks when registering a vehicle into the fleet so pre-existing mechanical conditions and intake assessments are recorded from day one.
+   Allow Authorized Drivers on the Android mobile app to tap any vehicle status notification (`Vehicle_Status_Update`) to view the Agency Administrator's **Administrative Findings / Mechanical Remarks**, status transition (`from_status` $\rightarrow$ `to_status`), and triggering module explaining why the vehicle was grounded, serviced, or cleared for duty.
+3. **Feature 3 — Unified Mandatory Administrative Findings / Mechanical Remarks (Initial Registration & All Status Updates):**
+   Unify the remarks field across initial vehicle registration, vehicle edits, manual status changes, inspection reviews, and damage assessments under the single mandatory label **`Administrative Findings / Mechanical Remarks (Required)`** so baseline intake assessments and subsequent mechanical status reasons are consistently documented from day one.
 
 ---
 
@@ -33,13 +33,13 @@ Require Agency Administrators to record baseline condition / intake remarks when
   - Update `backend/app/Http/Controllers/Web/VehicleController.php` (`store`) and `backend/app/Http/Controllers/Api/V1/VehicleController.php` (`store`):
     - Stamp `status_source = 'Initial Registration'` and `status_changed_at = now()` when creating a vehicle so the initial intake remark has complete provenance.
 - **Web Dashboard UI:**
-  - Update `backend/resources/views/vehicles.blade.php`:
-    - Add a required **Baseline / Intake Remarks** textarea in the **Add Vehicle** modal.
-    - Add an optional **Remarks** textarea in the **Edit Vehicle** modal pre-filled with `data-remarks`.
-    - Display the vehicle's current/baseline remarks cleanly in the Vehicle Registry table/row details.
+  - Update `backend/resources/views/vehicles.blade.php` and `backend/resources/views/partials/update-status-modal.blade.php`:
+    - Unify the label and behavior across **Register New Vehicle**, **Edit Vehicle Details**, **Update Vehicle Status**, **Review Inspection**, and **Review & Assess Damage** to **`Administrative Findings / Mechanical Remarks (Required)`** (`required`).
+    - Fix the vehicle summary header layout in `#updateStatusModal`, `#reviewInspectionModal`, and `#reviewDamageModal` so long status pills (`Under Preventive Maintenance`, `Not Operational`) sit in the top-right row (`flex-shrink-0 text-nowrap`) and never overlap the origin timestamp or driver text below.
+    - Display the vehicle's current **Administrative Findings / Mechanical Remarks** cleanly in the Vehicle Information modal (`#viewVehicleModal`).
 - **Android Mobile App UI:**
   - Update `mobile/app/src/main/java/com/example/rvms/ui/vehicle/VehicleInfoScreen.kt`:
-    - Display the vehicle's `remarks` (already deserialized in `VehicleDto.kt`) so assigned drivers can view the baseline/current mechanical note on their assigned vehicle card.
+    - Display the vehicle's `remarks` under **`Administrative Findings / Mechanical Remarks`** so assigned drivers can view the baseline/current mechanical note on their assigned vehicle card.
 - **Database Seeding:**
   - Update vehicle seeders (`backend/database/seeders/VehicleSeeder.php` and UAT agency seeders in `backend/app/Console/Commands/Seed*Command.php`) so all seeded vehicles carry realistic initial baseline/operational remarks.
 
@@ -132,8 +132,9 @@ Support dual-trigger preventive maintenance scheduling (`Mileage & Time-Based`) 
   - Update `backend/app/Services/ReportBuilder.php` (`pmDueLabel()`):
     - Format dual-trigger schedules as `"<due_mileage> km / <due_date>"` in printable PM reports.
 - **Web Dashboard UI (`pm.blade.php`):**
-  - Add `<option value="Mileage & Time-Based">Mileage & Time-Based (Whichever Comes First)</option>` to the Create and Edit PM modals.
-  - Update the modal toggle JavaScript (`js-pm-type` handler, edit modal population, and complete modal handler) so selecting `Mileage & Time-Based` shows **both** the mileage field group and the time-based field group simultaneously, and prompts for `completion_mileage` on completion.
+  - Remove the `PM Type` dropdown from both the **Create PM Schedule** and **Edit PM Schedule** modals and remove the `SCHEDULE TYPE` column from the Active Schedules table.
+  - Always display and require **both** the mileage field group (`interval_km`, `last_pm_mileage`, `due_soon_threshold_km`) and the calendar date field group (`due_date`, `due_soon_threshold_days`) on every schedule ("Whichever Comes First"), and always prompt for `completion_mileage` (`Odometer at Service`) upon completion.
+  - Keep `pm_type` in the underlying `pm_schedules` schema (automatically set to `'Mileage & Time-Based'` and backfilled on existing rows via `2026_10_29_000002_unify_existing_pm_schedules_to_dual_trigger.php`) so **Figure 6.2 (Admin ERD) remains 100% untouched**.
 - **Database Seeding:**
   - Update `PmScheduleSeeder.php` and UAT agency seeders (`Seed*Command.php`) to include realistic `Mileage & Time-Based` schedules (e.g., 5,000 km or 6 months) alongside existing schedules.
 

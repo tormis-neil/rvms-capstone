@@ -232,12 +232,12 @@
                 @csrf
                 @method('PATCH')
                 <div class="modal-body p-4">
-                    <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-3">
-                        <div>
+                    <div class="bg-light rounded-3 p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
                             <div class="fw-bold" id="riVehicle">—</div>
-                            <div class="small text-secondary"><span id="riDriver">—</span> &middot; <span id="riWhen">—</span></div>
+                            <span class="badge px-3 py-1 rounded-pill flex-shrink-0 text-nowrap" id="riResultBadge">—</span>
                         </div>
-                        <span class="badge px-3 py-2 rounded-pill" id="riResultBadge">—</span>
+                        <div class="small text-secondary"><span id="riDriver">—</span> &middot; <span id="riWhen">—</span></div>
                     </div>
                     <div class="border rounded-3 p-3 mb-4">
                         <div class="small text-secondary fw-semibold mb-1">Driver's Submission</div>
@@ -258,8 +258,8 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold" for="riAdminRemarks">Administrative Findings / Mechanical Remarks <span class="text-secondary fw-normal small">(Optional)</span></label>
-                            <textarea class="form-control" name="remarks" id="riAdminRemarks" rows="2" maxlength="1000" placeholder="Explain the mechanical findings or reason for grounding, servicing, or clearing the vehicle..."></textarea>
+                            <label class="form-label fw-semibold" for="riAdminRemarks">Administrative Findings / Mechanical Remarks <span class="text-danger small fw-normal">(Required)</span></label>
+                            <textarea class="form-control" name="remarks" id="riAdminRemarks" rows="2" maxlength="1000" required placeholder="Document mechanical findings, condition assessment, or reason for status change..."></textarea>
                             <div class="form-text">Recorded on the vehicle and sent to the assigned driver when the operational status changes.</div>
                         </div>
                 </div>
@@ -285,12 +285,12 @@
                 @csrf
                 @method('PATCH')
                 <div class="modal-body p-4">
-                    <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-3 mb-3">
-                        <div>
+                    <div class="bg-light rounded-3 p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
                             <div class="fw-bold" id="rdVehicle">—</div>
-                            <div class="small text-secondary"><span id="rdDriver">—</span> &middot; <span id="rdWhen">—</span></div>
+                            <span class="badge badge-pending px-3 py-1 rounded-pill flex-shrink-0 text-nowrap">Pending</span>
                         </div>
-                        <span class="badge badge-pending px-3 py-2 rounded-pill">Pending</span>
+                        <div class="small text-secondary"><span id="rdDriver">—</span> &middot; <span id="rdWhen">—</span></div>
                     </div>
                     <ul class="list-group list-group-flush border rounded-3 mb-4">
                         <li class="list-group-item d-flex justify-content-between"><span class="text-secondary small fw-semibold">Nature of Damage</span><span class="fw-medium text-end ms-3" id="rdNature">—</span></li>
@@ -312,8 +312,8 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold" for="rdAdminRemarks">Administrative Findings / Mechanical Remarks <span class="text-secondary fw-normal small">(Optional)</span></label>
-                            <textarea class="form-control" name="remarks" id="rdAdminRemarks" rows="2" maxlength="1000" placeholder="Explain the damage assessment findings and reason for the status decision..."></textarea>
+                            <label class="form-label fw-semibold" for="rdAdminRemarks">Administrative Findings / Mechanical Remarks <span class="text-danger small fw-normal">(Required)</span></label>
+                            <textarea class="form-control" name="remarks" id="rdAdminRemarks" rows="2" maxlength="1000" required placeholder="Document mechanical findings, damage assessment, or reason for status change..."></textarea>
                             <div class="form-text">Recorded on the vehicle and sent to the assigned driver when the operational status changes.</div>
                         </div>
                 </div>
@@ -434,7 +434,7 @@
             document.getElementById('riWhen').textContent = d.when;
 
             const badge = document.getElementById('riResultBadge');
-            badge.className = 'badge ' + d.resultBadge + ' px-3 py-2 rounded-pill';
+            badge.className = 'badge ' + d.resultBadge + ' px-3 py-1 rounded-pill flex-shrink-0 text-nowrap';
             badge.textContent = d.result;
 
             document.getElementById('riRemarks').textContent = (d.remarks && d.remarks !== 'None')

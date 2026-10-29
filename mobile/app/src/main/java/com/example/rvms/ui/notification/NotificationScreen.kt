@@ -244,7 +244,6 @@ private fun NotificationDetailDialog(
     val source = payload.stringField("source")
     val remarks = payload.stringField("remarks")
     val serviceTarget = payload.stringField("service_target")
-    val pmType = payload.stringField("pm_type")
     val dueTarget = payload.stringField("due_target")
     val pmState = payload.stringField("state")
 
@@ -298,12 +297,8 @@ private fun NotificationDetailDialog(
                     DiagnosticRow(label = "Service Target", value = it)
                 }
 
-                pmType?.let {
-                    DiagnosticRow(label = "Schedule Type", value = it)
-                }
-
                 dueTarget?.let {
-                    DiagnosticRow(label = "Due At", value = it)
+                    DiagnosticRow(label = "Due At (Whichever Comes First)", value = it)
                 }
 
                 pmState?.let {
@@ -319,7 +314,7 @@ private fun NotificationDetailDialog(
                             .padding(12.dp),
                     ) {
                         Text(
-                            text = "Administrator's Remarks & Findings",
+                            text = "Administrative Findings / Mechanical Remarks",
                             style = MaterialTheme.typography.labelSmall,
                             color = TextSecondary,
                             fontWeight = FontWeight.SemiBold,

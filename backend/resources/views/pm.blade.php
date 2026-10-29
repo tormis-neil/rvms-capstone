@@ -36,8 +36,7 @@
                                         <tr>
                                             <th class="py-3 text-secondary fw-semibold small">VEHICLE</th>
                                             <th class="py-3 text-secondary fw-semibold small">MAINTENANCE TARGET</th>
-                                            <th class="py-3 text-secondary fw-semibold small">SCHEDULE TYPE</th>
-                                            <th class="py-3 text-secondary fw-semibold small">DUE AT</th>
+                                            <th class="py-3 text-secondary fw-semibold small">DUE AT (WHICHEVER COMES FIRST)</th>
                                             <th class="py-3 text-secondary fw-semibold small">STATUS</th>
                                             <th class="py-3 text-secondary fw-semibold small text-end">ACTIONS</th>
                                         </tr>
@@ -65,12 +64,9 @@
                                                 <div class="small text-secondary">{{ $pm->vehicle->type ?? '' }}</div>
                                             </td>
                                             <td><div class="fw-semibold">{{ $pm->service_target }}</div></td>
-                                            <td><div class="badge bg-light text-dark border">{{ $pm->pm_type }}</div></td>
                                             <td>
                                                 <div class="fw-bold {{ $pm->status === \App\Models\PmSchedule::STATUS_DUE ? 'text-danger' : ($pm->status === \App\Models\PmSchedule::STATUS_DUE_SOON ? 'text-warning' : 'text-dark') }}">{{ $pm->targetLabel() }}</div>
-                                                @if ($pm->usesMileage())
                                                 <div class="small text-secondary">Current: {{ number_format($pm->vehicle->current_mileage ?? 0) }} km{{ $pm->status === \App\Models\PmSchedule::STATUS_DUE ? ' — overdue' : '' }}</div>
-                                                @endif
                                             </td>
                                             <td><span class="badge {{ $pm->statusBadgeClass() }} px-3 py-2 rounded-pill">{{ $pm->status }}</span></td>
                                             <td class="text-end">
@@ -85,7 +81,7 @@
                                             </td>
                                         </tr>
                                         @empty
-                                        <tr><td colspan="6" class="text-center text-secondary py-4">No active PM schedules.</td></tr>
+                                        <tr><td colspan="5" class="text-center text-secondary py-4">No active PM schedules.</td></tr>
                                         @endforelse
                                     </tbody>
                                 </table>
@@ -191,42 +187,36 @@
                             <div class="form-text">Pre-inspection checklist or recommendation. PDF or image, up to 5 MB.</div>
                             @error('schedule_document')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">PM Type</label>
-                            <select class="form-select js-pm-type" name="pm_type">
-                                <option value="Mileage-Based">Mileage-Based</option>
-                                <option value="Time-Based">Time-Based</option>
-                                <option value="Mileage & Time-Based">Mileage &amp; Time-Based (Whichever Comes First)</option>
-                            </select>
+                        <input type="hidden" name="pm_type" value="Mileage & Time-Based">
+                        <div class="alert alert-light border small text-secondary py-2 px-3 mb-3">
+                            <i class="bi bi-info-circle text-primary me-1"></i>
+                            Status automatically transitions to <strong>Due Soon</strong> or <strong>Due</strong> based on <strong>whichever threshold (mileage or target date) is reached first</strong>.
                         </div>
-                        {{-- Structured, type-appropriate fields replace the prototype's ambiguous
-                             free-text "Interval"/"Threshold" so the schedule can persist and be
-                             recalculated (documented refinement of the prototype form). --}}
                         <div class="js-mileage-fields">
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Interval (km)</label>
-                                    <input type="number" min="1" class="form-control" name="interval_km" placeholder="e.g., 5000">
+                                    <input type="number" min="1" class="form-control" name="interval_km" placeholder="e.g., 5000" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Last PM Mileage</label>
-                                    <input type="number" min="0" class="form-control" name="last_pm_mileage" placeholder="e.g., 41000">
+                                    <input type="number" min="0" class="form-control" name="last_pm_mileage" placeholder="e.g., 41000" required>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Due Soon Threshold (km)</label>
-                                <input type="number" min="0" class="form-control" name="due_soon_threshold_km" placeholder="e.g., 500">
+                                <input type="number" min="0" class="form-control" name="due_soon_threshold_km" placeholder="e.g., 500" required>
                             </div>
                         </div>
-                        <div class="js-time-fields" style="display:none;">
+                        <div class="js-time-fields">
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Target Date</label>
-                                    <input type="date" class="form-control" name="due_date">
+                                    <input type="date" class="form-control" name="due_date" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Due Soon Threshold (days)</label>
-                                    <input type="number" min="0" class="form-control" name="due_soon_threshold_days" placeholder="e.g., 14">
+                                    <input type="number" min="0" class="form-control" name="due_soon_threshold_days" placeholder="e.g., 14" required>
                                 </div>
                             </div>
                         </div>
@@ -348,39 +338,36 @@
                             <input type="file" class="form-control" name="schedule_document" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif">
                             <div class="form-text">PDF or image, up to 5 MB. Leave blank to keep the current file.</div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">PM Type</label>
-                            <select class="form-select js-pm-type" name="pm_type" id="epType">
-                                <option value="Mileage-Based">Mileage-Based</option>
-                                <option value="Time-Based">Time-Based</option>
-                                <option value="Mileage & Time-Based">Mileage &amp; Time-Based (Whichever Comes First)</option>
-                            </select>
+                        <input type="hidden" name="pm_type" id="epType" value="Mileage & Time-Based">
+                        <div class="alert alert-light border small text-secondary py-2 px-3 mb-3">
+                            <i class="bi bi-info-circle text-primary me-1"></i>
+                            Status automatically transitions to <strong>Due Soon</strong> or <strong>Due</strong> based on <strong>whichever threshold (mileage or target date) is reached first</strong>.
                         </div>
                         <div class="js-mileage-fields">
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Interval (km)</label>
-                                    <input type="number" min="1" class="form-control" name="interval_km" id="epIntervalKm">
+                                    <input type="number" min="1" class="form-control" name="interval_km" id="epIntervalKm" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Last PM Mileage</label>
-                                    <input type="number" min="0" class="form-control" name="last_pm_mileage" id="epLastMileage">
+                                    <input type="number" min="0" class="form-control" name="last_pm_mileage" id="epLastMileage" required>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Due Soon Threshold (km)</label>
-                                <input type="number" min="0" class="form-control" name="due_soon_threshold_km" id="epDueSoonKm">
+                                <input type="number" min="0" class="form-control" name="due_soon_threshold_km" id="epDueSoonKm" required>
                             </div>
                         </div>
-                        <div class="js-time-fields" style="display:none;">
+                        <div class="js-time-fields">
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Target Date</label>
-                                    <input type="date" class="form-control" name="due_date" id="epDueDate">
+                                    <input type="date" class="form-control" name="due_date" id="epDueDate" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Due Soon Threshold (days)</label>
-                                    <input type="number" min="0" class="form-control" name="due_soon_threshold_days" id="epDueSoonDays">
+                                    <input type="number" min="0" class="form-control" name="due_soon_threshold_days" id="epDueSoonDays" required>
                                 </div>
                             </div>
                         </div>
@@ -423,25 +410,7 @@
             sync();
         }
 
-        // Show the mileage-based, time-based, or dual-trigger fields for a modal's PM Type select.
-        function bindTypeToggle(root) {
-            const select = root.querySelector('.js-pm-type');
-            const mileage = root.querySelector('.js-mileage-fields');
-            const time = root.querySelector('.js-time-fields');
-            if (!select || !mileage || !time) return;
-            const sync = () => {
-                const usesMileage = select.value === 'Mileage-Based' || select.value === 'Mileage & Time-Based';
-                const usesTime = select.value === 'Time-Based' || select.value === 'Mileage & Time-Based';
-                mileage.style.display = usesMileage ? '' : 'none';
-                time.style.display = usesTime ? '' : 'none';
-            };
-            select.addEventListener('change', sync);
-            sync();
-        }
-
-        bindTypeToggle(document.getElementById('createPmModal'));
         const editModal = document.getElementById('editPmModal');
-        bindTypeToggle(editModal);
 
         // Mark Completed — set the per-row action.
         const markCompletedModal = document.getElementById('markCompletedModal');
@@ -451,10 +420,10 @@
             if (!row) return;
             document.getElementById('completePmForm').action = completePmTemplate.replace('__ID__', row.dataset.id);
 
-            // Mileage-based and dual-trigger schedules have an odometer to record.
+            // Every unified PM schedule tracks both mileage and calendar date.
             const wrap = markCompletedModal.querySelector('.js-completion-mileage');
             const input = document.getElementById('cpMileage');
-            const usesMileage = row.dataset.pmType === 'Mileage-Based' || row.dataset.pmType === 'Mileage & Time-Based';
+            const usesMileage = row.dataset.pmType !== 'Time-Based';
 
             wrap.style.display = usesMileage ? '' : 'none';
             input.value = usesMileage ? (row.dataset.currentMileage || '') : '';
@@ -472,16 +441,12 @@
             document.getElementById('epDocCurrent').innerHTML = d.document
                 ? '<a href="' + d.document + '" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> View current document</a>'
                 : '<span class="text-secondary">No document on file.</span>';
-            document.getElementById('epType').value = d.pmType;
+            document.getElementById('epType').value = 'Mileage & Time-Based';
             document.getElementById('epIntervalKm').value = d.intervalKm || '';
             document.getElementById('epLastMileage').value = d.lastPmMileage || '';
             document.getElementById('epDueSoonKm').value = d.dueSoonKm || '';
             document.getElementById('epDueDate').value = d.dueDate || '';
             document.getElementById('epDueSoonDays').value = d.dueSoonDays || '';
-            const usesMileage = d.pmType === 'Mileage-Based' || d.pmType === 'Mileage & Time-Based';
-            const usesTime = d.pmType === 'Time-Based' || d.pmType === 'Mileage & Time-Based';
-            editModal.querySelector('.js-mileage-fields').style.display = usesMileage ? '' : 'none';
-            editModal.querySelector('.js-time-fields').style.display = usesTime ? '' : 'none';
         });
     </script>
 @endsection

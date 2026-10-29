@@ -22,6 +22,15 @@ class StorePmScheduleRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->filled('pm_type')) {
+            $this->merge([
+                'pm_type' => PmSchedule::TYPE_BOTH,
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         $agencyId = $this->user()->agency_id;

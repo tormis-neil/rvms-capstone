@@ -206,8 +206,8 @@
                                 @error('secondary_driver_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                             <div class="col-12">
-                                <label class="form-label fw-semibold">Baseline / Intake Remarks</label>
-                                <textarea name="remarks" rows="2" class="form-control @error('remarks') is-invalid @enderror" placeholder="Document initial mechanical condition, intake assessment, or pre-existing notes..." required>{{ old('remarks') }}</textarea>
+                                <label class="form-label fw-semibold">Administrative Findings / Mechanical Remarks <span class="text-danger small fw-normal">(Required)</span></label>
+                                <textarea name="remarks" rows="2" class="form-control @error('remarks') is-invalid @enderror" placeholder="Document mechanical findings, baseline condition assessment, or operational status remarks..." required>{{ old('remarks') }}</textarea>
                                 @error('remarks')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
@@ -297,8 +297,8 @@
                                 </select>
                             </div>
                             <div class="col-12">
-                                <label class="form-label fw-semibold">Remarks <span class="text-secondary fw-normal">(Optional)</span></label>
-                                <textarea name="remarks" id="evRemarks" rows="2" class="form-control" placeholder="Baseline intake notes or current condition remarks..."></textarea>
+                                <label class="form-label fw-semibold" for="evRemarks">Administrative Findings / Mechanical Remarks <span class="text-danger small fw-normal">(Required)</span></label>
+                                <textarea name="remarks" id="evRemarks" rows="2" class="form-control" placeholder="Document mechanical findings, baseline condition assessment, or operational status remarks..." required></textarea>
                             </div>
                         </div>
                 </div>
@@ -358,7 +358,7 @@
                             <span class="fw-medium text-uppercase" id="vvChassis">JALC4W14697100345</span>
                         </li>
                         <li class="list-group-item py-3">
-                            <div class="text-secondary small fw-semibold mb-1">Remarks / Condition Notes</div>
+                            <div class="text-secondary small fw-semibold mb-1">Administrative Findings / Mechanical Remarks</div>
                             <div class="fw-medium text-break" id="vvRemarks">—</div>
                         </li>
                     </ul>

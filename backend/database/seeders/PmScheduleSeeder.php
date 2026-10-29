@@ -44,16 +44,20 @@ class PmScheduleSeeder extends Seeder
             $mileage->status = $mileage->recalculatedStatus($current);
             $mileage->save();
 
-            // Time-based, upcoming.
+            // Upcoming schedule: concurrent mileage & calendar date (whichever comes first).
             $time = new PmSchedule([
                 'agency_id' => $agency->id,
                 'vehicle_id' => $vehicle->id,
                 'service_target' => 'Brake Fluid Flush',
-                'pm_type' => PmSchedule::TYPE_TIME,
+                'pm_type' => PmSchedule::TYPE_BOTH,
+                'interval_km' => 10000,
+                'last_pm_mileage' => max(0, $current - 2000),
+                'due_mileage' => $current + 8000,
+                'due_soon_threshold_km' => 1000,
                 'due_date' => now()->addMonths(5)->toDateString(),
                 'due_soon_threshold_days' => 14,
             ]);
-            $time->status = $time->recalculatedStatus();
+            $time->status = $time->recalculatedStatus($current);
             $time->save();
 
             // Completed record.
@@ -61,11 +65,16 @@ class PmScheduleSeeder extends Seeder
                 'agency_id' => $agency->id,
                 'vehicle_id' => $vehicle->id,
                 'service_target' => 'Brake Inspection & Fluid',
-                'pm_type' => PmSchedule::TYPE_TIME,
+                'pm_type' => PmSchedule::TYPE_BOTH,
+                'interval_km' => 5000,
+                'last_pm_mileage' => max(0, $current - 5000),
+                'due_mileage' => $current,
+                'due_soon_threshold_km' => 500,
                 'due_date' => now()->subDays(20)->toDateString(),
                 'due_soon_threshold_days' => 14,
                 'status' => PmSchedule::STATUS_COMPLETED,
                 'date_serviced' => now()->subDays(19)->toDateString(),
+                'completion_mileage' => $current,
                 'completion_repair_source' => 'GSO Motorpool',
                 'completion_parts_replaced' => 'Brake fluid',
                 'completion_remarks' => 'Completed on schedule.',
