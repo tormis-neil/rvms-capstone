@@ -58,3 +58,4 @@ return new class extends Migration
         // Non-destructive data backfill; nothing to revert.
     }
 };
+

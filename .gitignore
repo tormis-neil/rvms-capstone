@@ -11,3 +11,7 @@
 # OS-generated files
 .DS_Store
 Thumbs.db
+
+# Firebase credentials — never version-control client configs or private keys
+google-services.json
+*firebase-adminsdk*.json
