@@ -87,3 +87,16 @@
     margin-right: 0.375rem;
     vertical-align: -1px;
 }
+
+/* ---------------------------------------------------------------------------
+ * 3. System Monitor metadata viewer (IAS 2 activity log details modal).
+ *
+ * Bounds tall JSON payloads inside the modal while keeping long strings or
+ * vehicle remarks wrapped cleanly instead of stretching the dialog horizontally.
+ * ------------------------------------------------------------------------- */
+.activity-metadata-pre {
+    max-height: 220px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}

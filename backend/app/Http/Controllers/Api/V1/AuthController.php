@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
+use App\Models\ActivityLog;
 use App\Models\Notification;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use App\Services\NotificationDispatcher;
 use App\Support\LoginThrottle;
 use Illuminate\Http\JsonResponse;
@@ -27,12 +29,25 @@ class AuthController extends Controller
         // Same throttle as the dashboard (R10 sub-task 5): both front doors
         // open the same accounts, so locking one and not the other would
         // leave the back door propped open.
-        LoginThrottle::assertNotLocked($request, $email);
+        try {
+            LoginThrottle::assertNotLocked($request, $email);
+        } catch (ValidationException $e) {
+            app(ActivityLogger::class)->logLoginLockout($request, $email, ActivityLog::SOURCE_MOBILE_API);
+
+            throw $e;
+        }
 
         $user = User::query()->where('email', $email)->first();
 
         if (! $user || ! Hash::check($request->input('password'), $user->password)) {
             LoginThrottle::recordFailure($request, $email);
+            app(ActivityLogger::class)->logLoginFailed(
+                $request,
+                $email,
+                ActivityLog::SOURCE_MOBILE_API,
+                $user ? 'Invalid password' : 'Unrecognized account',
+                $user,
+            );
 
             throw ValidationException::withMessages([
                 'email' => 'These credentials do not match our records.',
@@ -41,6 +56,13 @@ class AuthController extends Controller
 
         if (! $user->isActive()) {
             LoginThrottle::recordFailure($request, $email);
+            app(ActivityLogger::class)->logLoginFailed(
+                $request,
+                $email,
+                ActivityLog::SOURCE_MOBILE_API,
+                "Account status is {$user->status}",
+                $user,
+            );
 
             $reason = $user->status === User::STATUS_PENDING
                 ? 'Your account is pending approval by your agency administrator.'
@@ -52,6 +74,8 @@ class AuthController extends Controller
         LoginThrottle::clear($request, $email);
 
         $token = $user->createToken($user->role.'-token')->plainTextToken;
+
+        app(ActivityLogger::class)->logLoginSuccess($request, $user, ActivityLog::SOURCE_MOBILE_API);
 
         return response()->json([
             'token' => $token,
@@ -100,7 +124,13 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
+        $user = $request->user();
+
         $request->user()->currentAccessToken()->delete();
+
+        if ($user instanceof User) {
+            app(ActivityLogger::class)->logLogout($request, $user, ActivityLog::SOURCE_MOBILE_API);
+        }
 
         return response()->json(['message' => 'Logged out successfully.']);
     }

@@ -63,6 +63,9 @@
                 <a href="{{ route('profile') }}" class="nav-item {{ request()->routeIs('profile') ? 'active' : '' }}">
                     <i class="bi bi-person-gear"></i> Agency Profile
                 </a>
+                <a href="{{ route('activity-logs') }}" class="nav-item {{ request()->routeIs('activity-logs') ? 'active' : '' }}">
+                    <i class="bi bi-shield-check"></i> System Monitor
+                </a>
             </div>
         </nav>
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ActivityLog;
 use App\Models\Agency;
 use App\Models\DamageReport;
 use App\Models\Dispatch;
@@ -60,6 +61,18 @@ class TableColumnAlignmentTest extends TestCase
         Dispatch::factory()->create([
             'agency_id' => $this->agency->id, 'vehicle_id' => $vehicle->id, 'driver_id' => $driver->id,
         ]);
+        ActivityLog::query()->create([
+            'agency_id' => $this->agency->id,
+            'user_id' => $this->admin->id,
+            'actor_name' => $this->admin->name,
+            'actor_email' => $this->admin->email,
+            'actor_role' => User::ROLE_ADMIN,
+            'event_type' => ActivityLog::TYPE_LOGIN_SUCCESS,
+            'severity' => ActivityLog::SEVERITY_INFO,
+            'source' => ActivityLog::SOURCE_WEB,
+            'ip_address' => '127.0.0.1',
+            'description' => "{$this->admin->name} signed in via Web Portal.",
+        ]);
     }
 
     public static function pages(): array
@@ -71,6 +84,7 @@ class TableColumnAlignmentTest extends TestCase
             'repairs' => ['/repairs'],
             'pm schedules' => ['/pm'],
             'dispatch' => ['/dispatch'],
+            'activity logs' => ['/activity-logs'],
             // A report is printed and filed, so a column shifted one place left
             // survives on paper in a way a screen misalignment does not. Every
             // module already has a seeded row above, so all six render rows.

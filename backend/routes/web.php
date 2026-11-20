@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Web\ActivityLogController;
 use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\DamageReportController;
@@ -91,6 +92,9 @@ Route::middleware(['auth', 'role:admin', \App\Http\Middleware\NoStoreDashboard::
     // Opening one marks it read and forwards to the module it concerns.
     Route::post('/notifications/{notification}', [NotificationController::class, 'open'])
         ->whereNumber('notification')->name('notifications.open');
+
+    // System Monitor (IAS 2 activity log viewer — read-only).
+    Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });

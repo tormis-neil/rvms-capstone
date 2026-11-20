@@ -104,6 +104,7 @@ class VehicleStatusWriter
         // value — and notifying on those would ring the driver for nothing.
         if ($previous !== $status) {
             $this->notifyAssignedDriver($vehicle, $previous, $status, $source);
+            app(ActivityLogger::class)->logVehicleStatusUpdated($vehicle, $previous, $status, $source);
         }
     }
 

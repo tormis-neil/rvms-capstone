@@ -54,6 +54,7 @@ class PagesDoNotLeakSourceTest extends TestCase
             'notifications' => ['/notifications'],
             'reports' => ['/reports'],
             'profile' => ['/profile'],
+            'activity-logs' => ['/activity-logs'],
         ];
     }
 

@@ -36,6 +36,7 @@ class NoStoreDashboardTest extends TestCase
             'repairs' => ['/repairs'],
             'pm schedules' => ['/pm'],
             'dispatch' => ['/dispatch'],
+            'activity logs' => ['/activity-logs'],
         ];
     }
 

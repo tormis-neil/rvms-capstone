@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use App\Support\LoginThrottle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,10 +35,22 @@ class AuthController extends Controller
         // Throttled per account+IP (R10 sub-task 5, NFR-02). Checked BEFORE
         // Auth::attempt, so a locked-out caller never reaches the password
         // comparison at all.
-        LoginThrottle::assertNotLocked($request, $credentials['email']);
+        try {
+            LoginThrottle::assertNotLocked($request, $credentials['email']);
+        } catch (ValidationException $e) {
+            app(ActivityLogger::class)->logLoginLockout($request, $credentials['email'], ActivityLog::SOURCE_WEB);
+
+            throw $e;
+        }
 
         if (! Auth::attempt($credentials)) {
             LoginThrottle::recordFailure($request, $credentials['email']);
+            app(ActivityLogger::class)->logLoginFailed(
+                $request,
+                $credentials['email'],
+                ActivityLog::SOURCE_WEB,
+                'Invalid credentials',
+            );
 
             throw ValidationException::withMessages([
                 'email' => 'These credentials do not match our records.',
@@ -47,6 +61,13 @@ class AuthController extends Controller
 
         if ($user->role !== User::ROLE_ADMIN) {
             LoginThrottle::recordFailure($request, $credentials['email']);
+            app(ActivityLogger::class)->logLoginFailed(
+                $request,
+                $credentials['email'],
+                ActivityLog::SOURCE_WEB,
+                'Driver account restricted from admin portal',
+                $user,
+            );
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -58,6 +79,13 @@ class AuthController extends Controller
 
         if (! $user->isActive()) {
             LoginThrottle::recordFailure($request, $credentials['email']);
+            app(ActivityLogger::class)->logLoginFailed(
+                $request,
+                $credentials['email'],
+                ActivityLog::SOURCE_WEB,
+                "Account status is {$user->status}",
+                $user,
+            );
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -73,15 +101,23 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
+        app(ActivityLogger::class)->logLoginSuccess($request, $user, ActivityLog::SOURCE_WEB);
+
         return redirect()->intended(route('dashboard'));
     }
 
     public function logout(Request $request): RedirectResponse
     {
+        $user = Auth::guard('web')->user();
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        if ($user instanceof User) {
+            app(ActivityLogger::class)->logLogout($request, $user, ActivityLog::SOURCE_WEB);
+        }
 
         return redirect()->route('login');
     }
