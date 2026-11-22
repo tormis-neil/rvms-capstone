@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\ActivityLog;
 use App\Models\User;
 use App\Models\Vehicle;
-use App\Support\LoginThrottle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -79,37 +78,6 @@ class ActivityLogger
             'description' => "Failed {$source} login for {$label} ({$reason}).",
             'metadata' => [
                 'reason' => $reason,
-                'account_recognized' => $actor['recognized'],
-                'source' => $source,
-            ],
-        ]);
-    }
-
-    public function logLoginLockout(
-        Request $request,
-        string $email,
-        string $source,
-        ?User $matchedUser = null,
-    ): ?ActivityLog {
-        $actor = $this->resolveAuthActor($email, $matchedUser);
-
-        return $this->record([
-            'agency_id' => $actor['agency_id'],
-            'user_id' => $actor['user_id'],
-            'actor_name' => $actor['actor_name'],
-            'actor_email' => $actor['actor_email'],
-            'actor_role' => $actor['actor_role'],
-            'event_type' => ActivityLog::TYPE_LOGIN_LOCKOUT,
-            'severity' => ActivityLog::SEVERITY_HIGH,
-            'source' => $source,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'target_label' => $actor['actor_email'],
-            'description' => "Login locked out for {$actor['actor_email']} after repeated failed attempts via {$source}.",
-            'metadata' => [
-                'reason' => 'Rate limit exceeded (login lockout)',
-                'max_attempts' => LoginThrottle::MAX_ATTEMPTS,
-                'lockout_seconds' => LoginThrottle::DECAY_SECONDS,
                 'account_recognized' => $actor['recognized'],
                 'source' => $source,
             ],
@@ -244,7 +212,7 @@ class ActivityLogger
     }
 
     /**
-     * Resolve actor identity for login failures and lockouts without leaking
+     * Resolve actor identity for failed login attempts without leaking
      * account existence back to callers.
      *
      * @return array{agency_id: ?int, user_id: ?int, actor_name: ?string, actor_email: string, actor_role: string, recognized: bool}

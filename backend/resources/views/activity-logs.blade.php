@@ -47,8 +47,8 @@
                         <div class="card card-stat h-100 p-3" style="border-left: 4px solid #DC2626;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <p class="text-secondary small fw-semibold mb-1">FAILED LOGINS &amp; LOCKOUTS</p>
-                                    <h2 class="fw-bold mb-0">{{ $summary['failed_and_lockouts'] }}</h2>
+                                    <p class="text-secondary small fw-semibold mb-1">FAILED LOGINS</p>
+                                    <h2 class="fw-bold mb-0">{{ $summary['failed_logins'] }}</h2>
                                 </div>
                                 <div class="rounded p-2" style="background-color: rgba(220, 38, 38, 0.1); color: #DC2626;">
                                     <i class="bi bi-shield-exclamation fs-4"></i>

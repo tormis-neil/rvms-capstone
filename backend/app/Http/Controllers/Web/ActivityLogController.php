@@ -22,11 +22,13 @@ class ActivityLogController extends Controller
 
         $eventsToday = ActivityLog::query()
             ->visibleToAgency($agencyId)
+            ->monitoredTypes()
             ->where('created_at', '>=', now()->startOfDay())
             ->count();
 
         $byType = ActivityLog::query()
             ->visibleToAgency($agencyId)
+            ->monitoredTypes()
             ->selectRaw('event_type, COUNT(*) as total')
             ->groupBy('event_type')
             ->pluck('total', 'event_type');
@@ -34,8 +36,7 @@ class ActivityLogController extends Controller
         $summary = [
             'events_today' => $eventsToday,
             'successful_logins' => (int) $byType->get(ActivityLog::TYPE_LOGIN_SUCCESS, 0),
-            'failed_and_lockouts' => (int) $byType->get(ActivityLog::TYPE_LOGIN_FAILED, 0)
-                + (int) $byType->get(ActivityLog::TYPE_LOGIN_LOCKOUT, 0),
+            'failed_logins' => (int) $byType->get(ActivityLog::TYPE_LOGIN_FAILED, 0),
             'vehicle_status_updates' => (int) $byType->get(ActivityLog::TYPE_VEHICLE_STATUS_UPDATED, 0),
         ];
 
@@ -46,6 +47,7 @@ class ActivityLogController extends Controller
 
         $logs = ActivityLog::query()
             ->visibleToAgency($agencyId)
+            ->monitoredTypes()
             ->when($search !== '', function ($query) use ($search) {
                 $term = '%'.$search.'%';
                 $query->where(fn ($q) => $q

@@ -29,13 +29,7 @@ class AuthController extends Controller
         // Same throttle as the dashboard (R10 sub-task 5): both front doors
         // open the same accounts, so locking one and not the other would
         // leave the back door propped open.
-        try {
-            LoginThrottle::assertNotLocked($request, $email);
-        } catch (ValidationException $e) {
-            app(ActivityLogger::class)->logLoginLockout($request, $email, ActivityLog::SOURCE_MOBILE_API);
-
-            throw $e;
-        }
+        LoginThrottle::assertNotLocked($request, $email);
 
         $user = User::query()->where('email', $email)->first();
 

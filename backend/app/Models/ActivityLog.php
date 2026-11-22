@@ -10,9 +10,9 @@ use Illuminate\Support\Str;
 /**
  * Append-only system monitoring record for security and operational auditing.
  *
- * Deliberately does NOT use BelongsToAgency / AgencyScope: failed login and
- * lockout attempts for unrecognized emails have agency_id = null, and hiding
- * them via a global scope would blind administrators to external probing.
+ * Deliberately does NOT use BelongsToAgency / AgencyScope: failed login
+ * attempts for unrecognized emails have agency_id = null, and hiding them
+ * via a global scope would blind administrators to external probing.
  */
 class ActivityLog extends Model
 {
@@ -22,8 +22,6 @@ class ActivityLog extends Model
 
     public const TYPE_LOGIN_FAILED = 'login_failed';
 
-    public const TYPE_LOGIN_LOCKOUT = 'login_lockout';
-
     public const TYPE_LOGOUT = 'logout';
 
     public const TYPE_VEHICLE_STATUS_UPDATED = 'vehicle_status_updated';
@@ -31,9 +29,8 @@ class ActivityLog extends Model
     /** @var array<string, string> */
     public const TYPES = [
         self::TYPE_LOGIN_SUCCESS => 'Successful Login',
-        self::TYPE_LOGIN_FAILED => 'Failed Login',
-        self::TYPE_LOGIN_LOCKOUT => 'Login Lockout',
         self::TYPE_LOGOUT => 'Logout',
+        self::TYPE_LOGIN_FAILED => 'Failed Login',
         self::TYPE_VEHICLE_STATUS_UPDATED => 'Vehicle Status Updated',
     ];
 
@@ -41,13 +38,10 @@ class ActivityLog extends Model
 
     public const SEVERITY_WARNING = 'warning';
 
-    public const SEVERITY_HIGH = 'high';
-
     /** @var array<string, string> */
     public const SEVERITIES = [
         self::SEVERITY_INFO => 'Info',
         self::SEVERITY_WARNING => 'Warning',
-        self::SEVERITY_HIGH => 'High',
     ];
 
     public const SOURCE_WEB = 'Web Portal';
@@ -112,6 +106,19 @@ class ActivityLog extends Model
             ->orWhereNull('agency_id'));
     }
 
+    /**
+     * Limit queries to the active monitored event types so any legacy rows
+     * from retired event types stay preserved in storage without affecting
+     * monitor metrics or listings.
+     *
+     * @param  Builder<ActivityLog>  $query
+     * @return Builder<ActivityLog>
+     */
+    public function scopeMonitoredTypes(Builder $query): Builder
+    {
+        return $query->whereIn('event_type', array_keys(self::TYPES));
+    }
+
     public function eventLabel(): string
     {
         return self::TYPES[$this->event_type] ?? Str::headline((string) $this->event_type);
@@ -122,7 +129,6 @@ class ActivityLog extends Model
         return match ($this->event_type) {
             self::TYPE_LOGIN_SUCCESS => 'bg-success-subtle text-success border border-success-subtle',
             self::TYPE_LOGIN_FAILED => 'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
-            self::TYPE_LOGIN_LOCKOUT => 'bg-danger-subtle text-danger border border-danger-subtle',
             self::TYPE_LOGOUT => 'bg-secondary-subtle text-secondary border border-secondary-subtle',
             self::TYPE_VEHICLE_STATUS_UPDATED => 'bg-primary-subtle text-primary border border-primary-subtle',
             default => 'bg-light text-dark border',
@@ -134,7 +140,6 @@ class ActivityLog extends Model
         return match ($this->event_type) {
             self::TYPE_LOGIN_SUCCESS => 'bi-box-arrow-in-right',
             self::TYPE_LOGIN_FAILED => 'bi-shield-exclamation',
-            self::TYPE_LOGIN_LOCKOUT => 'bi-shield-lock-fill',
             self::TYPE_LOGOUT => 'bi-box-arrow-right',
             self::TYPE_VEHICLE_STATUS_UPDATED => 'bi-truck',
             default => 'bi-activity',
@@ -149,7 +154,6 @@ class ActivityLog extends Model
     public function severityBadgeClass(): string
     {
         return match ($this->severity) {
-            self::SEVERITY_HIGH => 'bg-danger text-white',
             self::SEVERITY_WARNING => 'bg-warning text-dark',
             default => 'bg-info-subtle text-info-emphasis border border-info-subtle',
         };

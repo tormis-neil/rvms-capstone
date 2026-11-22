@@ -35,13 +35,7 @@ class AuthController extends Controller
         // Throttled per account+IP (R10 sub-task 5, NFR-02). Checked BEFORE
         // Auth::attempt, so a locked-out caller never reaches the password
         // comparison at all.
-        try {
-            LoginThrottle::assertNotLocked($request, $credentials['email']);
-        } catch (ValidationException $e) {
-            app(ActivityLogger::class)->logLoginLockout($request, $credentials['email'], ActivityLog::SOURCE_WEB);
-
-            throw $e;
-        }
+        LoginThrottle::assertNotLocked($request, $credentials['email']);
 
         if (! Auth::attempt($credentials)) {
             LoginThrottle::recordFailure($request, $credentials['email']);

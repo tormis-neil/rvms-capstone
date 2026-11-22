@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Services\ActivityLogger;
 use App\Services\VehicleStatusWriter;
-use App\Support\LoginThrottle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -113,25 +112,6 @@ class ActivityLoggerCoreTest extends TestCase
         $this->assertSame(ActivityLog::SOURCE_MOBILE_API, $unknown->source);
         $this->assertFalse($unknown->metadata['account_recognized']);
         $this->assertTrue($unknown->isUnrecognizedAccount());
-    }
-
-    public function test_it_records_login_lockout_with_high_severity(): void
-    {
-        $log = $this->logger->logLoginLockout(
-            $this->makeRequest('/login'),
-            'bfp.admin@rvms.local',
-            ActivityLog::SOURCE_WEB,
-        );
-
-        $this->assertNotNull($log);
-        $this->assertSame($this->bfp->id, $log->agency_id);
-        $this->assertSame($this->bfpAdmin->id, $log->user_id);
-        $this->assertSame(ActivityLog::TYPE_LOGIN_LOCKOUT, $log->event_type);
-        $this->assertSame(ActivityLog::SEVERITY_HIGH, $log->severity);
-        $this->assertSame('Login Lockout', $log->eventLabel());
-        $this->assertSame('High', $log->severityLabel());
-        $this->assertSame(LoginThrottle::MAX_ATTEMPTS, $log->metadata['max_attempts']);
-        $this->assertSame(LoginThrottle::DECAY_SECONDS, $log->metadata['lockout_seconds']);
     }
 
     public function test_it_records_logout(): void

@@ -133,7 +133,7 @@ class ActivityLogTest extends TestCase
         $this->assertSecretNeverLogged('wrong-password-2');
     }
 
-    public function test_web_login_lockout_records_high_severity_for_known_and_unrecognized_emails(): void
+    public function test_web_login_throttle_still_blocks_without_recording_lockout_events(): void
     {
         for ($i = 0; $i < LoginThrottle::MAX_ATTEMPTS; $i++) {
             $this->from('/login')->post('/login', [
@@ -147,16 +147,17 @@ class ActivityLogTest extends TestCase
             'password' => 'bad-guess',
         ])->assertSessionHasErrors('email');
 
-        $unknownLockout = ActivityLog::query()
-            ->where('event_type', ActivityLog::TYPE_LOGIN_LOCKOUT)
-            ->where('actor_email', 'hacker@probe.local')
-            ->first();
-
-        $this->assertNotNull($unknownLockout);
-        $this->assertSame(ActivityLog::SEVERITY_HIGH, $unknownLockout->severity);
-        $this->assertSame(ActivityLog::SOURCE_WEB, $unknownLockout->source);
-        $this->assertNull($unknownLockout->agency_id);
-        $this->assertFalse($unknownLockout->metadata['account_recognized']);
+        $this->assertSame(
+            0,
+            ActivityLog::query()->where('event_type', 'login_lockout')->count()
+        );
+        $this->assertSame(
+            LoginThrottle::MAX_ATTEMPTS,
+            ActivityLog::query()
+                ->where('event_type', ActivityLog::TYPE_LOGIN_FAILED)
+                ->where('actor_email', 'hacker@probe.local')
+                ->count()
+        );
 
         for ($i = 0; $i < LoginThrottle::MAX_ATTEMPTS; $i++) {
             $this->from('/login')->post('/login', [
@@ -170,16 +171,18 @@ class ActivityLogTest extends TestCase
             'password' => $this->secret,
         ])->assertSessionHasErrors('email');
 
-        $knownLockout = ActivityLog::query()
-            ->where('event_type', ActivityLog::TYPE_LOGIN_LOCKOUT)
-            ->where('actor_email', $this->admin->email)
-            ->first();
-
-        $this->assertNotNull($knownLockout);
-        $this->assertSame($this->bfp->id, $knownLockout->agency_id);
-        $this->assertSame($this->admin->id, $knownLockout->user_id);
-        $this->assertSame(ActivityLog::SEVERITY_HIGH, $knownLockout->severity);
-        $this->assertTrue($knownLockout->metadata['account_recognized']);
+        $this->assertFalse(auth()->check());
+        $this->assertSame(
+            0,
+            ActivityLog::query()->where('event_type', 'login_lockout')->count()
+        );
+        $this->assertSame(
+            LoginThrottle::MAX_ATTEMPTS,
+            ActivityLog::query()
+                ->where('event_type', ActivityLog::TYPE_LOGIN_FAILED)
+                ->where('actor_email', $this->admin->email)
+                ->count()
+        );
 
         $this->assertSecretNeverLogged($this->secret);
         $this->assertSecretNeverLogged('bad-guess');
@@ -236,14 +239,18 @@ class ActivityLogTest extends TestCase
             'password' => 'bad',
         ])->assertStatus(429);
 
-        $apiLockout = ActivityLog::query()
-            ->where('event_type', ActivityLog::TYPE_LOGIN_LOCKOUT)
-            ->where('actor_email', 'mobile.lockout@rvms.local')
-            ->first();
-
-        $this->assertNotNull($apiLockout);
-        $this->assertSame(ActivityLog::SOURCE_MOBILE_API, $apiLockout->source);
-        $this->assertSame(ActivityLog::SEVERITY_HIGH, $apiLockout->severity);
+        $this->assertSame(
+            0,
+            ActivityLog::query()->where('event_type', 'login_lockout')->count()
+        );
+        $this->assertSame(
+            LoginThrottle::MAX_ATTEMPTS,
+            ActivityLog::query()
+                ->where('event_type', ActivityLog::TYPE_LOGIN_FAILED)
+                ->where('actor_email', 'mobile.lockout@rvms.local')
+                ->where('source', ActivityLog::SOURCE_MOBILE_API)
+                ->count()
+        );
 
         $loginResponse = $this->postJson('/api/v1/login', [
             'email' => $this->driver->email,
@@ -388,7 +395,8 @@ class ActivityLogTest extends TestCase
             ->assertSee('System Monitor')
             ->assertSee('EVENTS TODAY')
             ->assertSee('SUCCESSFUL LOGINS')
-            ->assertSee('FAILED LOGINS & LOCKOUTS')
+            ->assertSee('FAILED LOGINS')
+            ->assertDontSee('LOCKOUTS')
             ->assertSee('VEHICLE STATUS UPDATES')
             ->assertSee('id="viewActivityLogModal"', false);
 
@@ -412,6 +420,16 @@ class ActivityLogTest extends TestCase
         $logger->logLoginSuccess($request, $choAdmin, ActivityLog::SOURCE_MOBILE_API);
         $logger->logLoginFailed($request, 'probe@attacker.local', ActivityLog::SOURCE_WEB, 'Invalid credentials');
 
+        ActivityLog::query()->create([
+            'agency_id' => $this->bfp->id,
+            'actor_email' => 'legacy.lockout@rvms.local',
+            'actor_role' => User::ROLE_ADMIN,
+            'event_type' => 'login_lockout',
+            'severity' => 'high',
+            'source' => ActivityLog::SOURCE_WEB,
+            'description' => 'Legacy lockout row',
+        ]);
+
         $response = $this->actingAs($this->admin)
             ->get('/activity-logs')
             ->assertOk();
@@ -420,13 +438,24 @@ class ActivityLogTest extends TestCase
             ->assertSee('Unrecognized Account')
             ->assertSee('probe@attacker.local')
             ->assertDontSee('cho.admin@rvms.local')
-            ->assertDontSee('CHO Admin');
+            ->assertDontSee('CHO Admin')
+            ->assertDontSee('legacy.lockout@rvms.local');
 
         $summary = $response->viewData('summary');
         $this->assertSame(2, $summary['events_today']);
         $this->assertSame(1, $summary['successful_logins']);
-        $this->assertSame(1, $summary['failed_and_lockouts']);
+        $this->assertSame(1, $summary['failed_logins']);
         $this->assertSame(0, $summary['vehicle_status_updates']);
+
+        $choResponse = $this->actingAs($choAdmin)
+            ->get('/activity-logs')
+            ->assertOk();
+
+        $choResponse->assertSee('cho.admin@rvms.local')
+            ->assertSee('Unrecognized Account')
+            ->assertSee('probe@attacker.local')
+            ->assertDontSee($this->admin->email)
+            ->assertDontSee('legacy.lockout@rvms.local');
     }
 
     public function test_system_monitor_filters_and_searches_safely(): void
@@ -447,9 +476,9 @@ class ActivityLogTest extends TestCase
             $this->driver,
         );
 
-        $logger->logLoginLockout(
-            Request::create('/login', 'POST', [], [], [], ['REMOTE_ADDR' => '198.51.100.77']),
-            'brute@probe.local',
+        $logger->logLogout(
+            Request::create('/logout', 'POST', [], [], [], ['REMOTE_ADDR' => '198.51.100.77']),
+            $this->admin,
             ActivityLog::SOURCE_WEB,
         );
 
@@ -470,43 +499,58 @@ class ActivityLogTest extends TestCase
             Request::create('/vehicles/'.$vehicle->id.'/status', 'PATCH', [], [], [], ['REMOTE_ADDR' => '10.0.0.3']),
         );
 
-        $this->actingAs($this->admin)
-            ->get('/activity-logs?event_type=login_lockout')
-            ->assertOk()
-            ->assertSee('brute@probe.local')
-            ->assertDontSee($this->admin->email)
-            ->assertDontSee('BFP-999');
+        ActivityLog::query()->create([
+            'agency_id' => $this->bfp->id,
+            'actor_email' => 'legacy@probe.local',
+            'actor_role' => 'unknown',
+            'event_type' => 'login_lockout',
+            'severity' => 'high',
+            'source' => ActivityLog::SOURCE_WEB,
+            'description' => 'Legacy lockout event',
+        ]);
 
         $this->actingAs($this->admin)
-            ->get('/activity-logs?severity=high')
+            ->get('/activity-logs?event_type=logout')
             ->assertOk()
-            ->assertSee('brute@probe.local')
-            ->assertDontSee($this->admin->email)
-            ->assertDontSee($this->driver->email);
+            ->assertSee('198.51.100.77')
+            ->assertDontSee('BFP-999')
+            ->assertDontSee($this->driver->email)
+            ->assertDontSee('10.0.0.1')
+            ->assertDontSee('legacy@probe.local');
+
+        $this->actingAs($this->admin)
+            ->get('/activity-logs?severity=warning')
+            ->assertOk()
+            ->assertSee($this->driver->email)
+            ->assertSee('BFP-999')
+            ->assertDontSee('198.51.100.77')
+            ->assertDontSee('10.0.0.1')
+            ->assertDontSee('legacy@probe.local');
 
         $this->actingAs($this->admin)
             ->get('/activity-logs?source=Mobile+API')
             ->assertOk()
             ->assertSee($this->driver->email)
-            ->assertDontSee('brute@probe.local')
+            ->assertDontSee('198.51.100.77')
             ->assertDontSee('BFP-999');
 
         $this->actingAs($this->admin)
             ->get('/activity-logs?search=BFP-999')
             ->assertOk()
             ->assertSee('BFP-999')
-            ->assertDontSee('brute@probe.local');
+            ->assertDontSee('198.51.100.77');
 
         $this->actingAs($this->admin)
             ->get('/activity-logs?search=198.51.100.77')
             ->assertOk()
-            ->assertSee('brute@probe.local')
+            ->assertSee('198.51.100.77')
             ->assertDontSee('BFP-999');
 
         $this->actingAs($this->admin)
-            ->get('/activity-logs?event_type=invalid&severity=bogus&source=unknown')
+            ->get('/activity-logs?event_type=login_lockout&severity=high&source=unknown')
             ->assertOk()
-            ->assertSee('Showing 1 to 4 of 4 events');
+            ->assertSee('Showing 1 to 4 of 4 events')
+            ->assertDontSee('legacy@probe.local');
     }
 
     public function test_system_monitor_paginates_at_fifteen_with_constant_query_count(): void
